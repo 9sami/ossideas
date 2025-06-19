@@ -64,11 +64,22 @@ const AppContent: React.FC = () => {
   };
 
   const handleAuthModalClose = () => {
-    // Allow closing the modal unless onboarding is required
-    if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
-      setAuthModalOpen(false);
-    }
+    // Simplified logic: always allow closing the modal
+    // The useEffect will handle reopening if onboarding is still required
+    setAuthModalOpen(false);
   };
+
+  // Show loading screen while auth is initializing
+  if (authState.loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
