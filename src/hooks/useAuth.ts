@@ -464,7 +464,8 @@ export const useAuthLogic = () => {
         throw new Error('No authenticated user found');
       }
 
-      const { error } = await supabase
+      // Update profile with onboarding data
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           phone_number: data.phoneNumber,
@@ -476,21 +477,43 @@ export const useAuthLogic = () => {
         })
         .eq('id', user.id);
 
-      if (error) {
-        throw error;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
       }
 
-      // Refresh user data
-      const updatedUser = await convertSupabaseUser(user);
+      // Wait a moment to ensure the profile is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Refresh user data with retries
+      let updatedUser = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (!updatedUser && retryCount < maxRetries) {
+        updatedUser = await convertSupabaseUser(user);
+        if (!updatedUser) {
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      if (!updatedUser) {
+        throw new Error('Failed to refresh user data after onboarding');
+      }
+
       setAuthState(prev => ({ 
         ...prev, 
         user: updatedUser, 
         loading: false, 
         error: null,
-        onboardingRequired: false, // Onboarding is now complete
+        onboardingRequired: false,
       }));
+
+      console.log('Onboarding completed successfully:', updatedUser);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
+      console.error('Onboarding error:', error);
       setAuthState(prev => ({ 
         ...prev, 
         loading: false, 
