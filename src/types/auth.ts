@@ -15,7 +15,7 @@ export interface User {
 export interface AuthState {
   user: User | null;
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   emailVerificationRequired: boolean;
   onboardingRequired: boolean;
 }
