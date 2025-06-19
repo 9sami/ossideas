@@ -137,10 +137,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     setValidationError(null);
     
     try {
+      console.log('📋 Submitting onboarding data:', onboardingData);
       await completeOnboarding(onboardingData);
+      console.log('✅ Onboarding completed, calling onClose()');
       onClose();
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('💥 Onboarding error:', error);
       setValidationError('Failed to complete onboarding. Please try again.');
     }
   };

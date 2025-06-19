@@ -36,8 +36,16 @@ export const useAuthLogic = () => {
   const checkIfOnboarded = (user: User): boolean => {
     if (!user) return true; // No user means no onboarding needed
     
+    console.log('🔍 Checking onboarding status for user:', {
+      phoneNumber: user.phoneNumber,
+      location: user.location,
+      usagePurpose: user.usagePurpose,
+      industries: user.industries,
+      referralSource: user.referralSource
+    });
+    
     // Check if all required onboarding fields are populated
-    return !!(
+    const isOnboarded = !!(
       user.phoneNumber &&
       user.location &&
       user.usagePurpose &&
@@ -45,6 +53,9 @@ export const useAuthLogic = () => {
       user.industries.length > 0 &&
       user.referralSource
     );
+    
+    console.log('✅ User onboarding status:', isOnboarded ? 'COMPLETE' : 'REQUIRED');
+    return isOnboarded;
   };
 
   // Check if user exists with given email
@@ -445,6 +456,7 @@ export const useAuthLogic = () => {
   // Complete onboarding
   const completeOnboarding = async (data: OnboardingData): Promise<void> => {
     try {
+      console.log('🚀 Starting onboarding completion with data:', data);
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -453,6 +465,7 @@ export const useAuthLogic = () => {
         throw new Error('No authenticated user found');
       }
 
+      console.log('📝 Updating profile for user:', user.id);
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -466,19 +479,29 @@ export const useAuthLogic = () => {
         .eq('id', user.id);
 
       if (error) {
+        console.error('❌ Error updating profile:', error);
         throw error;
       }
 
+      console.log('✅ Profile updated successfully, refreshing user data...');
       // Refresh user data
       const updatedUser = await convertSupabaseUser(user);
+      console.log('👤 Updated user object:', updatedUser);
+      
+      const newOnboardingRequired = false; // Explicitly set to false
+      console.log('🎯 Setting onboardingRequired to:', newOnboardingRequired);
+      
       setAuthState(prev => ({ 
         ...prev, 
         user: updatedUser, 
         loading: false, 
         error: null,
-        onboardingRequired: false, // Onboarding is now complete
+        onboardingRequired: newOnboardingRequired,
       }));
+      
+      console.log('🎉 Onboarding completion successful!');
     } catch (error) {
+      console.error('💥 Onboarding completion failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
       setAuthState(prev => ({ 
         ...prev, 
