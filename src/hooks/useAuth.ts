@@ -178,49 +178,35 @@ export const useAuthLogic = () => {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        
-        if (session?.user) {
-          if (!session.user.email_confirmed_at) {
-            setAuthState({ 
-              user: null, 
-              loading: false, 
-              error: null, 
-              emailVerificationRequired: true,
-              onboardingRequired: false,
-            });
-            return;
-          }
-
-          setAuthState(prev => ({ 
-            ...prev, 
-            loading: true, 
-            emailVerificationRequired: false 
-          }));
-          
-          const user = await convertSupabaseUser(session.user);
-          const isOnboarded = user ? checkIfOnboarded(user) : true;
-          
-          setAuthState({ 
-            user, 
-            loading: false, 
-            error: null, 
-            emailVerificationRequired: false,
-            onboardingRequired: !isOnboarded,
-          });
-        } else {
-          setAuthState({ 
-            user: null, 
-            loading: false, 
-            error: null, 
-            emailVerificationRequired: false,
-            onboardingRequired: false,
-          });
-        }
-      }
-    );
+const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  async (event, session) => {
+    // Skip the initial TOKEN_REFRESHED event to avoid double initialization
+    if (event === 'TOKEN_REFRESHED') return;
+    
+    console.log('Auth state changed:', event, session?.user?.id);
+    
+    if (session?.user) {
+      const user = await convertSupabaseUser(session.user);
+      const isOnboarded = user ? checkIfOnboarded(user) : true;
+      
+      setAuthState({ 
+        user,
+        loading: false,
+        error: null,
+        emailVerificationRequired: !session.user.email_confirmed_at,
+        onboardingRequired: session.user.email_confirmed_at ? !isOnboarded : false,
+      });
+    } else {
+      setAuthState({ 
+        user: null,
+        loading: false,
+        error: null,
+        emailVerificationRequired: false,
+        onboardingRequired: false,
+      });
+    }
+  }
+);
 
     return () => subscription.unsubscribe();
   }, []);
