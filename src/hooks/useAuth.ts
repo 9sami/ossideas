@@ -29,7 +29,22 @@ export const useAuthLogic = () => {
     loading: true,
     error: null,
     emailVerificationRequired: false,
+    onboardingRequired: false,
   });
+
+  // Check if user needs onboarding
+  const checkIfOnboarded = (user: User): boolean => {
+    if (!user) return true; // No user means no onboarding needed
+    
+    // Check if all required onboarding fields are populated
+    return !!(
+      user.phoneNumber &&
+      user.usagePurpose &&
+      user.industries &&
+      user.industries.length > 0 &&
+      user.referralSource
+    );
+  };
 
   // Check if user exists with given email
   const checkUserExists = async (email: string): Promise<{ exists: boolean; provider?: string }> => {
@@ -123,24 +138,29 @@ export const useAuthLogic = () => {
               user: null, 
               loading: false, 
               error: null, 
-              emailVerificationRequired: true 
+              emailVerificationRequired: true,
+              onboardingRequired: false,
             });
             return;
           }
 
           const user = await convertSupabaseUser(session.user);
+          const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+          
           setAuthState({ 
             user, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: false 
+            emailVerificationRequired: false,
+            onboardingRequired,
           });
         } else {
           setAuthState({ 
             user: null, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: false 
+            emailVerificationRequired: false,
+            onboardingRequired: false,
           });
         }
       } catch (error) {
@@ -149,7 +169,8 @@ export const useAuthLogic = () => {
           user: null, 
           loading: false, 
           error: 'Failed to initialize authentication',
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         });
       }
     };
@@ -166,26 +187,35 @@ export const useAuthLogic = () => {
               user: null, 
               loading: false, 
               error: null, 
-              emailVerificationRequired: true 
+              emailVerificationRequired: true,
+              onboardingRequired: false,
             });
             return;
           }
 
-          setAuthState(prev => ({ ...prev, loading: true, emailVerificationRequired: false }));
+          setAuthState(prev => ({ 
+            ...prev, 
+            loading: true, 
+            emailVerificationRequired: false 
+          }));
           
           const user = await convertSupabaseUser(session.user);
+          const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+          
           setAuthState({ 
             user, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: false 
+            emailVerificationRequired: false,
+            onboardingRequired,
           });
         } else {
           setAuthState({ 
             user: null, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: false 
+            emailVerificationRequired: false,
+            onboardingRequired: false,
           });
         }
       }
@@ -201,7 +231,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: true, 
         error: null, 
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -219,7 +250,8 @@ export const useAuthLogic = () => {
             user: null, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: true 
+            emailVerificationRequired: true,
+            onboardingRequired: false,
           });
           return { 
             user: null, 
@@ -232,7 +264,8 @@ export const useAuthLogic = () => {
           ...prev, 
           loading: false, 
           error: errorMessage,
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         }));
         return { user: null, error: errorMessage };
       }
@@ -243,7 +276,8 @@ export const useAuthLogic = () => {
             user: null, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: true 
+            emailVerificationRequired: true,
+            onboardingRequired: false,
           });
           return { 
             user: null, 
@@ -253,13 +287,21 @@ export const useAuthLogic = () => {
         }
 
         const user = await convertSupabaseUser(data.user);
+        const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+        
         setAuthState({ 
           user, 
           loading: false, 
           error: null, 
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired,
         });
-        return { user, error: null };
+        
+        return { 
+          user, 
+          error: null, 
+          onboardingRequired 
+        };
       }
 
       return { user: null, error: 'Login failed' };
@@ -269,7 +311,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: false, 
         error: errorMessage,
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
       return { user: null, error: errorMessage };
     }
@@ -282,7 +325,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: true, 
         error: null, 
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
 
       // Validate passwords match
@@ -292,7 +336,8 @@ export const useAuthLogic = () => {
           ...prev, 
           loading: false, 
           error: errorMessage,
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         }));
         return { user: null, error: errorMessage };
       }
@@ -309,7 +354,8 @@ export const useAuthLogic = () => {
           ...prev, 
           loading: false, 
           error: errorMessage,
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         }));
         return { user: null, error: errorMessage };
       }
@@ -339,7 +385,8 @@ export const useAuthLogic = () => {
           ...prev, 
           loading: false, 
           error: errorMessage,
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         }));
         return { user: null, error: errorMessage };
       }
@@ -351,7 +398,8 @@ export const useAuthLogic = () => {
             user: null, 
             loading: false, 
             error: null, 
-            emailVerificationRequired: true 
+            emailVerificationRequired: true,
+            onboardingRequired: false,
           });
           return { 
             user: null, 
@@ -360,15 +408,23 @@ export const useAuthLogic = () => {
           };
         }
 
-        // Email is already confirmed
+        // Email is already confirmed, user will need onboarding
         const user = await convertSupabaseUser(data.user);
+        const onboardingRequired = true; // New users always need onboarding
+        
         setAuthState({ 
           user, 
           loading: false, 
           error: null, 
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired,
         });
-        return { user, error: null };
+        
+        return { 
+          user, 
+          error: null, 
+          onboardingRequired 
+        };
       }
 
       return { user: null, error: 'Registration failed' };
@@ -378,7 +434,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: false, 
         error: errorMessage,
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
       return { user: null, error: errorMessage };
     }
@@ -416,7 +473,8 @@ export const useAuthLogic = () => {
         ...prev, 
         user: updatedUser, 
         loading: false, 
-        error: null 
+        error: null,
+        onboardingRequired: false, // Onboarding is now complete
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
@@ -436,7 +494,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: true, 
         error: null, 
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -455,7 +514,8 @@ export const useAuthLogic = () => {
           ...prev, 
           loading: false, 
           error: error.message,
-          emailVerificationRequired: false 
+          emailVerificationRequired: false,
+          onboardingRequired: false,
         }));
         throw error;
       }
@@ -465,7 +525,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: false, 
         error: errorMessage,
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
       throw new Error(errorMessage);
     }
@@ -478,7 +539,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: true, 
         error: null, 
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
       
       const { error } = await supabase.auth.signOut();
@@ -489,7 +551,8 @@ export const useAuthLogic = () => {
         ...prev, 
         loading: false, 
         error: errorMessage,
-        emailVerificationRequired: false 
+        emailVerificationRequired: false,
+        onboardingRequired: false,
       }));
       throw new Error(errorMessage);
     }

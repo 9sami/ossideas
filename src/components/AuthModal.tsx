@@ -6,7 +6,7 @@ import { OnboardingData } from '../types/auth';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: 'login' | 'register';
+  initialMode?: 'login' | 'register' | 'onboarding';
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
@@ -29,14 +29,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
   const { login, register, loginWithGoogle, authState, completeOnboarding } = useAuth();
 
-  // Reset form when modal opens/closes
+  // Update mode when initialMode changes (for onboarding trigger)
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
-      setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
-      setOnboardingData({ phoneNumber: '', usagePurpose: '', industries: [], referralSource: '' });
-      setShowPassword(false);
-      setShowConfirmPassword(false);
+      if (initialMode !== 'onboarding') {
+        setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
+        setOnboardingData({ phoneNumber: '', usagePurpose: '', industries: [], referralSource: '' });
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+      }
     }
   }, [isOpen, initialMode]);
 
@@ -94,8 +96,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           password: formData.password,
         });
         
-        if (result.user && !result.emailVerificationRequired) {
+        if (result.user && !result.emailVerificationRequired && !result.onboardingRequired) {
           onClose();
+        } else if (result.onboardingRequired) {
+          setMode('onboarding');
         }
       } else if (mode === 'register') {
         const result = await register({
@@ -280,12 +284,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
               <p className="text-sm text-gray-600 mt-1">Help us personalize your experience</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {/* Only show close button if onboarding is not required */}
+            {!authState.onboardingRequired && (
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
 
           <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">

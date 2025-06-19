@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
@@ -18,10 +18,18 @@ const AppContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'onboarding'>('login');
 
   const { authState, logout } = useAuth();
   const isLoggedIn = !!authState.user;
+
+  // Check for onboarding requirement after login
+  useEffect(() => {
+    if (authState.onboardingRequired && !authState.loading) {
+      setAuthModalMode('onboarding');
+      setAuthModalOpen(true);
+    }
+  }, [authState.onboardingRequired, authState.loading]);
 
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
@@ -52,6 +60,13 @@ const AppContent: React.FC = () => {
       await logout();
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const handleAuthModalClose = () => {
+    // Only allow closing if onboarding is not required
+    if (!authState.onboardingRequired) {
+      setAuthModalOpen(false);
     }
   };
 
@@ -110,7 +125,7 @@ const AppContent: React.FC = () => {
 
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={handleAuthModalClose}
         initialMode={authModalMode}
       />
     </div>

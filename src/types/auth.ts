@@ -17,6 +17,7 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   emailVerificationRequired: boolean;
+  onboardingRequired: boolean;
 }
 
 export interface LoginCredentials {
@@ -42,4 +43,5 @@ export interface AuthResponse {
   user: User | null;
   error: string | null;
   emailVerificationRequired?: boolean;
+  onboardingRequired?: boolean;
 }
