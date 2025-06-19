@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
@@ -22,14 +22,18 @@ const AppContent: React.FC = () => {
 
   const { authState, logout } = useAuth();
   const isLoggedIn = !!authState.user;
+  const location = useLocation();
 
-  // Check for onboarding requirement after login
+  // Check for onboarding requirement after login or OAuth callback
   useEffect(() => {
-    if (authState.onboardingRequired && !authState.loading && isLoggedIn) {
+    const showOnboarding = location.state?.showOnboarding;
+    if ((authState.onboardingRequired || showOnboarding) && !authState.loading && isLoggedIn) {
       setAuthModalMode('onboarding');
       setAuthModalOpen(true);
+      // Clear the location state
+      window.history.replaceState({}, document.title);
     }
-  }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
+  }, [authState.onboardingRequired, authState.loading, isLoggedIn, location.state]);
 
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
@@ -58,15 +62,20 @@ const AppContent: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
+      // Reset view to home after logout
+      setCurrentView('home');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
   const handleAuthModalClose = () => {
-    // Allow closing the modal unless onboarding is required
+    // Only allow closing the modal if:
+    // 1. Onboarding is not required, or
+    // 2. The current modal is not onboarding
     if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
       setAuthModalOpen(false);
+      setAuthModalMode('login'); // Reset to login mode when closing
     }
   };
 
