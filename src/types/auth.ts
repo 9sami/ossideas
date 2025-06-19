@@ -34,6 +34,7 @@ export interface RegisterCredentials {
 
 export interface OnboardingData {
   phoneNumber: string;
+  location: string;
   usagePurpose: string;
   industries: string[];
   referralSource: string;

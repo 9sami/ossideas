@@ -39,6 +39,7 @@ export const useAuthLogic = () => {
     // Check if all required onboarding fields are populated
     return !!(
       user.phoneNumber &&
+      user.location &&
       user.usagePurpose &&
       user.industries &&
       user.industries.length > 0 &&
@@ -456,6 +457,7 @@ export const useAuthLogic = () => {
         .from('profiles')
         .update({
           phone_number: data.phoneNumber,
+          location: data.location,
           usage_purpose: data.usagePurpose,
           industries: data.industries,
           referral_source: data.referralSource,

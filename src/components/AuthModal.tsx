@@ -22,10 +22,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     phoneNumber: '',
+    location: '',
     usagePurpose: '',
     industries: [],
     referralSource: '',
   });
+
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const { login, register, loginWithGoogle, authState, completeOnboarding } = useAuth();
 
@@ -33,9 +36,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
+      setValidationError(null);
       if (initialMode !== 'onboarding') {
         setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
-        setOnboardingData({ phoneNumber: '', usagePurpose: '', industries: [], referralSource: '' });
+        setOnboardingData({ phoneNumber: '', location: '', usagePurpose: '', industries: [], referralSource: '' });
         setShowPassword(false);
         setShowConfirmPassword(false);
       }
@@ -66,7 +70,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
   };
 
   const validateOnboarding = () => {
-    if (!onboardingData.phoneNumber || !onboardingData.usagePurpose || 
+    if (!onboardingData.phoneNumber || !onboardingData.location || !onboardingData.usagePurpose || 
         onboardingData.industries.length === 0 || !onboardingData.referralSource) {
       return 'All fields are required';
     }
@@ -85,9 +89,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     
     const validationError = validateForm();
     if (validationError) {
-      // Set a temporary error state
+      setValidationError(validationError);
       return;
     }
+    
+    setValidationError(null);
     
     try {
       if (mode === 'login') {
@@ -124,14 +130,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     
     const validationError = validateOnboarding();
     if (validationError) {
+      setValidationError(validationError);
       return;
     }
+    
+    setValidationError(null);
     
     try {
       await completeOnboarding(onboardingData);
       onClose();
     } catch (error) {
       console.error('Onboarding error:', error);
+      setValidationError('Failed to complete onboarding. Please try again.');
     }
   };
 
@@ -317,6 +327,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
             </div>
 
+            {/* Location */}
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                Location *
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  value={onboardingData.location}
+                  onChange={handleOnboardingChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                  placeholder="City, Country"
+                  required
+                />
+              </div>
+            </div>
+
             {/* Usage Purpose */}
             <div>
               <label htmlFor="usagePurpose" className="block text-sm font-medium text-gray-700 mb-2">
@@ -392,11 +422,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               </div>
             </div>
 
-            {authState.error && (
+            {(authState.error || validationError) && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-red-600">{authState.error}</p>
+                  <p className="text-sm text-red-600">{authState.error || validationError}</p>
                 </div>
               </div>
             )}
@@ -566,13 +596,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               </div>
             )}
 
-            {authState.error && (
+            {(authState.error || validationError) && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm text-red-600">{authState.error}</p>
-                    {authState.error.includes('already exists') && mode === 'register' && (
+                    <p className="text-sm text-red-600">{authState.error || validationError}</p>
+                    {(authState.error?.includes('already exists') || validationError?.includes('already exists')) && mode === 'register' && (
                       <button
                         type="button"
                         onClick={handleSwitchToLogin}
