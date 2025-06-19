@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 
 const AuthCallback: React.FC = () => {
   const { getCurrentUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -13,7 +15,7 @@ const AuthCallback: React.FC = () => {
         
         if (error) {
           console.error('Auth callback error:', error);
-          window.location.href = '/';
+          navigate('/');
           return;
         }
 
@@ -38,18 +40,21 @@ const AuthCallback: React.FC = () => {
           if (profileError) {
             console.error('Error updating profile:', profileError);
           }
+
+          // Wait a moment to ensure the profile is created before redirecting
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         // Redirect to home page
-        window.location.href = '/';
+        navigate('/');
       } catch (error) {
         console.error('Unexpected error in auth callback:', error);
-        window.location.href = '/';
+        navigate('/');
       }
     };
 
     handleAuthCallback();
-  }, [getCurrentUser]);
+  }, [getCurrentUser, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

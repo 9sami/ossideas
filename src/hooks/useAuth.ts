@@ -29,8 +29,11 @@ export const useAuthLogic = () => {
     error: null,
   });
 
-  // Convert Supabase user to our User type
-  const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+  // Convert Supabase user to our User type with retry mechanism
+  const convertSupabaseUser = async (supabaseUser: SupabaseUser, retryCount = 0): Promise<User | null> => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -39,6 +42,13 @@ export const useAuthLogic = () => {
         .single();
 
       if (error) {
+        // If profile not found and we haven't exceeded retry limit, retry
+        if (error.code === 'PGRST116' && retryCount < maxRetries) {
+          console.log(`Profile not found, retrying... (${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return convertSupabaseUser(supabaseUser, retryCount + 1);
+        }
+        
         console.error('Error fetching user profile:', error);
         return null;
       }
@@ -53,6 +63,13 @@ export const useAuthLogic = () => {
         updatedAt: profile.updated_at,
       };
     } catch (error) {
+      // If it's a network error or similar, retry
+      if (retryCount < maxRetries) {
+        console.log(`Error converting user, retrying... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return convertSupabaseUser(supabaseUser, retryCount + 1);
+      }
+      
       console.error('Error converting user:', error);
       return null;
     }
@@ -81,7 +98,12 @@ export const useAuthLogic = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
         if (session?.user) {
+          // Set loading state while we fetch the profile
+          setAuthState(prev => ({ ...prev, loading: true }));
+          
           const user = await convertSupabaseUser(session.user);
           setAuthState({ user, loading: false, error: null });
         } else {
