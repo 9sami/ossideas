@@ -134,14 +134,14 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider> 
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/*" element={<AppContent />} />
         </Routes>
-      </Router>
-    </AuthProvider> 
+      </AuthProvider>
+    </Router>
   );
 }
 
