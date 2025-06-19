@@ -32,7 +32,7 @@ export const useAuthLogic = () => {
     onboardingRequired: false,
   });
 
-  // Check if user needs onboarding
+  // Check if user is onboarded based on database fields
   const checkIfOnboarded = (user: User): boolean => {
     if (!user) return true; // No user means no onboarding needed
     
@@ -146,14 +146,14 @@ export const useAuthLogic = () => {
           }
 
           const user = await convertSupabaseUser(session.user);
-          const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+          const isOnboarded = user ? checkIfOnboarded(user) : true;
           
           setAuthState({ 
             user, 
             loading: false, 
             error: null, 
             emailVerificationRequired: false,
-            onboardingRequired,
+            onboardingRequired: !isOnboarded,
           });
         } else {
           setAuthState({ 
@@ -201,14 +201,14 @@ export const useAuthLogic = () => {
           }));
           
           const user = await convertSupabaseUser(session.user);
-          const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+          const isOnboarded = user ? checkIfOnboarded(user) : true;
           
           setAuthState({ 
             user, 
             loading: false, 
             error: null, 
             emailVerificationRequired: false,
-            onboardingRequired,
+            onboardingRequired: !isOnboarded,
           });
         } else {
           setAuthState({ 
@@ -288,20 +288,20 @@ export const useAuthLogic = () => {
         }
 
         const user = await convertSupabaseUser(data.user);
-        const onboardingRequired = user ? !checkIfOnboarded(user) : false;
+        const isOnboarded = user ? checkIfOnboarded(user) : true;
         
         setAuthState({ 
           user, 
           loading: false, 
           error: null, 
           emailVerificationRequired: false,
-          onboardingRequired,
+          onboardingRequired: !isOnboarded,
         });
         
         return { 
           user, 
           error: null, 
-          onboardingRequired 
+          onboardingRequired: !isOnboarded 
         };
       }
 
@@ -411,20 +411,20 @@ export const useAuthLogic = () => {
 
         // Email is already confirmed, user will need onboarding
         const user = await convertSupabaseUser(data.user);
-        const onboardingRequired = true; // New users always need onboarding
+        const isOnboarded = user ? checkIfOnboarded(user) : false;
         
         setAuthState({ 
           user, 
           loading: false, 
           error: null, 
           emailVerificationRequired: false,
-          onboardingRequired,
+          onboardingRequired: !isOnboarded,
         });
         
         return { 
           user, 
           error: null, 
-          onboardingRequired 
+          onboardingRequired: !isOnboarded 
         };
       }
 

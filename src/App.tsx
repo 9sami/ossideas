@@ -25,11 +25,11 @@ const AppContent: React.FC = () => {
 
   // Check for onboarding requirement after login
   useEffect(() => {
-    if (authState.onboardingRequired && !authState.loading) {
+    if (authState.onboardingRequired && !authState.loading && isLoggedIn) {
       setAuthModalMode('onboarding');
       setAuthModalOpen(true);
     }
-  }, [authState.onboardingRequired, authState.loading]);
+  }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
 
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
@@ -64,8 +64,8 @@ const AppContent: React.FC = () => {
   };
 
   const handleAuthModalClose = () => {
-    // Only allow closing if onboarding is not required
-    if (!authState.onboardingRequired) {
+    // Allow closing the modal unless onboarding is required
+    if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
       setAuthModalOpen(false);
     }
   };

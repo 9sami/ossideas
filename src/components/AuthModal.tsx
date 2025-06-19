@@ -294,15 +294,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
               <p className="text-sm text-gray-600 mt-1">Help us personalize your experience</p>
             </div>
-            {/* Only show close button if onboarding is not required */}
-            {!authState.onboardingRequired && (
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
+            {/* Allow closing onboarding modal */}
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">
@@ -438,6 +436,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             >
               {authState.loading ? 'Completing Setup...' : 'Complete Setup'}
             </button>
+
+            {/* Skip option for onboarding */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Skip for now (you can complete this later)
+              </button>
+            </div>
           </form>
         </div>
       </div>
