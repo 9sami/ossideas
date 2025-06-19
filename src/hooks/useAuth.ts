@@ -11,7 +11,7 @@ const AuthContext = createContext<{
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
-  completeOnboarding: (data: OnboardingData) => Promise<void>;
+  completeOnboarding: (data: OnboardingData) => Promise<{ success: boolean; error?: string }>;
 } | null>(null);
 
 export const useAuth = () => {
@@ -485,7 +485,7 @@ export const useAuthLogic = () => {
   };
 
   // Complete onboarding
-  const completeOnboarding = async (data: OnboardingData): Promise<void> => {
+  const completeOnboarding = async (data: OnboardingData): Promise<{ success: boolean; error?: string }> => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -504,6 +504,7 @@ export const useAuthLogic = () => {
           industries: data.industries,
           referral_source: data.referralSource,
           updated_at: new Date().toISOString(),
+          onboarding_completed: true
         })
         .eq('id', user.id);
 
@@ -513,13 +514,21 @@ export const useAuthLogic = () => {
 
       // Refresh user data
       const updatedUser = await convertSupabaseUser(user);
+      
+      if (!updatedUser) {
+        throw new Error('Failed to refresh user data');
+      }
+
       setAuthState(prev => ({ 
         ...prev, 
         user: updatedUser, 
         loading: false, 
         error: null,
-        onboardingRequired: false, // Onboarding is now complete
+        onboardingRequired: false,
+        emailVerificationRequired: false
       }));
+
+      return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
       setAuthState(prev => ({ 
@@ -527,7 +536,7 @@ export const useAuthLogic = () => {
         loading: false, 
         error: errorMessage 
       }));
-      throw new Error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 

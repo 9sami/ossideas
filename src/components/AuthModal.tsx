@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle, Phone, Building, Users, Megaphone } from 'lucide-react';
+import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle, Phone, Building, Megaphone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { OnboardingData } from '../types/auth';
 
@@ -137,8 +137,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     setValidationError(null);
     
     try {
-      await completeOnboarding(onboardingData);
-      onClose();
+      const result = await completeOnboarding(onboardingData);
+      
+      if (result.success) {
+        // Reset form data
+        setOnboardingData({
+          phoneNumber: '',
+          location: '',
+          usagePurpose: '',
+          industries: [],
+          referralSource: '',
+        });
+        
+        // Close the modal and redirect
+        onClose();
+        
+        // Optional: Redirect to main application interface
+        window.location.href = '/dashboard'; // Adjust the path as needed
+      } else {
+        setValidationError(result.error || 'Failed to complete onboarding. Please try again.');
+      }
     } catch (error) {
       console.error('Onboarding error:', error);
       setValidationError('Failed to complete onboarding. Please try again.');
