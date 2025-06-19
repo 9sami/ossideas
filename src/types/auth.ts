@@ -4,6 +4,10 @@ export interface User {
   fullName: string | null;
   location: string | null;
   avatarUrl: string | null;
+  phoneNumber: string | null;
+  usagePurpose: string | null;
+  industries: string[] | null;
+  referralSource: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,7 +27,15 @@ export interface LoginCredentials {
 export interface RegisterCredentials {
   email: string;
   password: string;
+  confirmPassword: string;
   fullName?: string;
+}
+
+export interface OnboardingData {
+  phoneNumber: string;
+  usagePurpose: string;
+  industries: string[];
+  referralSource: string;
 }
 
 export interface AuthResponse {

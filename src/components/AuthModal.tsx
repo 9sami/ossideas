@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle, Phone, Building, Users, Megaphone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { OnboardingData } from '../types/auth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,27 +10,82 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'onboarding'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
   });
 
-  const { login, register, loginWithGoogle, authState } = useAuth();
+  const [onboardingData, setOnboardingData] = useState<OnboardingData>({
+    phoneNumber: '',
+    usagePurpose: '',
+    industries: [],
+    referralSource: '',
+  });
+
+  const { login, register, loginWithGoogle, authState, completeOnboarding } = useAuth();
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
-      setFormData({ email: '', password: '', fullName: '' });
+      setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
+      setOnboardingData({ phoneNumber: '', usagePurpose: '', industries: [], referralSource: '' });
       setShowPassword(false);
+      setShowConfirmPassword(false);
     }
   }, [isOpen, initialMode]);
 
+  const validateForm = () => {
+    if (mode === 'register') {
+      if (!formData.email || !formData.password || !formData.confirmPassword) {
+        return 'All fields are required';
+      }
+      
+      if (formData.password !== formData.confirmPassword) {
+        return 'Passwords do not match';
+      }
+      
+      if (formData.password.length < 6) {
+        return 'Password must be at least 6 characters long';
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        return 'Please enter a valid email address';
+      }
+    }
+    
+    return null;
+  };
+
+  const validateOnboarding = () => {
+    if (!onboardingData.phoneNumber || !onboardingData.usagePurpose || 
+        onboardingData.industries.length === 0 || !onboardingData.referralSource) {
+      return 'All fields are required';
+    }
+    
+    // Basic phone number validation
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(onboardingData.phoneNumber)) {
+      return 'Please enter a valid phone number with country code (e.g., +1234567890)';
+    }
+    
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      // Set a temporary error state
+      return;
+    }
     
     try {
       if (mode === 'login') {
@@ -41,21 +97,37 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         if (result.user && !result.emailVerificationRequired) {
           onClose();
         }
-        // If emailVerificationRequired is true, the modal will show verification message
-      } else {
+      } else if (mode === 'register') {
         const result = await register({
           email: formData.email,
           password: formData.password,
+          confirmPassword: formData.confirmPassword,
           fullName: formData.fullName,
         });
         
         if (result.user && !result.emailVerificationRequired) {
-          onClose();
+          // Move to onboarding step
+          setMode('onboarding');
         }
-        // If emailVerificationRequired is true, the modal will show verification message
       }
     } catch (error) {
       console.error('Auth error:', error);
+    }
+  };
+
+  const handleOnboardingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const validationError = validateOnboarding();
+    if (validationError) {
+      return;
+    }
+    
+    try {
+      await completeOnboarding(onboardingData);
+      onClose();
+    } catch (error) {
+      console.error('Onboarding error:', error);
     }
   };
 
@@ -67,22 +139,48 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
+  const handleOnboardingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'industries') {
+      // Handle multi-select for industries
+      const select = e.target as HTMLSelectElement;
+      const selectedOptions = Array.from(select.selectedOptions, option => option.value);
+      setOnboardingData(prev => ({
+        ...prev,
+        industries: selectedOptions,
+      }));
+    } else {
+      setOnboardingData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleIndustryToggle = (industry: string) => {
+    setOnboardingData(prev => ({
+      ...prev,
+      industries: prev.industries.includes(industry)
+        ? prev.industries.filter(i => i !== industry)
+        : [...prev.industries, industry]
+    }));
+  };
+
   const handleBackToForm = () => {
-    // Reset the email verification state by clearing any auth errors
-    // This allows users to try again or switch between login/register
-    setFormData({ email: '', password: '', fullName: '' });
+    setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
   };
 
   const handleSwitchToLogin = () => {
     setMode('login');
-    setFormData(prev => ({ ...prev, password: '', fullName: '' }));
+    setFormData(prev => ({ ...prev, password: '', confirmPassword: '', fullName: '' }));
   };
 
   if (!isOpen) return null;
@@ -92,7 +190,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-          {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
             <button
@@ -103,7 +200,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             </button>
           </div>
 
-          {/* Content */}
           <div className="p-6 text-center">
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Mail className="h-8 w-8 text-orange-600" />
@@ -126,7 +222,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   <ul className="space-y-1 text-left">
                     <li>• Check your email inbox (and spam folder)</li>
                     <li>• Click the verification link</li>
-                    <li>• Return here to sign in</li>
+                    <li>• Return here to complete your profile</li>
                   </ul>
                 </div>
               </div>
@@ -153,11 +249,168 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     );
   }
 
+  // Show onboarding form
+  if (mode === 'onboarding') {
+    const usagePurposes = [
+      { value: 'personal', label: 'Personal use' },
+      { value: 'business', label: 'Business use' },
+      { value: 'saas', label: 'Building SaaS / micro SaaS' },
+    ];
+
+    const industries = [
+      'AI/ML', 'DevTools', 'SaaS', 'E-commerce', 'Data Analytics',
+      'Security', 'Mobile', 'Web Dev', 'IoT', 'Blockchain',
+      'FinTech', 'HealthTech', 'EdTech', 'Marketing', 'Design',
+      'Gaming', 'Social Media', 'Productivity', 'Enterprise', 'Other'
+    ];
+
+    const referralSources = [
+      { value: 'linkedin', label: 'LinkedIn' },
+      { value: 'instagram', label: 'Instagram' },
+      { value: 'product-hunt', label: 'Product Hunt' },
+      { value: 'indie-hackers', label: 'Indie Hackers' },
+      { value: 'other', label: 'Other' },
+    ];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
+              <p className="text-sm text-gray-600 mt-1">Help us personalize your experience</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">
+            {/* Phone Number */}
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number *
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={onboardingData.phoneNumber}
+                  onChange={handleOnboardingChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                  placeholder="+1234567890"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+            </div>
+
+            {/* Usage Purpose */}
+            <div>
+              <label htmlFor="usagePurpose" className="block text-sm font-medium text-gray-700 mb-2">
+                What will you use OSSIdeas for? *
+              </label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  id="usagePurpose"
+                  name="usagePurpose"
+                  value={onboardingData.usagePurpose}
+                  onChange={handleOnboardingChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white"
+                  required
+                >
+                  <option value="">Select your purpose</option>
+                  {usagePurposes.map((purpose) => (
+                    <option key={purpose.value} value={purpose.value}>
+                      {purpose.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Industries */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Industries of Interest *
+              </label>
+              <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2">
+                  {industries.map((industry) => (
+                    <label key={industry} className="flex items-center text-sm">
+                      <input
+                        type="checkbox"
+                        checked={onboardingData.industries.includes(industry)}
+                        onChange={() => handleIndustryToggle(industry)}
+                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 mr-2"
+                      />
+                      <span className="text-gray-700">{industry}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Selected: {onboardingData.industries.length} industries
+              </p>
+            </div>
+
+            {/* Referral Source */}
+            <div>
+              <label htmlFor="referralSource" className="block text-sm font-medium text-gray-700 mb-2">
+                Where did you hear about us? *
+              </label>
+              <div className="relative">
+                <Megaphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  id="referralSource"
+                  name="referralSource"
+                  value={onboardingData.referralSource}
+                  onChange={handleOnboardingChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white"
+                  required
+                >
+                  <option value="">Select source</option>
+                  {referralSources.map((source) => (
+                    <option key={source.value} value={source.value}>
+                      {source.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {authState.error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-600">{authState.error}</p>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={authState.loading}
+              className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {authState.loading ? 'Completing Setup...' : 'Complete Setup'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // Show regular login/register form
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        {/* Header */}
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
             {mode === 'login' ? 'Welcome Back' : 'Create Account'}
@@ -170,7 +423,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6">
           {/* Google Login */}
           <button
@@ -233,7 +485,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                Email Address *
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -252,7 +504,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Password *
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -274,7 +526,38 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {mode === 'register' && (
+                <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+              )}
             </div>
+
+            {mode === 'register' && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password *
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                    placeholder="Confirm your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {authState.error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">

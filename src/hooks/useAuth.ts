@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse } from '../types/auth';
+import { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse, OnboardingData } from '../types/auth';
 
 // Auth Context
 const AuthContext = createContext<{
@@ -11,6 +11,7 @@ const AuthContext = createContext<{
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
+  completeOnboarding: (data: OnboardingData) => Promise<void>;
 } | null>(null);
 
 export const useAuth = () => {
@@ -33,36 +34,28 @@ export const useAuthLogic = () => {
   // Check if user exists with given email
   const checkUserExists = async (email: string): Promise<{ exists: boolean; provider?: string }> => {
     try {
-      // First check if there's an existing user by attempting to sign in with a dummy password
-      // This is a safe way to check if an email is registered without exposing user data
       const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: 'dummy-password-for-checking-existence'
       });
 
       if (error) {
-        // If error is "Invalid login credentials", the email exists but password is wrong
         if (error.message.includes('Invalid login credentials') || 
             error.message.includes('invalid_credentials')) {
-          // Try to determine the provider by checking common OAuth patterns
-          // This is a heuristic approach since Supabase doesn't expose provider info directly
           return { exists: true, provider: 'email' };
         }
         
-        // If error is about email not confirmed, user exists but needs verification
         if (error.message.includes('email not confirmed') || 
             error.message.includes('Email not confirmed')) {
           return { exists: true, provider: 'email' };
         }
         
-        // If error is "User not found" or similar, email doesn't exist
         if (error.message.includes('User not found') || 
             error.message.includes('user_not_found')) {
           return { exists: false };
         }
       }
 
-      // If no error (which shouldn't happen with dummy password), assume exists
       return { exists: true, provider: 'email' };
     } catch (error) {
       console.error('Error checking user existence:', error);
@@ -73,7 +66,7 @@ export const useAuthLogic = () => {
   // Convert Supabase user to our User type with retry mechanism
   const convertSupabaseUser = async (supabaseUser: SupabaseUser, retryCount = 0): Promise<User | null> => {
     const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
+    const retryDelay = 1000;
 
     try {
       const { data: profile, error } = await supabase
@@ -83,7 +76,6 @@ export const useAuthLogic = () => {
         .single();
 
       if (error) {
-        // If profile not found and we haven't exceeded retry limit, retry
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
           console.log(`Profile not found, retrying... (${retryCount + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -100,11 +92,14 @@ export const useAuthLogic = () => {
         fullName: profile.full_name,
         location: profile.location,
         avatarUrl: profile.avatar_url,
+        phoneNumber: profile.phone_number,
+        usagePurpose: profile.usage_purpose,
+        industries: profile.industries,
+        referralSource: profile.referral_source,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       };
     } catch (error) {
-      // If it's a network error or similar, retry
       if (retryCount < maxRetries) {
         console.log(`Error converting user, retrying... (${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -123,7 +118,6 @@ export const useAuthLogic = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Check if email is confirmed
           if (!session.user.email_confirmed_at) {
             setAuthState({ 
               user: null, 
@@ -162,13 +156,11 @@ export const useAuthLogic = () => {
 
     initializeAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         if (session?.user) {
-          // Check if email is confirmed
           if (!session.user.email_confirmed_at) {
             setAuthState({ 
               user: null, 
@@ -179,7 +171,6 @@ export const useAuthLogic = () => {
             return;
           }
 
-          // Set loading state while we fetch the profile
           setAuthState(prev => ({ ...prev, loading: true, emailVerificationRequired: false }));
           
           const user = await convertSupabaseUser(session.user);
@@ -221,7 +212,6 @@ export const useAuthLogic = () => {
       if (error) {
         let errorMessage = error.message;
         
-        // Provide more user-friendly error messages
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = 'Invalid email or password. Please check your credentials and try again.';
         } else if (error.message.includes('Email not confirmed')) {
@@ -248,7 +238,6 @@ export const useAuthLogic = () => {
       }
 
       if (data.user) {
-        // Check if email is confirmed
         if (!data.user.email_confirmed_at) {
           setAuthState({ 
             user: null, 
@@ -296,7 +285,19 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false 
       }));
 
-      // First check if user already exists
+      // Validate passwords match
+      if (credentials.password !== credentials.confirmPassword) {
+        const errorMessage = 'Passwords do not match';
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: errorMessage,
+          emailVerificationRequired: false 
+        }));
+        return { user: null, error: errorMessage };
+      }
+
+      // Check if user already exists
       const userCheck = await checkUserExists(credentials.email);
       
       if (userCheck.exists) {
@@ -326,7 +327,6 @@ export const useAuthLogic = () => {
       if (error) {
         let errorMessage = error.message;
         
-        // Handle specific Supabase errors with user-friendly messages
         if (error.message.includes('User already registered')) {
           errorMessage = `An account with ${credentials.email} already exists. Please sign in instead.`;
         } else if (error.message.includes('Password should be at least')) {
@@ -345,7 +345,7 @@ export const useAuthLogic = () => {
       }
 
       if (data.user) {
-        // Check if email confirmation is required (session will be null if confirmation is needed)
+        // Check if email confirmation is required
         if (!data.session) {
           setAuthState({ 
             user: null, 
@@ -360,7 +360,7 @@ export const useAuthLogic = () => {
           };
         }
 
-        // Email is already confirmed (e.g., via OAuth or disabled confirmation)
+        // Email is already confirmed
         const user = await convertSupabaseUser(data.user);
         setAuthState({ 
           user, 
@@ -381,6 +381,51 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false 
       }));
       return { user: null, error: errorMessage };
+    }
+  };
+
+  // Complete onboarding
+  const completeOnboarding = async (data: OnboardingData): Promise<void> => {
+    try {
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          phone_number: data.phoneNumber,
+          usage_purpose: data.usagePurpose,
+          industries: data.industries,
+          referral_source: data.referralSource,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh user data
+      const updatedUser = await convertSupabaseUser(user);
+      setAuthState(prev => ({ 
+        ...prev, 
+        user: updatedUser, 
+        loading: false, 
+        error: null 
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage 
+      }));
+      throw new Error(errorMessage);
     }
   };
 
@@ -429,7 +474,6 @@ export const useAuthLogic = () => {
   // Logout
   const logout = async (): Promise<void> => {
     try {
-      // Set loading state to provide immediate feedback
       setAuthState(prev => ({ 
         ...prev, 
         loading: true, 
@@ -439,9 +483,6 @@ export const useAuthLogic = () => {
       
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      // Don't manually set auth state - let onAuthStateChange handle it
-      // This ensures consistency with Supabase's session management
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       setAuthState(prev => ({ 
@@ -477,6 +518,7 @@ export const useAuthLogic = () => {
     loginWithGoogle,
     logout,
     getCurrentUser,
+    completeOnboarding,
   };
 };
 
