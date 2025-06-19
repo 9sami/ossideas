@@ -165,19 +165,8 @@ export const useAuthLogic = () => {
       }
 
       if (data.user) {
-        // Create profile record
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: data.user.email!,
-            full_name: credentials.fullName || null,
-          });
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-
+        // Profile creation is now handled automatically by database trigger
+        // No need to manually create profile record here
         const user = await convertSupabaseUser(data.user);
         setAuthState({ user, loading: false, error: null });
         return { user, error: null };
