@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse, OnboardingData } from '../types/auth';
 
@@ -532,6 +532,9 @@ export const useAuthLogic = () => {
         }));
         throw error;
       }
+
+      // Note: We don't need to set success state here as the auth state change listener
+      // will handle that after the OAuth callback
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google login failed';
       setAuthState(prev => ({ 
