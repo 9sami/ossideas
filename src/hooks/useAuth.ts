@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse, OnboardingData } from '../types/auth';
 
@@ -133,60 +133,80 @@ export const useAuthLogic = () => {
 
     const initializeAuth = async () => {
       try {
-        // Get the initial session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Set up auth state change listener first
+        // Set up auth state change listener first to avoid missing any auth events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             console.log('Auth state changed:', event, newSession?.user?.id);
             
             if (!mounted) return;
 
-            if (newSession?.user) {
-              if (!newSession.user.email_confirmed_at) {
-                setAuthState({ 
-                  user: null, 
-                  loading: false, 
-                  error: null, 
-                  emailVerificationRequired: true,
-                  onboardingRequired: false,
-                });
-                return;
-              }
+            // Set loading state while processing auth change
+            setAuthState(prev => ({ ...prev, loading: true }));
 
-              const user = await convertSupabaseUser(newSession.user);
-              const isOnboarded = user ? checkIfOnboarded(user) : true;
-              
-              setAuthState({ 
-                user, 
-                loading: false, 
-                error: null, 
-                emailVerificationRequired: false,
-                onboardingRequired: !isOnboarded,
-              });
-            } else {
-              setAuthState({ 
-                user: null, 
-                loading: false, 
-                error: null, 
-                emailVerificationRequired: false,
-                onboardingRequired: false,
-              });
+            try {
+              if (newSession?.user) {
+                if (!newSession.user.email_confirmed_at) {
+                  setAuthState({ 
+                    user: null, 
+                    loading: false, 
+                    error: null, 
+                    emailVerificationRequired: true,
+                    onboardingRequired: false,
+                  });
+                  return;
+                }
+
+                const user = await convertSupabaseUser(newSession.user);
+                const isOnboarded = user ? checkIfOnboarded(user) : true;
+                
+                if (mounted) {
+                  setAuthState({ 
+                    user, 
+                    loading: false, 
+                    error: null, 
+                    emailVerificationRequired: false,
+                    onboardingRequired: !isOnboarded,
+                  });
+                }
+              } else {
+                if (mounted) {
+                  setAuthState({ 
+                    user: null, 
+                    loading: false, 
+                    error: null, 
+                    emailVerificationRequired: false,
+                    onboardingRequired: false,
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Error processing auth state change:', error);
+              if (mounted) {
+                setAuthState(prev => ({ 
+                  ...prev, 
+                  loading: false, 
+                  error: 'Failed to process authentication change' 
+                }));
+              }
             }
           }
         );
 
-        // Handle initial session
+        // Get the initial session after setting up the listener
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // Process initial session
         if (session?.user) {
           if (!session.user.email_confirmed_at) {
-            setAuthState({ 
-              user: null, 
-              loading: false, 
-              error: null, 
-              emailVerificationRequired: true,
-              onboardingRequired: false,
-            });
+            if (mounted) {
+              setAuthState({ 
+                user: null, 
+                loading: false, 
+                error: null, 
+                emailVerificationRequired: true,
+                onboardingRequired: false,
+              });
+            }
             return;
           }
 
@@ -202,17 +222,20 @@ export const useAuthLogic = () => {
               onboardingRequired: !isOnboarded,
             });
           }
-        } else if (mounted) {
-          setAuthState({ 
-            user: null, 
-            loading: false, 
-            error: null, 
-            emailVerificationRequired: false,
-            onboardingRequired: false,
-          });
+        } else {
+          if (mounted) {
+            setAuthState({ 
+              user: null, 
+              loading: false, 
+              error: null, 
+              emailVerificationRequired: false,
+              onboardingRequired: false,
+            });
+          }
         }
 
         return () => {
+          mounted = false;
           subscription.unsubscribe();
         };
       } catch (error) {
@@ -230,10 +253,6 @@ export const useAuthLogic = () => {
     };
 
     initializeAuth();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
   // Login with email and password
@@ -464,8 +483,7 @@ export const useAuthLogic = () => {
         throw new Error('No authenticated user found');
       }
 
-      // Update profile with onboarding data
-      const { error: profileError } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
           phone_number: data.phoneNumber,
@@ -477,43 +495,21 @@ export const useAuthLogic = () => {
         })
         .eq('id', user.id);
 
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
+      if (error) {
+        throw error;
       }
 
-      // Wait a moment to ensure the profile is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Refresh user data with retries
-      let updatedUser = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      while (!updatedUser && retryCount < maxRetries) {
-        updatedUser = await convertSupabaseUser(user);
-        if (!updatedUser) {
-          retryCount++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      if (!updatedUser) {
-        throw new Error('Failed to refresh user data after onboarding');
-      }
-
+      // Refresh user data
+      const updatedUser = await convertSupabaseUser(user);
       setAuthState(prev => ({ 
         ...prev, 
         user: updatedUser, 
         loading: false, 
         error: null,
-        onboardingRequired: false,
+        onboardingRequired: false, // Onboarding is now complete
       }));
-
-      console.log('Onboarding completed successfully:', updatedUser);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
-      console.error('Onboarding error:', error);
       setAuthState(prev => ({ 
         ...prev, 
         loading: false, 
@@ -555,9 +551,6 @@ export const useAuthLogic = () => {
         }));
         throw error;
       }
-
-      // Note: We don't need to set success state here as the auth state change listener
-      // will handle that after the OAuth callback
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google login failed';
       setAuthState(prev => ({ 
