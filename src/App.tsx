@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
