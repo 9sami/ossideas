@@ -70,6 +70,18 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Show loading state while authentication is being initialized
+  if (authState.loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
@@ -80,6 +92,7 @@ const AppContent: React.FC = () => {
         onProfileClick={handleProfileView}
         onLogoClick={handleBackToHome}
         isLoggedIn={isLoggedIn}
+        loading={authState.loading}
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
@@ -116,6 +129,7 @@ const AppContent: React.FC = () => {
             <UserProfile 
               onIdeaSelect={handleIdeaSelect}
               isLoggedIn={isLoggedIn}
+              loading={authState.loading}
               onLoginClick={handleLoginClick}
               user={authState.user}
             />
