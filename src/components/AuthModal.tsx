@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Mail, Lock, User, MapPin, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
@@ -19,6 +19,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
   const { login, register, loginWithGoogle, authState } = useAuth();
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setFormData({ email: '', password: '', fullName: '' });
+      setShowPassword(false);
+    }
+  }, [isOpen, initialMode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -29,9 +38,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           password: formData.password,
         });
         
-        if (result.user) {
+        if (result.user && !result.emailVerificationRequired) {
           onClose();
         }
+        // If emailVerificationRequired is true, the modal will show verification message
       } else {
         const result = await register({
           email: formData.email,
@@ -39,9 +49,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           fullName: formData.fullName,
         });
         
-        if (result.user) {
+        if (result.user && !result.emailVerificationRequired) {
           onClose();
         }
+        // If emailVerificationRequired is true, the modal will show verification message
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -63,8 +74,81 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     }));
   };
 
+  const handleBackToForm = () => {
+    // Reset the email verification state by clearing any auth errors
+    // This allows users to try again or switch between login/register
+    setFormData({ email: '', password: '', fullName: '' });
+  };
+
   if (!isOpen) return null;
 
+  // Show email verification screen
+  if (authState.emailVerificationRequired) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="h-8 w-8 text-orange-600" />
+            </div>
+            
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              Verify Your Email Address
+            </h3>
+            
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              We've sent a verification link to <strong>{formData.email}</strong>. 
+              Please check your email and click the link to verify your account.
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">What's next?</p>
+                  <ul className="space-y-1 text-left">
+                    <li>• Check your email inbox (and spam folder)</li>
+                    <li>• Click the verification link</li>
+                    <li>• Return here to sign in</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleBackToForm}
+                className="w-full px-4 py-2 text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition-colors"
+              >
+                Try Different Email
+              </button>
+              
+              <button
+                onClick={onClose}
+                className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                I'll Check My Email
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show regular login/register form
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">

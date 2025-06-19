@@ -27,6 +27,7 @@ export const useAuthLogic = () => {
     user: null,
     loading: true,
     error: null,
+    emailVerificationRequired: false,
   });
 
   // Convert Supabase user to our User type with retry mechanism
@@ -82,14 +83,40 @@ export const useAuthLogic = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          // Check if email is confirmed
+          if (!session.user.email_confirmed_at) {
+            setAuthState({ 
+              user: null, 
+              loading: false, 
+              error: null, 
+              emailVerificationRequired: true 
+            });
+            return;
+          }
+
           const user = await convertSupabaseUser(session.user);
-          setAuthState({ user, loading: false, error: null });
+          setAuthState({ 
+            user, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: false 
+          });
         } else {
-          setAuthState({ user: null, loading: false, error: null });
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: false 
+          });
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setAuthState({ user: null, loading: false, error: 'Failed to initialize authentication' });
+        setAuthState({ 
+          user: null, 
+          loading: false, 
+          error: 'Failed to initialize authentication',
+          emailVerificationRequired: false 
+        });
       }
     };
 
@@ -101,13 +128,34 @@ export const useAuthLogic = () => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         if (session?.user) {
+          // Check if email is confirmed
+          if (!session.user.email_confirmed_at) {
+            setAuthState({ 
+              user: null, 
+              loading: false, 
+              error: null, 
+              emailVerificationRequired: true 
+            });
+            return;
+          }
+
           // Set loading state while we fetch the profile
-          setAuthState(prev => ({ ...prev, loading: true }));
+          setAuthState(prev => ({ ...prev, loading: true, emailVerificationRequired: false }));
           
           const user = await convertSupabaseUser(session.user);
-          setAuthState({ user, loading: false, error: null });
+          setAuthState({ 
+            user, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: false 
+          });
         } else {
-          setAuthState({ user: null, loading: false, error: null });
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: false 
+          });
         }
       }
     );
@@ -118,7 +166,12 @@ export const useAuthLogic = () => {
   // Login with email and password
   const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: true, 
+        error: null, 
+        emailVerificationRequired: false 
+      }));
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
@@ -126,20 +179,50 @@ export const useAuthLogic = () => {
       });
 
       if (error) {
-        setAuthState(prev => ({ ...prev, loading: false, error: error.message }));
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          emailVerificationRequired: false 
+        }));
         return { user: null, error: error.message };
       }
 
       if (data.user) {
+        // Check if email is confirmed
+        if (!data.user.email_confirmed_at) {
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: true 
+          });
+          return { 
+            user: null, 
+            error: null, 
+            emailVerificationRequired: true 
+          };
+        }
+
         const user = await convertSupabaseUser(data.user);
-        setAuthState({ user, loading: false, error: null });
+        setAuthState({ 
+          user, 
+          loading: false, 
+          error: null, 
+          emailVerificationRequired: false 
+        });
         return { user, error: null };
       }
 
       return { user: null, error: 'Login failed' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        emailVerificationRequired: false 
+      }));
       return { user: null, error: errorMessage };
     }
   };
@@ -147,7 +230,12 @@ export const useAuthLogic = () => {
   // Register with email and password
   const register = async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     try {
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: true, 
+        error: null, 
+        emailVerificationRequired: false 
+      }));
 
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
@@ -160,22 +248,51 @@ export const useAuthLogic = () => {
       });
 
       if (error) {
-        setAuthState(prev => ({ ...prev, loading: false, error: error.message }));
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          emailVerificationRequired: false 
+        }));
         return { user: null, error: error.message };
       }
 
       if (data.user) {
-        // Profile creation is now handled automatically by database trigger
-        // No need to manually create profile record here
+        // Check if email confirmation is required (session will be null if confirmation is needed)
+        if (!data.session) {
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: true 
+          });
+          return { 
+            user: null, 
+            error: null, 
+            emailVerificationRequired: true 
+          };
+        }
+
+        // Email is already confirmed (e.g., via OAuth or disabled confirmation)
         const user = await convertSupabaseUser(data.user);
-        setAuthState({ user, loading: false, error: null });
+        setAuthState({ 
+          user, 
+          loading: false, 
+          error: null, 
+          emailVerificationRequired: false 
+        });
         return { user, error: null };
       }
 
       return { user: null, error: 'Registration failed' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
-      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        emailVerificationRequired: false 
+      }));
       return { user: null, error: errorMessage };
     }
   };
@@ -183,7 +300,12 @@ export const useAuthLogic = () => {
   // Login with Google
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: true, 
+        error: null, 
+        emailVerificationRequired: false 
+      }));
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -197,12 +319,22 @@ export const useAuthLogic = () => {
       });
 
       if (error) {
-        setAuthState(prev => ({ ...prev, loading: false, error: error.message }));
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          emailVerificationRequired: false 
+        }));
         throw error;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google login failed';
-      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        emailVerificationRequired: false 
+      }));
       throw new Error(errorMessage);
     }
   };
@@ -211,7 +343,12 @@ export const useAuthLogic = () => {
   const logout = async (): Promise<void> => {
     try {
       // Set loading state to provide immediate feedback
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: true, 
+        error: null, 
+        emailVerificationRequired: false 
+      }));
       
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -220,7 +357,12 @@ export const useAuthLogic = () => {
       // This ensures consistency with Supabase's session management
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: errorMessage,
+        emailVerificationRequired: false 
+      }));
       throw new Error(errorMessage);
     }
   };
@@ -230,7 +372,7 @@ export const useAuthLogic = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (user) {
+      if (user && user.email_confirmed_at) {
         return await convertSupabaseUser(user);
       }
       

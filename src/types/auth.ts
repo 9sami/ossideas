@@ -12,6 +12,7 @@ export interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  emailVerificationRequired: boolean;
 }
 
 export interface LoginCredentials {
@@ -28,4 +29,5 @@ export interface RegisterCredentials {
 export interface AuthResponse {
   user: User | null;
   error: string | null;
+  emailVerificationRequired?: boolean;
 }
