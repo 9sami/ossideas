@@ -221,13 +221,17 @@ export const useAuthLogic = () => {
   // Logout
   const logout = async (): Promise<void> => {
     try {
+      // Set loading state to provide immediate feedback
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      setAuthState({ user: null, loading: false, error: null });
+      // Don't manually set auth state - let onAuthStateChange handle it
+      // This ensures consistency with Supabase's session management
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
       throw new Error(errorMessage);
     }
   };
