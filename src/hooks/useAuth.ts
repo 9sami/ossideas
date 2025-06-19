@@ -33,18 +33,26 @@ export const useAuthLogic = () => {
   });
 
   // Check if user is onboarded based on database fields
-  const checkIfOnboarded = (user: User): boolean => {
+  const checkIfOnboarded = async (user: User): Promise<boolean> => {
     if (!user) return true; // No user means no onboarding needed
     
-    // Check if all required onboarding fields are populated
-    return !!(
-      user.phoneNumber &&
-      user.location &&
-      user.usagePurpose &&
-      user.industries &&
-      user.industries.length > 0 &&
-      user.referralSource
-    );
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error checking onboarding status:', error);
+        return false;
+      }
+
+      return profile?.onboarding_completed || false;
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      return false;
+    }
   };
 
   // Check if user exists with given email
@@ -142,10 +150,14 @@ export const useAuthLogic = () => {
   // Initialize auth state
   useEffect(() => {
     let mounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     const initializeAuth = async () => {
       try {
-        // Set up auth state change listener first to avoid missing any auth events
+        // Get the initial session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // Set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             console.log('Auth state changed:', event, newSession?.user?.id);
@@ -169,7 +181,11 @@ export const useAuthLogic = () => {
                 }
 
                 const user = await convertSupabaseUser(newSession.user);
-                const isOnboarded = user ? checkIfOnboarded(user) : true;
+                if (!user) {
+                  throw new Error('Failed to get user data');
+                }
+
+                const isOnboarded = await checkIfOnboarded(user);
                 
                 if (mounted) {
                   setAuthState({ 
@@ -204,67 +220,44 @@ export const useAuthLogic = () => {
           }
         );
 
-        // Get the initial session after setting up the listener
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Process initial session
+        authSubscription = subscription;
+
+        // Process initial session if it exists
         if (session?.user) {
-          if (!session.user.email_confirmed_at) {
+          const user = await convertSupabaseUser(session.user);
+          if (user) {
+            const isOnboarded = await checkIfOnboarded(user);
             if (mounted) {
-              setAuthState({ 
-                user: null, 
-                loading: false, 
-                error: null, 
-                emailVerificationRequired: true,
-                onboardingRequired: false,
+              setAuthState({
+                user,
+                loading: false,
+                error: null,
+                emailVerificationRequired: false,
+                onboardingRequired: !isOnboarded,
               });
             }
-            return;
-          }
-
-          const user = await convertSupabaseUser(session.user);
-          const isOnboarded = user ? checkIfOnboarded(user) : true;
-          
-          if (mounted) {
-            setAuthState({ 
-              user, 
-              loading: false, 
-              error: null, 
-              emailVerificationRequired: false,
-              onboardingRequired: !isOnboarded,
-            });
-          }
-        } else {
-          if (mounted) {
-            setAuthState({ 
-              user: null, 
-              loading: false, 
-              error: null, 
-              emailVerificationRequired: false,
-              onboardingRequired: false,
-            });
           }
         }
-
-        return () => {
-          mounted = false;
-          subscription.unsubscribe();
-        };
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
-          setAuthState({ 
-            user: null, 
+          setAuthState(prev => ({ 
+            ...prev, 
             loading: false, 
-            error: 'Failed to initialize authentication',
-            emailVerificationRequired: false,
-            onboardingRequired: false,
-          });
+            error: 'Failed to initialize authentication' 
+          }));
         }
       }
     };
 
     initializeAuth();
+
+    return () => {
+      mounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, []);
 
   // Login with email and password

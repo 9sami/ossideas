@@ -35,8 +35,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
   // Update mode when initialMode changes (for onboarding trigger)
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode);
+      // Only update mode if we're not already in onboarding or if onboarding is required
+      if (initialMode === 'onboarding' && authState.onboardingRequired) {
+        setMode('onboarding');
+      } else if (initialMode !== 'onboarding') {
+        setMode(initialMode);
+      }
+
       setValidationError(null);
+      
       if (initialMode !== 'onboarding') {
         setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
         setOnboardingData({ phoneNumber: '', location: '', usagePurpose: '', industries: [], referralSource: '' });
@@ -44,7 +51,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         setShowConfirmPassword(false);
       }
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, initialMode, authState.onboardingRequired]);
+
+  // Prevent showing onboarding if it's already completed
+  useEffect(() => {
+    if (mode === 'onboarding' && !authState.onboardingRequired) {
+      onClose();
+    }
+  }, [mode, authState.onboardingRequired, onClose]);
 
   const validateForm = () => {
     if (mode === 'register') {
@@ -116,12 +130,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         });
         
         if (result.user && !result.emailVerificationRequired) {
-          // Move to onboarding step
           setMode('onboarding');
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
+      setValidationError(error instanceof Error ? error.message : 'Authentication failed');
     }
   };
 
@@ -153,7 +167,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         onClose();
         
         // Optional: Redirect to main application interface
-        window.location.href = '/dashboard'; // Adjust the path as needed
+        window.location.href = '/dashboard';
       } else {
         setValidationError(result.error || 'Failed to complete onboarding. Please try again.');
       }
