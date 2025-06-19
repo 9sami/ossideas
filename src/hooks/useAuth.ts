@@ -129,10 +129,55 @@ export const useAuthLogic = () => {
 
   // Initialize auth state
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
+        // Get the initial session
         const { data: { session } } = await supabase.auth.getSession();
         
+        // Set up auth state change listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            console.log('Auth state changed:', event, newSession?.user?.id);
+            
+            if (!mounted) return;
+
+            if (newSession?.user) {
+              if (!newSession.user.email_confirmed_at) {
+                setAuthState({ 
+                  user: null, 
+                  loading: false, 
+                  error: null, 
+                  emailVerificationRequired: true,
+                  onboardingRequired: false,
+                });
+                return;
+              }
+
+              const user = await convertSupabaseUser(newSession.user);
+              const isOnboarded = user ? checkIfOnboarded(user) : true;
+              
+              setAuthState({ 
+                user, 
+                loading: false, 
+                error: null, 
+                emailVerificationRequired: false,
+                onboardingRequired: !isOnboarded,
+              });
+            } else {
+              setAuthState({ 
+                user: null, 
+                loading: false, 
+                error: null, 
+                emailVerificationRequired: false,
+                onboardingRequired: false,
+              });
+            }
+          }
+        );
+
+        // Handle initial session
         if (session?.user) {
           if (!session.user.email_confirmed_at) {
             setAuthState({ 
@@ -148,14 +193,16 @@ export const useAuthLogic = () => {
           const user = await convertSupabaseUser(session.user);
           const isOnboarded = user ? checkIfOnboarded(user) : true;
           
-          setAuthState({ 
-            user, 
-            loading: false, 
-            error: null, 
-            emailVerificationRequired: false,
-            onboardingRequired: !isOnboarded,
-          });
-        } else {
+          if (mounted) {
+            setAuthState({ 
+              user, 
+              loading: false, 
+              error: null, 
+              emailVerificationRequired: false,
+              onboardingRequired: !isOnboarded,
+            });
+          }
+        } else if (mounted) {
           setAuthState({ 
             user: null, 
             loading: false, 
@@ -164,51 +211,29 @@ export const useAuthLogic = () => {
             onboardingRequired: false,
           });
         }
+
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setAuthState({ 
-          user: null, 
-          loading: false, 
-          error: 'Failed to initialize authentication',
-          emailVerificationRequired: false,
-          onboardingRequired: false,
-        });
+        if (mounted) {
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: 'Failed to initialize authentication',
+            emailVerificationRequired: false,
+            onboardingRequired: false,
+          });
+        }
       }
     };
 
     initializeAuth();
 
-const { data: { subscription } } = supabase.auth.onAuthStateChange(
-  async (event, session) => {
-    // Skip the initial TOKEN_REFRESHED event to avoid double initialization
-    if (event === 'TOKEN_REFRESHED') return;
-    
-    console.log('Auth state changed:', event, session?.user?.id);
-    
-    if (session?.user) {
-      const user = await convertSupabaseUser(session.user);
-      const isOnboarded = user ? checkIfOnboarded(user) : true;
-      
-      setAuthState({ 
-        user,
-        loading: false,
-        error: null,
-        emailVerificationRequired: !session.user.email_confirmed_at,
-        onboardingRequired: session.user.email_confirmed_at ? !isOnboarded : false,
-      });
-    } else {
-      setAuthState({ 
-        user: null,
-        loading: false,
-        error: null,
-        emailVerificationRequired: false,
-        onboardingRequired: false,
-      });
-    }
-  }
-);
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Login with email and password
@@ -547,43 +572,20 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(
   };
 
   // Get current user
-const getCurrentUser = async (): Promise<User | null> => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const convertedUser = await convertSupabaseUser(user);
-      const isOnboarded = convertedUser ? checkIfOnboarded(convertedUser) : true;
+  const getCurrentUser = async (): Promise<User | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
       
-      setAuthState({
-        user: convertedUser,
-        loading: false,
-        error: null,
-        emailVerificationRequired: !user.email_confirmed_at,
-        onboardingRequired: !isOnboarded,
-      });
+      if (user && user.email_confirmed_at) {
+        return await convertSupabaseUser(user);
+      }
       
-      return convertedUser;
+      return null;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return null;
     }
-    
-    setAuthState({
-      user: null,
-      loading: false,
-      error: null,
-      emailVerificationRequired: false,
-      onboardingRequired: false,
-    });
-    return null;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    setAuthState(prev => ({
-      ...prev,
-      loading: false,
-      error: 'Failed to fetch user',
-    }));
-    return null;
-  }
-};
+  };
 
   return {
     authState,
