@@ -30,6 +30,46 @@ export const useAuthLogic = () => {
     emailVerificationRequired: false,
   });
 
+  // Check if user exists with given email
+  const checkUserExists = async (email: string): Promise<{ exists: boolean; provider?: string }> => {
+    try {
+      // First check if there's an existing user by attempting to sign in with a dummy password
+      // This is a safe way to check if an email is registered without exposing user data
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: 'dummy-password-for-checking-existence'
+      });
+
+      if (error) {
+        // If error is "Invalid login credentials", the email exists but password is wrong
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('invalid_credentials')) {
+          // Try to determine the provider by checking common OAuth patterns
+          // This is a heuristic approach since Supabase doesn't expose provider info directly
+          return { exists: true, provider: 'email' };
+        }
+        
+        // If error is about email not confirmed, user exists but needs verification
+        if (error.message.includes('email not confirmed') || 
+            error.message.includes('Email not confirmed')) {
+          return { exists: true, provider: 'email' };
+        }
+        
+        // If error is "User not found" or similar, email doesn't exist
+        if (error.message.includes('User not found') || 
+            error.message.includes('user_not_found')) {
+          return { exists: false };
+        }
+      }
+
+      // If no error (which shouldn't happen with dummy password), assume exists
+      return { exists: true, provider: 'email' };
+    } catch (error) {
+      console.error('Error checking user existence:', error);
+      return { exists: false };
+    }
+  };
+
   // Convert Supabase user to our User type with retry mechanism
   const convertSupabaseUser = async (supabaseUser: SupabaseUser, retryCount = 0): Promise<User | null> => {
     const maxRetries = 3;
@@ -179,13 +219,32 @@ export const useAuthLogic = () => {
       });
 
       if (error) {
+        let errorMessage = error.message;
+        
+        // Provide more user-friendly error messages
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          setAuthState({ 
+            user: null, 
+            loading: false, 
+            error: null, 
+            emailVerificationRequired: true 
+          });
+          return { 
+            user: null, 
+            error: null, 
+            emailVerificationRequired: true 
+          };
+        }
+        
         setAuthState(prev => ({ 
           ...prev, 
           loading: false, 
-          error: error.message,
+          error: errorMessage,
           emailVerificationRequired: false 
         }));
-        return { user: null, error: error.message };
+        return { user: null, error: errorMessage };
       }
 
       if (data.user) {
@@ -237,6 +296,23 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false 
       }));
 
+      // First check if user already exists
+      const userCheck = await checkUserExists(credentials.email);
+      
+      if (userCheck.exists) {
+        const errorMessage = userCheck.provider === 'oauth' 
+          ? `An account with ${credentials.email} already exists. Please sign in with Google or use the "Forgot Password" option if you created this account with a password.`
+          : `An account with ${credentials.email} already exists. Please sign in instead or use "Forgot Password" if you've forgotten your credentials.`;
+        
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: errorMessage,
+          emailVerificationRequired: false 
+        }));
+        return { user: null, error: errorMessage };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
@@ -248,13 +324,24 @@ export const useAuthLogic = () => {
       });
 
       if (error) {
+        let errorMessage = error.message;
+        
+        // Handle specific Supabase errors with user-friendly messages
+        if (error.message.includes('User already registered')) {
+          errorMessage = `An account with ${credentials.email} already exists. Please sign in instead.`;
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = 'Password must be at least 6 characters long.';
+        } else if (error.message.includes('Unable to validate email address')) {
+          errorMessage = 'Please enter a valid email address.';
+        }
+        
         setAuthState(prev => ({ 
           ...prev, 
           loading: false, 
-          error: error.message,
+          error: errorMessage,
           emailVerificationRequired: false 
         }));
-        return { user: null, error: error.message };
+        return { user: null, error: errorMessage };
       }
 
       if (data.user) {

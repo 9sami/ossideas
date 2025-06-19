@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
@@ -78,6 +78,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     // Reset the email verification state by clearing any auth errors
     // This allows users to try again or switch between login/register
     setFormData({ email: '', password: '', fullName: '' });
+  };
+
+  const handleSwitchToLogin = () => {
+    setMode('login');
+    setFormData(prev => ({ ...prev, password: '', fullName: '' }));
   };
 
   if (!isOpen) return null;
@@ -273,7 +278,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             {authState.error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{authState.error}</p>
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-red-600">{authState.error}</p>
+                    {authState.error.includes('already exists') && mode === 'register' && (
+                      <button
+                        type="button"
+                        onClick={handleSwitchToLogin}
+                        className="mt-2 text-sm text-red-700 hover:text-red-800 font-medium underline"
+                      >
+                        Switch to Sign In
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
