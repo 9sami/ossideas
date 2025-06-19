@@ -27,13 +27,32 @@ const AppContent: React.FC = () => {
   // Check for onboarding requirement after login or OAuth callback
   useEffect(() => {
     const showOnboarding = location.state?.showOnboarding;
-    if ((authState.onboardingRequired || showOnboarding) && !authState.loading && isLoggedIn) {
-      setAuthModalMode('onboarding');
-      setAuthModalOpen(true);
-      // Clear the location state
-      window.history.replaceState({}, document.title);
+    const justLoggedIn = location.state?.justLoggedIn;
+
+    if (!authState.loading && isLoggedIn) {
+      // Check if user needs onboarding
+      const needsOnboarding = authState.onboardingRequired || showOnboarding;
+      
+      if (needsOnboarding || justLoggedIn) {
+        console.log('Onboarding check:', { 
+          needsOnboarding, 
+          showOnboarding, 
+          justLoggedIn,
+          user: authState.user 
+        });
+      }
+
+      if (needsOnboarding) {
+        setAuthModalMode('onboarding');
+        setAuthModalOpen(true);
+      }
+
+      // Clear the location state if it exists
+      if (location.state) {
+        window.history.replaceState({}, document.title, location.pathname);
+      }
     }
-  }, [authState.onboardingRequired, authState.loading, isLoggedIn, location.state]);
+  }, [authState.onboardingRequired, authState.loading, isLoggedIn, location.state, authState.user]);
 
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
@@ -72,10 +91,17 @@ const AppContent: React.FC = () => {
   const handleAuthModalClose = () => {
     // Only allow closing the modal if:
     // 1. Onboarding is not required, or
-    // 2. The current modal is not onboarding
-    if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
+    // 2. The current modal is not onboarding, or
+    // 3. User has completed onboarding
+    const canClose = !authState.onboardingRequired || 
+                    authModalMode !== 'onboarding' ||
+                    (authState.user && authState.user.usagePurpose);
+
+    if (canClose) {
       setAuthModalOpen(false);
       setAuthModalMode('login'); // Reset to login mode when closing
+    } else {
+      console.log('Cannot close onboarding modal - onboarding required');
     }
   };
 
