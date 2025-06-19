@@ -64,13 +64,9 @@ const AppContent: React.FC = () => {
   };
 
   const handleAuthModalClose = () => {
-    console.log('🚪 handleAuthModalClose called, onboardingRequired:', authState.onboardingRequired);
     // Only allow closing if onboarding is not required
     if (!authState.onboardingRequired) {
-      console.log('✅ Closing modal - onboarding not required');
       setAuthModalOpen(false);
-    } else {
-      console.log('❌ Cannot close modal - onboarding still required');
     }
   };
 
