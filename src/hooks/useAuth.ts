@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse, OnboardingData } from '../types/auth';
 
@@ -50,29 +50,41 @@ export const useAuthLogic = () => {
   // Check if user exists with given email
   const checkUserExists = async (email: string): Promise<{ exists: boolean; provider?: string }> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: 'dummy-password-for-checking-existence'
-      });
+      // Try to get user by email from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, auth_provider')
+        .eq('email', email)
+        .single();
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials') || 
-            error.message.includes('invalid_credentials')) {
-          return { exists: true, provider: 'email' };
-        }
-        
-        if (error.message.includes('email not confirmed') || 
-            error.message.includes('Email not confirmed')) {
-          return { exists: true, provider: 'email' };
-        }
-        
-        if (error.message.includes('User not found') || 
-            error.message.includes('user_not_found')) {
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
           return { exists: false };
         }
+        console.error('Error checking profile existence:', profileError);
+        return { exists: false };
       }
 
-      return { exists: true, provider: 'email' };
+      if (profile) {
+        // Check if the user still exists in auth system
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          // User exists in profiles but not in auth - clean up the stale profile
+          await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', profile.id);
+          return { exists: false };
+        }
+
+        return { 
+          exists: true, 
+          provider: profile.auth_provider || 'email'
+        };
+      }
+
+      return { exists: false };
     } catch (error) {
       console.error('Error checking user existence:', error);
       return { exists: false };
@@ -522,45 +534,47 @@ export const useAuthLogic = () => {
   // Login with Google
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      setAuthState(prev => ({ 
-        ...prev, 
-        loading: true, 
-        error: null, 
-        emailVerificationRequired: false,
-        onboardingRequired: false,
-      }));
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+            prompt: 'consent'
+          }
+        }
       });
 
       if (error) {
-        setAuthState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          error: error.message,
-          emailVerificationRequired: false,
-          onboardingRequired: false,
+        console.error('Google OAuth error:', error);
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to authenticate with Google'
         }));
-        throw error;
+        return;
       }
+
+      if (!data.url) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to get OAuth URL'
+        }));
+        return;
+      }
+
+      // Redirect to the OAuth URL
+      window.location.href = data.url;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Google login failed';
-      setAuthState(prev => ({ 
-        ...prev, 
-        loading: false, 
-        error: errorMessage,
-        emailVerificationRequired: false,
-        onboardingRequired: false,
+      console.error('Google OAuth error:', error);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'An unexpected error occurred during Google authentication'
       }));
-      throw new Error(errorMessage);
     }
   };
 

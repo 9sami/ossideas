@@ -9,24 +9,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
+    persistSession: true,/*  */
     storageKey: 'auth-store',
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: {
-      getItem: (key) => {
-        const item = document.cookie.split('; ').find(row => row.startsWith(`${key}=`));
-        return Promise.resolve(item ? item.split('=')[1] : null);
-      },
-      setItem: (key, value) => {
-        document.cookie = `${key}=${value}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-        return Promise.resolve();
-      },
-      removeItem: (key) => {
-        document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-        return Promise.resolve();
-      }
-    }
+    detectSessionInUrl: true
   }
 });
 
