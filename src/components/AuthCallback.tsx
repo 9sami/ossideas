@@ -7,54 +7,45 @@ const AuthCallback: React.FC = () => {
   const { getCurrentUser } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Handle the OAuth callback
-        const { data, error } = await supabase.auth.getSession();
+useEffect(() => {
+  const handleAuthCallback = async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) throw error;
+
+      if (data.session?.user) {
+        const user = data.session.user;
         
-        if (error) {
-          console.error('Auth callback error:', error);
-          navigate('/');
-          return;
-        }
+        // Update profile
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email!,
+          full_name: user.user_metadata.full_name || user.user_metadata.name || null,
+          avatar_url: user.user_metadata.avatar_url || user.user_metadata.picture || null,
+          location: user.user_metadata.location || null,
+        }, { onConflict: 'id' });
 
-        if (data.session?.user) {
-          // Extract user information from Google OAuth
-          const user = data.session.user;
-          const userMetadata = user.user_metadata;
-          
-          // Create or update profile with Google data
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: user.id,
-              email: user.email!,
-              full_name: userMetadata.full_name || userMetadata.name || null,
-              avatar_url: userMetadata.avatar_url || userMetadata.picture || null,
-              location: userMetadata.location || null,
-            }, {
-              onConflict: 'id'
-            });
-
-          if (profileError) {
-            console.error('Error updating profile:', profileError);
-          }
-
-          // Wait a moment to ensure the profile is created before redirecting
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        // Redirect to home page
-        navigate('/');
-      } catch (error) {
-        console.error('Unexpected error in auth callback:', error);
-        navigate('/');
+        // Wait for auth state to update
+        await new Promise<void>((resolve) => {
+          const unsubscribe = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session?.user?.id === user.id) {
+              unsubscribe.subscription.unsubscribe();
+              resolve();
+            }
+          });
+        });
       }
-    };
 
-    handleAuthCallback();
-  }, [getCurrentUser, navigate]);
+      navigate('/');
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      navigate('/');
+    }
+  };
+
+  handleAuthCallback();
+}, [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
