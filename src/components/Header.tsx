@@ -10,7 +10,6 @@ interface HeaderProps {
   onProfileClick: () => void;
   onLogoClick: () => void;
   isLoggedIn: boolean;
-  loading: boolean;
   onLoginClick: () => void;
   onLogoutClick: () => void;
   user: UserType | null;
@@ -24,7 +23,6 @@ const Header: React.FC<HeaderProps> = ({
   onProfileClick,
   onLogoClick,
   isLoggedIn,
-  loading,
   onLoginClick,
   onLogoutClick,
   user
@@ -79,12 +77,7 @@ const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Profile/Login */}
-            {loading ? (
-              <div className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                <span className="hidden sm:inline text-sm">Loading...</span>
-              </div>
-            ) : isLoggedIn && user ? (
+            {isLoggedIn && user ? (
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}

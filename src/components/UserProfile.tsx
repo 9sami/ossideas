@@ -8,7 +8,6 @@ import { mockIdeas } from '../data/mockData';
 interface UserProfileProps {
   onIdeaSelect: (idea: IdeaData) => void;
   isLoggedIn: boolean;
-  loading: boolean;
   onLoginClick: () => void;
   user: UserType | null;
 }
@@ -16,7 +15,6 @@ interface UserProfileProps {
 const UserProfile: React.FC<UserProfileProps> = ({ 
   onIdeaSelect, 
   isLoggedIn, 
-  loading,
   onLoginClick,
   user 
 }) => {
@@ -31,20 +29,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     { label: 'Submissions', value: '3', icon: Plus, color: 'text-green-500' },
   ];
 
-  // Show loading state while authentication is being checked
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center max-w-md w-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show sign in required only if not loading and not logged in
-  if (!loading && (!isLoggedIn || !user)) {
+  if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center max-w-md w-full">
