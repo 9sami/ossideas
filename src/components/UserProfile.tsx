@@ -10,13 +10,15 @@ interface UserProfileProps {
   isLoggedIn: boolean;
   onLoginClick: () => void;
   user: UserType | null;
+  authLoading?: boolean;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ 
   onIdeaSelect, 
   isLoggedIn, 
   onLoginClick,
-  user 
+  user,
+  authLoading = false
 }) => {
   const [activeTab, setActiveTab] = useState<'saved' | 'preferences' | 'activity'>('saved');
 
@@ -29,6 +31,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
     { label: 'Submissions', value: '3', icon: Plus, color: 'text-green-500' },
   ];
 
+  // Show loading state during auth initialization
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center max-w-md w-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile</h2>
+          <p className="text-gray-600">
+            Please wait while we load your profile information...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show sign in required after loading is complete
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
