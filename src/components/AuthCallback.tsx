@@ -20,18 +20,6 @@ const AuthCallback: React.FC = () => {
         }
 
         if (data.session?.user) {
-          // CRITICAL FIX: Explicitly set the session to ensure cookie storage is used
-          const { error: setSessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-
-          if (setSessionError) {
-            console.error('Error setting session:', setSessionError);
-            navigate('/');
-            return;
-          }
-
           // Extract user information from Google OAuth
           const user = data.session.user;
           const userMetadata = user.user_metadata;
@@ -53,8 +41,8 @@ const AuthCallback: React.FC = () => {
             console.error('Error updating profile:', profileError);
           }
 
-          // Wait a moment to ensure the profile is created and session is stored before redirecting
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait a moment to ensure the profile is created before redirecting
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         // Redirect to home page
@@ -73,7 +61,6 @@ const AuthCallback: React.FC = () => {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
         <p className="text-gray-600">Completing authentication...</p>
-        <p className="text-sm text-gray-500 mt-2">Securing your session...</p>
       </div>
     </div>
   );

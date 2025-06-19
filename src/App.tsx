@@ -83,7 +83,6 @@ const AppContent: React.FC = () => {
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
-        authLoading={authState.loading}
       />
       
       <div className="flex">
@@ -119,7 +118,6 @@ const AppContent: React.FC = () => {
               isLoggedIn={isLoggedIn}
               onLoginClick={handleLoginClick}
               user={authState.user}
-              authLoading={authState.loading}
             />
           )}
         </main>

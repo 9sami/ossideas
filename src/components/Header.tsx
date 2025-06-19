@@ -13,7 +13,6 @@ interface HeaderProps {
   onLoginClick: () => void;
   onLogoutClick: () => void;
   user: UserType | null;
-  authLoading?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -26,8 +25,7 @@ const Header: React.FC<HeaderProps> = ({
   isLoggedIn,
   onLoginClick,
   onLogoutClick,
-  user,
-  authLoading = false
+  user
 }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -78,13 +76,8 @@ const Header: React.FC<HeaderProps> = ({
               <Filter className="h-5 w-5" />
             </button>
 
-            {/* Profile/Login - Show loading state during auth initialization */}
-            {authLoading ? (
-              <div className="flex items-center space-x-2 px-4 py-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
-                <span className="hidden sm:inline text-sm text-gray-600">Loading...</span>
-              </div>
-            ) : isLoggedIn && user ? (
+            {/* Profile/Login */}
+            {isLoggedIn && user ? (
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
