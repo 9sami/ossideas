@@ -164,8 +164,16 @@ export const useAuthLogic = () => {
             
             if (!mounted) return;
 
-            // Set loading state while processing auth change
-            setAuthState(prev => ({ ...prev, loading: true }));
+            if (event === 'SIGNED_OUT') {
+              setAuthState({
+                user: null,
+                loading: false,
+                error: null,
+                emailVerificationRequired: false,
+                onboardingRequired: false,
+              });
+              return;
+            }
 
             try {
               if (newSession?.user) {
@@ -198,22 +206,22 @@ export const useAuthLogic = () => {
                 }
               } else {
                 if (mounted) {
-                  setAuthState({ 
-                    user: null, 
-                    loading: false, 
-                    error: null, 
+                  setAuthState({
+                    user: null,
+                    loading: false,
+                    error: null,
                     emailVerificationRequired: false,
                     onboardingRequired: false,
                   });
                 }
               }
             } catch (error) {
-              console.error('Error processing auth state change:', error);
+              console.error('Error processing auth change:', error);
               if (mounted) {
                 setAuthState(prev => ({ 
                   ...prev, 
-                  loading: false, 
-                  error: 'Failed to process authentication change' 
+                  loading: false,
+                  error: error instanceof Error ? error.message : 'Authentication error'
                 }));
               }
             }
@@ -222,7 +230,7 @@ export const useAuthLogic = () => {
 
         authSubscription = subscription;
 
-        // Process initial session if it exists
+        // Process initial session
         if (session?.user) {
           const user = await convertSupabaseUser(session.user);
           if (user) {
@@ -237,15 +245,27 @@ export const useAuthLogic = () => {
               });
             }
           }
+        } else {
+          if (mounted) {
+            setAuthState({
+              user: null,
+              loading: false,
+              error: null,
+              emailVerificationRequired: false,
+              onboardingRequired: false,
+            });
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
-          setAuthState(prev => ({ 
-            ...prev, 
-            loading: false, 
-            error: 'Failed to initialize authentication' 
-          }));
+          setAuthState({
+            user: null,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Failed to initialize auth',
+            emailVerificationRequired: false,
+            onboardingRequired: false,
+          });
         }
       }
     };

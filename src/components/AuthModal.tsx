@@ -3,14 +3,31 @@ import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle, Pho
 import { useAuth } from '../hooks/useAuth';
 import { OnboardingData } from '../types/auth';
 
+type AuthMode = 'login' | 'register' | 'onboarding';
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: 'login' | 'register' | 'onboarding';
+  initialMode?: AuthMode;
 }
 
+const MODAL_CONTENT = {
+  login: {
+    title: 'Welcome Back',
+    subtitle: 'Sign in to your account'
+  },
+  register: {
+    title: 'Create Account',
+    subtitle: 'Start your journey with us'
+  },
+  onboarding: {
+    title: 'Complete Your Profile',
+    subtitle: 'Help us personalize your experience'
+  }
+} as const;
+
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'onboarding'>(initialMode);
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -229,6 +246,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     setFormData(prev => ({ ...prev, password: '', confirmPassword: '', fullName: '' }));
   };
 
+  // Add skip onboarding function
+  const handleSkipOnboarding = () => {
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   // Show email verification screen
@@ -323,10 +345,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
-              <p className="text-sm text-gray-600 mt-1">Help us personalize your experience</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {MODAL_CONTENT[mode].title}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {MODAL_CONTENT[mode].subtitle}
+              </p>
             </div>
-            {/* Allow closing onboarding modal */}
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -473,10 +498,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             <div className="text-center">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleSkipOnboarding}
                 className="text-sm text-gray-500 hover:text-gray-700 underline"
               >
-                Skip for now (you can complete this later)
+                Skip for now
               </button>
             </div>
           </form>
@@ -491,7 +516,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+            {MODAL_CONTENT[mode].title}
           </h2>
           <button
             onClick={onClose}
