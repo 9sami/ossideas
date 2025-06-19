@@ -561,20 +561,43 @@ export const useAuthLogic = () => {
   };
 
   // Get current user
-  const getCurrentUser = async (): Promise<User | null> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+const getCurrentUser = async (): Promise<User | null> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const convertedUser = await convertSupabaseUser(user);
+      const isOnboarded = convertedUser ? checkIfOnboarded(convertedUser) : true;
       
-      if (user && user.email_confirmed_at) {
-        return await convertSupabaseUser(user);
-      }
+      setAuthState({
+        user: convertedUser,
+        loading: false,
+        error: null,
+        emailVerificationRequired: !user.email_confirmed_at,
+        onboardingRequired: !isOnboarded,
+      });
       
-      return null;
-    } catch (error) {
-      console.error('Error getting current user:', error);
-      return null;
+      return convertedUser;
     }
-  };
+    
+    setAuthState({
+      user: null,
+      loading: false,
+      error: null,
+      emailVerificationRequired: false,
+      onboardingRequired: false,
+    });
+    return null;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    setAuthState(prev => ({
+      ...prev,
+      loading: false,
+      error: 'Failed to fetch user',
+    }));
+    return null;
+  }
+};
 
   return {
     authState,
