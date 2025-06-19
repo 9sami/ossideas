@@ -2,14 +2,22 @@ import React, { useState } from 'react';
 import { Heart, User, Settings, TrendingUp, Plus } from 'lucide-react';
 import IdeaCard from './IdeaCard';
 import { IdeaData } from '../types';
+import { User as UserType } from '../types/auth';
 import { mockIdeas } from '../data/mockData';
 
 interface UserProfileProps {
   onIdeaSelect: (idea: IdeaData) => void;
   isLoggedIn: boolean;
+  onLoginClick: () => void;
+  user: UserType | null;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ onIdeaSelect, isLoggedIn }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ 
+  onIdeaSelect, 
+  isLoggedIn, 
+  onLoginClick,
+  user 
+}) => {
   const [activeTab, setActiveTab] = useState<'saved' | 'preferences' | 'activity'>('saved');
 
   const savedIdeas = mockIdeas.filter(idea => idea.isSaved).slice(0, 8);
@@ -21,7 +29,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onIdeaSelect, isLoggedIn }) =
     { label: 'Submissions', value: '3', icon: Plus, color: 'text-green-500' },
   ];
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center max-w-md w-full">
@@ -32,7 +40,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onIdeaSelect, isLoggedIn }) =
           <p className="text-gray-600 mb-6">
             Create an account to save ideas, get personalized recommendations, and access your profile.
           </p>
-          <button className="w-full px-6 py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors">
+          <button 
+            onClick={onLoginClick}
+            className="w-full px-6 py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+          >
             Sign Up Free
           </button>
         </div>
@@ -40,18 +51,40 @@ const UserProfile: React.FC<UserProfileProps> = ({ onIdeaSelect, isLoggedIn }) =
     );
   }
 
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Profile Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <div className="flex items-center space-x-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">JD</span>
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center overflow-hidden">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName || user.email}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-2xl">
+                  {getInitials(user.fullName, user.email)}
+                </span>
+              )}
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">John Doe</h1>
-              <p className="text-gray-600 mb-4">Entrepreneur & Tech Enthusiast</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {user.fullName || user.email.split('@')[0]}
+              </h1>
+              <p className="text-gray-600 mb-1">{user.email}</p>
+              {user.location && (
+                <p className="text-gray-500 text-sm mb-4">{user.location}</p>
+              )}
               <div className="flex items-center space-x-6">
                 {stats.map((stat) => {
                   const Icon = stat.icon;
