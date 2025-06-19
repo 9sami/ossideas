@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
@@ -22,37 +22,14 @@ const AppContent: React.FC = () => {
 
   const { authState, logout } = useAuth();
   const isLoggedIn = !!authState.user;
-  const location = useLocation();
 
-  // Check for onboarding requirement after login or OAuth callback
+  // Check for onboarding requirement after login
   useEffect(() => {
-    const showOnboarding = location.state?.showOnboarding;
-    const justLoggedIn = location.state?.justLoggedIn;
-
-    if (!authState.loading && isLoggedIn) {
-      // Check if user needs onboarding
-      const needsOnboarding = authState.onboardingRequired || showOnboarding;
-      
-      if (needsOnboarding || justLoggedIn) {
-        console.log('Onboarding check:', { 
-          needsOnboarding, 
-          showOnboarding, 
-          justLoggedIn,
-          user: authState.user 
-        });
-      }
-
-      if (needsOnboarding) {
-        setAuthModalMode('onboarding');
-        setAuthModalOpen(true);
-      }
-
-      // Clear the location state if it exists
-      if (location.state) {
-        window.history.replaceState({}, document.title, location.pathname);
-      }
+    if (authState.onboardingRequired && !authState.loading && isLoggedIn) {
+      setAuthModalMode('onboarding');
+      setAuthModalOpen(true);
     }
-  }, [authState.onboardingRequired, authState.loading, isLoggedIn, location.state, authState.user]);
+  }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
 
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
@@ -81,27 +58,15 @@ const AppContent: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      // Reset view to home after logout
-      setCurrentView('home');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
   const handleAuthModalClose = () => {
-    // Only allow closing the modal if:
-    // 1. Onboarding is not required, or
-    // 2. The current modal is not onboarding, or
-    // 3. User has completed onboarding
-    const canClose = !authState.onboardingRequired || 
-                    authModalMode !== 'onboarding' ||
-                    (authState.user && authState.user.usagePurpose);
-
-    if (canClose) {
+    // Allow closing the modal unless onboarding is required
+    if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
       setAuthModalOpen(false);
-      setAuthModalMode('login'); // Reset to login mode when closing
-    } else {
-      console.log('Cannot close onboarding modal - onboarding required');
     }
   };
 
