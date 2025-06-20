@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { stripeProducts, StripeProduct } from '../stripe-config';
+import { stripeProducts, StripeProduct, getSubscriptionProducts, getOneTimeProducts } from '../stripe-config';
 
 interface PricingPlan {
   id: string;
@@ -20,77 +20,6 @@ interface PricingPlan {
   iconBg: string;
   iconColor: string;
 }
-
-const plans: PricingPlan[] = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: 10,
-    period: 'month',
-    description: 'Perfect for individual entrepreneurs and small projects',
-    features: [
-      'Access to 100+ curated startup ideas',
-      'Basic filtering and search',
-      'Save up to 10 ideas',
-      'Email support',
-      'Monthly idea updates',
-      'Basic market insights'
-    ],
-    icon: Zap,
-    buttonText: 'Start Basic Plan',
-    gradient: 'from-blue-500 to-blue-600',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600'
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 20,
-    period: 'month',
-    description: 'Ideal for serious entrepreneurs and growing teams',
-    features: [
-      'Access to 500+ premium startup ideas',
-      'Advanced filtering and AI-powered search',
-      'Unlimited saved ideas',
-      'Priority email & chat support',
-      'Weekly trending reports',
-      'Detailed market analysis',
-      'Export to Notion, PDF, and more',
-      'Community access and networking',
-      'Early access to new features'
-    ],
-    icon: Crown,
-    popular: true,
-    buttonText: 'Start Pro Plan',
-    gradient: 'from-orange-500 to-orange-600',
-    iconBg: 'bg-orange-100',
-    iconColor: 'text-orange-600'
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 0,
-    period: 'custom',
-    description: 'Tailored solutions for large organizations and teams',
-    features: [
-      'Unlimited access to all startup ideas',
-      'Custom idea generation based on your industry',
-      'Dedicated account manager',
-      'White-label solutions',
-      'API access for integrations',
-      'Custom reporting and analytics',
-      'Team collaboration tools',
-      'Priority phone support',
-      'Custom training and onboarding'
-    ],
-    icon: Building2,
-    enterprise: true,
-    buttonText: "Let's have a call",
-    gradient: 'from-gray-500 to-gray-600',
-    iconBg: 'bg-gray-100',
-    iconColor: 'text-gray-600'
-  }
-];
 
 const PricingPage: React.FC = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -121,6 +50,78 @@ const PricingPage: React.FC = () => {
       console.error('Error fetching subscription:', error);
     }
   };
+
+  // Get subscription products based on billing period
+  const subscriptionProducts = getSubscriptionProducts();
+  const currentPeriodProducts = subscriptionProducts.filter(product => 
+    product.interval === (isAnnual ? 'year' : 'month')
+  );
+
+  // Create plans from Stripe products
+  const plans: PricingPlan[] = [
+    // Basic Plan
+    ...currentPeriodProducts
+      .filter(product => product.name === 'Basic')
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        price: product.price / 100, // Convert from cents
+        period: product.interval || 'month',
+        description: product.description,
+        features: product.features,
+        icon: Zap,
+        stripeProduct: product,
+        buttonText: `Start ${product.name} Plan`,
+        gradient: 'from-blue-500 to-blue-600',
+        iconBg: 'bg-blue-100',
+        iconColor: 'text-blue-600'
+      })),
+    
+    // Pro Plan
+    ...currentPeriodProducts
+      .filter(product => product.name === 'Pro')
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        price: product.price / 100, // Convert from cents
+        period: product.interval || 'month',
+        description: product.description,
+        features: product.features,
+        icon: Crown,
+        popular: product.popular,
+        stripeProduct: product,
+        buttonText: `Start ${product.name} Plan`,
+        gradient: 'from-orange-500 to-orange-600',
+        iconBg: 'bg-orange-100',
+        iconColor: 'text-orange-600'
+      })),
+    
+    // Enterprise Plan (custom)
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      price: 0,
+      period: 'custom',
+      description: 'Tailored solutions for large organizations and teams',
+      features: [
+        'Unlimited access to all startup ideas',
+        'Custom idea generation based on your industry',
+        'Dedicated account manager',
+        'White-label solutions',
+        'API access for integrations',
+        'Custom reporting and analytics',
+        'Team collaboration tools',
+        'Priority phone support',
+        'Custom training and onboarding'
+      ],
+      icon: Building2,
+      enterprise: true,
+      buttonText: "Let's have a call",
+      gradient: 'from-gray-500 to-gray-600',
+      iconBg: 'bg-gray-100',
+      iconColor: 'text-gray-600'
+    }
+  ];
 
   const handleSubscribe = async (plan: PricingPlan) => {
     if (plan.enterprise) {
@@ -182,10 +183,6 @@ const PricingPage: React.FC = () => {
     }
   };
 
-  const getDiscountedPrice = (price: number) => {
-    return Math.round(price * 0.8); // 20% discount for annual
-  };
-
   const formatPrice = (price: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -193,6 +190,18 @@ const PricingPage: React.FC = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(price);
+  };
+
+  const getMonthlyPrice = (plan: PricingPlan) => {
+    if (plan.period === 'year') {
+      return plan.price / 12;
+    }
+    return plan.price;
+  };
+
+  const getAnnualSavings = (monthlyPrice: number, yearlyPrice: number) => {
+    const monthlyTotal = monthlyPrice * 12;
+    return monthlyTotal - yearlyPrice;
   };
 
   return (
@@ -249,18 +258,24 @@ const PricingPage: React.FC = () => {
             </span>
             {isAnnual && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Save 20%
+                Save up to 20%
               </span>
             )}
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => {
             const Icon = plan.icon;
-            const finalPrice = plan.enterprise ? 0 : (isAnnual && plan.period === 'month' ? getDiscountedPrice(plan.price) : plan.price);
+            const monthlyPrice = getMonthlyPrice(plan);
             const currency = plan.stripeProduct?.currency || 'USD';
+            
+            // Calculate savings for annual plans
+            const monthlyPlan = plans.find(p => p.name === plan.name && p.period === 'month');
+            const annualSavings = monthlyPlan && plan.period === 'year' 
+              ? getAnnualSavings(monthlyPlan.price, plan.price)
+              : 0;
             
             return (
               <div
@@ -302,18 +317,21 @@ const PricingPage: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-center mb-2">
                           <span className="text-4xl font-bold text-gray-900">
-                            {formatPrice(finalPrice, currency)}
+                            {formatPrice(plan.price, currency)}
                           </span>
                           {plan.period !== 'one-time' && (
                             <span className="text-gray-500 ml-2">/{plan.period}</span>
                           )}
                         </div>
-                        {isAnnual && plan.period === 'month' && (
+                        
+                        {plan.period === 'year' && (
                           <div className="text-sm text-gray-500">
-                            <span className="line-through">{formatPrice(plan.price, currency)}/month</span>
-                            <span className="text-green-600 font-medium ml-2">
-                              Save {formatPrice((plan.price - finalPrice) * 12, currency)}/year
-                            </span>
+                            <div className="text-green-600 font-medium">
+                              Save {formatPrice(annualSavings, currency)} per year
+                            </div>
+                            <div className="text-xs">
+                              {formatPrice(monthlyPrice, currency)}/month when billed annually
+                            </div>
                           </div>
                         )}
                       </div>
@@ -362,6 +380,61 @@ const PricingPage: React.FC = () => {
           })}
         </div>
 
+        {/* One-time Products Section */}
+        {getOneTimeProducts().length > 0 && (
+          <div className="mt-20">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">One-Time Purchases</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Get instant access to premium content without a subscription
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              {getOneTimeProducts().map((product) => (
+                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                  
+                  <div className="text-2xl font-bold text-gray-900 mb-4">
+                    {formatPrice(product.price / 100, product.currency)}
+                  </div>
+                  
+                  <ul className="space-y-2 mb-6">
+                    {product.features.map((feature, index) => (
+                      <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
+                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <button
+                    onClick={() => handleSubscribe({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price / 100,
+                      period: 'one-time',
+                      description: product.description,
+                      features: product.features,
+                      icon: Zap,
+                      stripeProduct: product,
+                      buttonText: `Buy ${product.name}`,
+                      gradient: 'from-blue-500 to-blue-600',
+                      iconBg: 'bg-blue-100',
+                      iconColor: 'text-blue-600'
+                    })}
+                    disabled={loadingPlan === product.id}
+                    className="w-full py-3 px-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingPlan === product.id ? 'Processing...' : `Buy ${product.name}`}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* FAQ Section */}
         <div className="mt-20 max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
@@ -385,6 +458,14 @@ const PricingPage: React.FC = () => {
               {
                 question: "What happens if I cancel?",
                 answer: "You can cancel anytime. You'll continue to have access to your plan features until the end of your billing period."
+              },
+              {
+                question: "Do you offer refunds?",
+                answer: "We offer a 30-day money-back guarantee for all subscription plans. One-time purchases are final but we're happy to help with any issues."
+              },
+              {
+                question: "Can I get an invoice for my purchase?",
+                answer: "Yes! You'll automatically receive an invoice via email after each payment. You can also download invoices from your account dashboard."
               }
             ].map((faq, index) => (
               <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
