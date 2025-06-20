@@ -67,26 +67,6 @@ const plans: PricingPlan[] = [
     iconColor: 'text-orange-600'
   },
   {
-    id: 'test',
-    name: 'Test Product',
-    price: 1,
-    period: 'one-time',
-    description: 'Test our payment system with this sample product',
-    features: [
-      'Test payment processing',
-      'Verify integration',
-      'Sample purchase flow',
-      'Confirmation email',
-      'Receipt generation'
-    ],
-    icon: Building2,
-    stripeProduct: stripeProducts[0], // test 2 product
-    buttonText: 'Buy Test Product',
-    gradient: 'from-purple-500 to-purple-600',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600'
-  },
-  {
     id: 'enterprise',
     name: 'Enterprise',
     price: 0,
