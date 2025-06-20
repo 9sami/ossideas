@@ -6,13 +6,14 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
 import UserProfile from './components/UserProfile';
+import PricingPage from './components/PricingPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import { useAuth } from './hooks/useAuth';
 import { IdeaData } from './types';
 
 const AppContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'detail' | 'profile'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'detail' | 'profile' | 'pricing'>('home');
   const [selectedIdea, setSelectedIdea] = useState<IdeaData | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +58,10 @@ const AppContent: React.FC = () => {
     setCurrentView('profile');
   };
 
+  const handlePricingView = () => {
+    setCurrentView('pricing');
+  };
+
   const handleLoginClick = () => {
     setAuthModalMode('login');
     setAuthModalOpen(true);
@@ -82,6 +87,13 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleNavigate = (view: 'home' | 'detail' | 'profile' | 'pricing') => {
+    setCurrentView(view);
+    if (view === 'home') {
+      setSelectedIdea(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
@@ -102,7 +114,7 @@ const AppContent: React.FC = () => {
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(!sidebarOpen)}
           currentView={currentView}
-          onNavigate={setCurrentView}
+          onNavigate={handleNavigate}
           onHomeClick={handleBackToHome}
         />
         
@@ -131,6 +143,10 @@ const AppContent: React.FC = () => {
               onLoginClick={handleLoginClick}
               user={authState.user}
             />
+          )}
+
+          {currentView === 'pricing' && (
+            <PricingPage />
           )}
         </main>
       </div>

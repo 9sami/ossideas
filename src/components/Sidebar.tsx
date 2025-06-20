@@ -7,14 +7,15 @@ import {
   Plus, 
   Settings, 
   Menu, 
-  X 
+  X,
+  CreditCard
 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   currentView: string;
-  onNavigate: (view: 'home' | 'detail' | 'profile') => void;
+  onNavigate: (view: 'home' | 'detail' | 'profile' | 'pricing') => void;
   onHomeClick: () => void;
 }
 
@@ -30,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'categories', icon: Grid3X3, label: 'Categories', onClick: () => {} },
     { id: 'saved', icon: Heart, label: 'Saved Ideas', onClick: () => onNavigate('profile') },
     { id: 'community', icon: Users, label: 'Community', onClick: () => {} },
+    { id: 'pricing', icon: CreditCard, label: 'Pricing', onClick: () => onNavigate('pricing') },
     { id: 'submit', icon: Plus, label: 'Submit Idea', onClick: () => {}, premium: true },
     { id: 'settings', icon: Settings, label: 'Settings', onClick: () => {} },
   ];
