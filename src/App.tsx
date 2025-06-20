@@ -7,6 +7,7 @@ import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
 import UserProfile from './components/UserProfile';
 import PricingPage from './components/PricingPage';
+import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import { useAuth } from './hooks/useAuth';
@@ -166,6 +167,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/success" element={<SuccessPage />} />
           <Route path="/*" element={<AppContent />} />
         </Routes>
       </AuthProvider>

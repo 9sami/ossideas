@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+import { supabase } from '../lib/supabase';
+import { stripeProducts, StripeProduct } from '../stripe-config';
 
 interface PricingPlan {
   id: string;
@@ -15,7 +14,7 @@ interface PricingPlan {
   icon: React.ComponentType<any>;
   popular?: boolean;
   enterprise?: boolean;
-  stripePriceId?: string;
+  stripeProduct?: StripeProduct;
   buttonText: string;
   gradient: string;
   iconBg: string;
@@ -38,7 +37,6 @@ const plans: PricingPlan[] = [
       'Basic market insights'
     ],
     icon: Zap,
-    stripePriceId: 'price_basic_monthly',
     buttonText: 'Start Basic Plan',
     gradient: 'from-blue-500 to-blue-600',
     iconBg: 'bg-blue-100',
@@ -63,11 +61,30 @@ const plans: PricingPlan[] = [
     ],
     icon: Crown,
     popular: true,
-    stripePriceId: 'price_pro_monthly',
     buttonText: 'Start Pro Plan',
     gradient: 'from-orange-500 to-orange-600',
     iconBg: 'bg-orange-100',
     iconColor: 'text-orange-600'
+  },
+  {
+    id: 'test',
+    name: 'Test Product',
+    price: 1,
+    period: 'one-time',
+    description: 'Test our payment system with this sample product',
+    features: [
+      'Test payment processing',
+      'Verify integration',
+      'Sample purchase flow',
+      'Confirmation email',
+      'Receipt generation'
+    ],
+    icon: Building2,
+    stripeProduct: stripeProducts[0], // test 2 product
+    buttonText: 'Buy Test Product',
+    gradient: 'from-purple-500 to-purple-600',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600'
   },
   {
     id: 'enterprise',
@@ -89,16 +106,41 @@ const plans: PricingPlan[] = [
     icon: Building2,
     enterprise: true,
     buttonText: "Let's have a call",
-    gradient: 'from-purple-500 to-purple-600',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600'
+    gradient: 'from-gray-500 to-gray-600',
+    iconBg: 'bg-gray-100',
+    iconColor: 'text-gray-600'
   }
 ];
 
 const PricingPage: React.FC = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
   const { authState } = useAuth();
+
+  useEffect(() => {
+    if (authState.user) {
+      fetchUserSubscription();
+    }
+  }, [authState.user]);
+
+  const fetchUserSubscription = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_user_subscriptions')
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        return;
+      }
+
+      setUserSubscription(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    }
+  };
 
   const handleSubscribe = async (plan: PricingPlan) => {
     if (plan.enterprise) {
@@ -108,47 +150,53 @@ const PricingPage: React.FC = () => {
     }
 
     if (!authState.user) {
-      // Redirect to login
-      alert('Please sign in to subscribe to a plan');
+      // Show login modal or redirect to login
+      alert('Please sign in to purchase a plan');
+      return;
+    }
+
+    if (!plan.stripeProduct) {
+      alert('This plan is not available for purchase yet');
       return;
     }
 
     setLoadingPlan(plan.id);
 
     try {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to load');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
 
-      // Create checkout session
-      const response = await fetch('/api/create-checkout-session', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          priceId: plan.stripePriceId,
-          userId: authState.user.id,
-          planName: plan.name,
+          price_id: plan.stripeProduct.priceId,
+          mode: plan.stripeProduct.mode,
+          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/pricing`,
         }),
       });
 
-      const session = await response.json();
+      const result = await response.json();
 
-      if (session.error) {
-        throw new Error(session.error);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create checkout session');
       }
 
-      // Redirect to Stripe Checkout
-      const result = await stripe.redirectToCheckout({
-        sessionId: session.sessionId,
-      });
-
-      if (result.error) {
-        throw new Error(result.error.message);
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      alert('Failed to start checkout process. Please try again.');
+      alert(`Failed to start checkout: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoadingPlan(null);
     }
@@ -156,6 +204,15 @@ const PricingPage: React.FC = () => {
 
   const getDiscountedPrice = (price: number) => {
     return Math.round(price * 0.8); // 20% discount for annual
+  };
+
+  const formatPrice = (price: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(price);
   };
 
   return (
@@ -177,6 +234,18 @@ const PricingPage: React.FC = () => {
             Start your entrepreneurial journey with the right plan for your needs. 
             All plans include our core features with no hidden fees.
           </p>
+
+          {/* Current Subscription Status */}
+          {authState.user && userSubscription && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8 max-w-md mx-auto">
+              <div className="flex items-center justify-center space-x-2">
+                <Check className="h-5 w-5 text-green-600" />
+                <span className="font-medium text-green-800">
+                  Current Plan: {userSubscription.subscription_status || 'Active'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center space-x-4 mb-12">
@@ -207,10 +276,11 @@ const PricingPage: React.FC = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
           {plans.map((plan) => {
             const Icon = plan.icon;
-            const finalPrice = plan.enterprise ? 0 : (isAnnual ? getDiscountedPrice(plan.price) : plan.price);
+            const finalPrice = plan.enterprise ? 0 : (isAnnual && plan.period === 'month' ? getDiscountedPrice(plan.price) : plan.price);
+            const currency = plan.stripeProduct?.currency || 'USD';
             
             return (
               <div
@@ -251,13 +321,19 @@ const PricingPage: React.FC = () => {
                     ) : (
                       <div>
                         <div className="flex items-center justify-center mb-2">
-                          <span className="text-4xl font-bold text-gray-900">${finalPrice}</span>
-                          <span className="text-gray-500 ml-2">/{plan.period}</span>
+                          <span className="text-4xl font-bold text-gray-900">
+                            {formatPrice(finalPrice, currency)}
+                          </span>
+                          {plan.period !== 'one-time' && (
+                            <span className="text-gray-500 ml-2">/{plan.period}</span>
+                          )}
                         </div>
-                        {isAnnual && !plan.enterprise && (
+                        {isAnnual && plan.period === 'month' && (
                           <div className="text-sm text-gray-500">
-                            <span className="line-through">${plan.price}/month</span>
-                            <span className="text-green-600 font-medium ml-2">Save ${(plan.price - finalPrice) * 12}/year</span>
+                            <span className="line-through">{formatPrice(plan.price, currency)}/month</span>
+                            <span className="text-green-600 font-medium ml-2">
+                              Save {formatPrice((plan.price - finalPrice) * 12, currency)}/year
+                            </span>
                           </div>
                         )}
                       </div>
@@ -320,7 +396,7 @@ const PricingPage: React.FC = () => {
               },
               {
                 question: "What payment methods do you accept?",
-                answer: "We accept all major credit cards, PayPal, and bank transfers for enterprise customers."
+                answer: "We accept all major credit cards through Stripe's secure payment processing."
               },
               {
                 question: "Is there a free trial?",
@@ -352,7 +428,7 @@ const PricingPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-sm">30-Day Money Back</span>
+              <span className="text-sm">Secure Payments</span>
             </div>
           </div>
         </div>

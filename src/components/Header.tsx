@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Filter, User, Menu, LogIn, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, User, Menu, LogIn, LogOut, Crown } from 'lucide-react';
 import { User as UserType } from '../types/auth';
+import { supabase } from '../lib/supabase';
 
 interface HeaderProps {
   searchQuery: string;
@@ -28,6 +29,41 @@ const Header: React.FC<HeaderProps> = ({
   user
 }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserSubscription();
+    }
+  }, [user]);
+
+  const fetchUserSubscription = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_user_subscriptions')
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        return;
+      }
+
+      setUserSubscription(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    }
+  };
+
+  const getSubscriptionStatus = () => {
+    if (!userSubscription) return null;
+    
+    const status = userSubscription.subscription_status;
+    if (status === 'active' || status === 'trialing') {
+      return 'Pro';
+    }
+    return status;
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -92,9 +128,17 @@ const Header: React.FC<HeaderProps> = ({
                   ) : (
                     <User className="h-5 w-5" />
                   )}
-                  <span className="hidden sm:inline text-sm font-medium">
-                    {user.fullName || user.email.split('@')[0]}
-                  </span>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium">
+                      {user.fullName || user.email.split('@')[0]}
+                    </div>
+                    {getSubscriptionStatus() && (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <Crown className="h-3 w-3 mr-1" />
+                        {getSubscriptionStatus()}
+                      </div>
+                    )}
+                  </div>
                 </button>
                 
                 {profileDropdownOpen && (
@@ -104,6 +148,12 @@ const Header: React.FC<HeaderProps> = ({
                         {user.fullName || 'User'}
                       </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
+                      {getSubscriptionStatus() && (
+                        <div className="flex items-center text-xs text-orange-600 mt-1">
+                          <Crown className="h-3 w-3 mr-1" />
+                          {getSubscriptionStatus()} Plan
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => {
