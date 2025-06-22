@@ -33,6 +33,32 @@ function corsResponse(body: string | object | null, status = 200) {
   });
 }
 
+// Helper function to verify if a Stripe customer exists
+async function verifyStripeCustomer(customerId: string): Promise<boolean> {
+  try {
+    await stripe.customers.retrieve(customerId);
+    return true;
+  } catch (error) {
+    console.log(`Stripe customer ${customerId} does not exist:`, error);
+    return false;
+  }
+}
+
+// Helper function to clean up invalid customer records
+async function cleanupInvalidCustomer(userId: string, customerId: string) {
+  console.log(`Cleaning up invalid customer record for user ${userId}, customer ${customerId}`);
+  
+  const { error } = await supabase
+    .from('stripe_customers')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('customer_id', customerId);
+
+  if (error) {
+    console.error('Failed to cleanup invalid customer:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
@@ -90,25 +116,40 @@ Deno.serve(async (req) => {
 
     console.log(`Processing checkout for user: ${user.id}, price: ${price_id}`);
 
-    // Get or create Stripe customer
-    const { data: customer, error: getCustomerError } = await supabase
+    // Get existing customer records
+    const { data: customers, error: getCustomerError } = await supabase
       .from('stripe_customers')
       .select('customer_id')
       .eq('user_id', user.id)
       .is('deleted_at', null)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (getCustomerError) {
       console.error('Failed to fetch customer information from the database:', getCustomerError);
       return corsResponse({ error: 'Failed to fetch customer information' }, 500);
     }
 
-    let customerId;
+    let customerId = null;
 
-    if (!customer || !customer.customer_id) {
+    // Check if we have existing customers and verify they exist in Stripe
+    if (customers && customers.length > 0) {
+      for (const customer of customers) {
+        const isValid = await verifyStripeCustomer(customer.customer_id);
+        if (isValid) {
+          customerId = customer.customer_id;
+          console.log(`Using existing valid customer: ${customerId}`);
+          break;
+        } else {
+          // Clean up invalid customer record
+          await cleanupInvalidCustomer(user.id, customer.customer_id);
+        }
+      }
+    }
+
+    // If no valid customer found, create a new one
+    if (!customerId) {
       console.log(`Creating new Stripe customer for user: ${user.id}`);
       
-      // Create new Stripe customer
       try {
         const newCustomer = await stripe.customers.create({
           email: user.email,
@@ -143,17 +184,15 @@ Deno.serve(async (req) => {
         console.error('Failed to create Stripe customer:', stripeError);
         return corsResponse({ error: 'Failed to create Stripe customer' }, 500);
       }
-    } else {
-      customerId = customer.customer_id;
-      console.log(`Using existing customer: ${customerId}`);
     }
 
     // Verify the price exists in Stripe
     try {
-      await stripe.prices.retrieve(price_id);
+      const price = await stripe.prices.retrieve(price_id);
+      console.log(`Using price: ${price.id} - ${price.unit_amount} ${price.currency}`);
     } catch (priceError) {
       console.error('Invalid price ID:', priceError);
-      return corsResponse({ error: 'Invalid price ID' }, 400);
+      return corsResponse({ error: `Invalid price ID: ${price_id}` }, 400);
     }
 
     // Create Checkout Session for subscription
