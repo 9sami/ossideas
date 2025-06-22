@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Zap, Crown, Building2, ArrowRight, Sparkles } from 'lucide-react';
+import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { StripeProduct, getSubscriptionProducts } from '../stripe-config';
@@ -47,16 +47,20 @@ const PricingPage: React.FC = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const { authState } = useAuth();
 
   useEffect(() => {
     if (authState.user) {
       fetchUserSubscription();
+    } else {
+      setSubscriptionLoading(false);
     }
   }, [authState.user]);
 
   const fetchUserSubscription = async () => {
     try {
+      setSubscriptionLoading(true);
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -72,6 +76,8 @@ const PricingPage: React.FC = () => {
       setUserSubscription(data);
     } catch (error) {
       console.error('Error fetching subscription:', error);
+    } finally {
+      setSubscriptionLoading(false);
     }
   };
 
@@ -95,7 +101,7 @@ const PricingPage: React.FC = () => {
         features: product.features,
         icon: Zap,
         stripeProduct: product,
-        buttonText: `Start ${product.name} Plan`,
+        buttonText: getButtonText(product, userSubscription),
         gradient: 'from-blue-500 to-blue-600',
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-600'
@@ -114,7 +120,7 @@ const PricingPage: React.FC = () => {
         icon: Crown,
         popular: product.popular,
         stripeProduct: product,
-        buttonText: `Start ${product.name} Plan`,
+        buttonText: getButtonText(product, userSubscription),
         gradient: 'from-orange-500 to-orange-600',
         iconBg: 'bg-orange-100',
         iconColor: 'text-orange-600'
@@ -147,6 +153,48 @@ const PricingPage: React.FC = () => {
     }
   ];
 
+  function getButtonText(product: StripeProduct, subscription: UserSubscription | null): string {
+    if (!subscription) {
+      return `Start ${product.name} Plan`;
+    }
+
+    // Check if this is the current plan
+    if (subscription.plan_name === product.name && subscription.plan_interval === product.interval) {
+      if (subscription.cancel_at_period_end) {
+        return 'Reactivate Plan';
+      }
+      return 'Current Plan';
+    }
+
+    // Check if it's an upgrade or downgrade
+    const currentPlanValue = getPlanValue(subscription.plan_name);
+    const targetPlanValue = getPlanValue(product.name);
+
+    if (targetPlanValue > currentPlanValue) {
+      return `Upgrade to ${product.name}`;
+    } else if (targetPlanValue < currentPlanValue) {
+      return `Downgrade to ${product.name}`;
+    } else {
+      // Same plan, different interval
+      return `Switch to ${product.interval}ly`;
+    }
+  }
+
+  function getPlanValue(planName: string): number {
+    switch (planName.toLowerCase()) {
+      case 'basic': return 1;
+      case 'pro': return 2;
+      case 'enterprise': return 3;
+      default: return 0;
+    }
+  }
+
+  function isCurrentPlan(plan: PricingPlan): boolean {
+    if (!userSubscription) return false;
+    return userSubscription.plan_name === plan.name && 
+           userSubscription.plan_interval === plan.period;
+  }
+
   const handleSubscribe = async (plan: PricingPlan) => {
     if (plan.enterprise) {
       // Handle enterprise contact
@@ -162,6 +210,11 @@ const PricingPage: React.FC = () => {
 
     if (!plan.stripeProduct) {
       alert('This plan is not available for purchase yet');
+      return;
+    }
+
+    // If this is the current plan and not canceled, don't allow resubscription
+    if (isCurrentPlan(plan) && !userSubscription?.cancel_at_period_end) {
       return;
     }
 
@@ -216,6 +269,14 @@ const PricingPage: React.FC = () => {
     }).format(price);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const getMonthlyPrice = (plan: PricingPlan) => {
     if (plan.period === 'year') {
       return plan.price / 12;
@@ -226,6 +287,40 @@ const PricingPage: React.FC = () => {
   const getAnnualSavings = (monthlyPrice: number, yearlyPrice: number) => {
     const monthlyTotal = monthlyPrice * 12;
     return monthlyTotal - yearlyPrice;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'trialing':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'past_due':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'canceled':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getStatusText = (subscription: UserSubscription) => {
+    if (subscription.cancel_at_period_end) {
+      return `Cancels on ${formatDate(subscription.current_period_end)}`;
+    }
+    
+    switch (subscription.status) {
+      case 'active':
+        return `Renews on ${formatDate(subscription.current_period_end)}`;
+      case 'trialing':
+        return `Trial ends on ${formatDate(subscription.current_period_end)}`;
+      case 'past_due':
+        return 'Payment past due';
+      case 'canceled':
+        return 'Subscription canceled';
+      default:
+        return subscription.status;
+    }
   };
 
   return (
@@ -249,13 +344,57 @@ const PricingPage: React.FC = () => {
           </p>
 
           {/* Current Subscription Status */}
-          {authState.user && userSubscription && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8 max-w-md mx-auto">
+          {authState.user && !subscriptionLoading && userSubscription && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 max-w-2xl mx-auto shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                      <Crown className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {userSubscription.plan_name} Plan
+                      </h3>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(userSubscription.status)}`}>
+                        {userSubscription.status === 'active' ? 'Active' : userSubscription.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {formatPrice(userSubscription.amount_cents / 100, userSubscription.currency)} per {userSubscription.plan_interval}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {getStatusText(userSubscription)}
+                    </div>
+                    {userSubscription.payment_method_brand && userSubscription.payment_method_last4 && (
+                      <div className="flex items-center text-sm text-gray-500 mt-1">
+                        <CreditCard className="h-4 w-4 mr-1" />
+                        {userSubscription.payment_method_brand.toUpperCase()} ending in {userSubscription.payment_method_last4}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {userSubscription.cancel_at_period_end && (
+                  <div className="flex-shrink-0">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Ending Soon
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {authState.user && subscriptionLoading && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 max-w-md mx-auto">
               <div className="flex items-center justify-center space-x-2">
-                <Check className="h-5 w-5 text-green-600" />
-                <span className="font-medium text-green-800">
-                  Current Plan: {userSubscription.status || 'Active'}
-                </span>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                <span className="text-gray-600">Loading subscription...</span>
               </div>
             </div>
           )}
@@ -294,6 +433,7 @@ const PricingPage: React.FC = () => {
             const Icon = plan.icon;
             const monthlyPrice = getMonthlyPrice(plan);
             const currency = plan.stripeProduct?.currency || 'USD';
+            const isCurrentUserPlan = isCurrentPlan(plan);
             
             // Calculate savings for annual plans
             const monthlyPlan = plans.find(p => p.name === plan.name && p.period === 'month');
@@ -305,13 +445,24 @@ const PricingPage: React.FC = () => {
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-                  plan.popular 
+                  isCurrentUserPlan
+                    ? 'border-orange-200 ring-4 ring-orange-100'
+                    : plan.popular 
                     ? 'border-orange-200 ring-4 ring-orange-100' 
                     : 'border-gray-200 hover:border-orange-200'
                 }`}
               >
+                {/* Current Plan Badge */}
+                {isCurrentUserPlan && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+                      Current Plan
+                    </div>
+                  </div>
+                )}
+
                 {/* Popular Badge */}
-                {plan.popular && (
+                {plan.popular && !isCurrentUserPlan && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
                       Most Popular
@@ -377,9 +528,11 @@ const PricingPage: React.FC = () => {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleSubscribe(plan)}
-                    disabled={loadingPlan === plan.id}
+                    disabled={loadingPlan === plan.id || (isCurrentUserPlan && !userSubscription?.cancel_at_period_end)}
                     className={`w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
-                      plan.popular
+                      isCurrentUserPlan && !userSubscription?.cancel_at_period_end
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        : plan.popular || isCurrentUserPlan
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`
                         : plan.enterprise
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105`
@@ -394,7 +547,9 @@ const PricingPage: React.FC = () => {
                     ) : (
                       <>
                         <span>{plan.buttonText}</span>
-                        <ArrowRight className="h-4 w-4" />
+                        {!(isCurrentUserPlan && !userSubscription?.cancel_at_period_end) && (
+                          <ArrowRight className="h-4 w-4" />
+                        )}
                       </>
                     )}
                   </button>
