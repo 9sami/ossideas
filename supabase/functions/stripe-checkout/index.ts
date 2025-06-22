@@ -19,7 +19,6 @@ function corsResponse(body: string | object | null, status = 200) {
     'Access-Control-Allow-Headers': '*',
   };
 
-  // For 204 No Content, don't include Content-Type or body
   if (status === 204) {
     return new Response(null, { status, headers });
   }
@@ -33,32 +32,6 @@ function corsResponse(body: string | object | null, status = 200) {
   });
 }
 
-// Helper function to verify if a Stripe customer exists
-async function verifyStripeCustomer(customerId: string): Promise<boolean> {
-  try {
-    await stripe.customers.retrieve(customerId);
-    return true;
-  } catch (error) {
-    console.log(`Stripe customer ${customerId} does not exist:`, error);
-    return false;
-  }
-}
-
-// Helper function to clean up invalid customer records
-async function cleanupInvalidCustomer(userId: string, customerId: string) {
-  console.log(`Cleaning up invalid customer record for user ${userId}, customer ${customerId}`);
-  
-  const { error } = await supabase
-    .from('stripe_customers')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .eq('customer_id', customerId);
-
-  if (error) {
-    console.error('Failed to cleanup invalid customer:', error);
-  }
-}
-
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
@@ -70,27 +43,11 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    let requestBody;
-    try {
-      requestBody = await req.json();
-    } catch (error) {
-      console.error('Failed to parse request body:', error);
-      return corsResponse({ error: 'Invalid JSON in request body' }, 400);
-    }
+    const { price_id, success_url, cancel_url } = await req.json();
 
-    const { price_id, success_url, cancel_url } = requestBody;
-
-    // Validate required parameters
-    if (!price_id || typeof price_id !== 'string') {
-      return corsResponse({ error: 'price_id is required and must be a string' }, 400);
-    }
-
-    if (!success_url || typeof success_url !== 'string') {
-      return corsResponse({ error: 'success_url is required and must be a string' }, 400);
-    }
-
-    if (!cancel_url || typeof cancel_url !== 'string') {
-      return corsResponse({ error: 'cancel_url is required and must be a string' }, 400);
+    // Validate parameters
+    if (!price_id || !success_url || !cancel_url) {
+      return corsResponse({ error: 'Missing required parameters: price_id, success_url, cancel_url' }, 400);
     }
 
     // Get user from authorization header
@@ -100,105 +57,71 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: getUserError,
-    } = await supabase.auth.getUser(token);
+    const { data: { user }, error: getUserError } = await supabase.auth.getUser(token);
 
-    if (getUserError) {
-      console.error('Failed to authenticate user:', getUserError);
-      return corsResponse({ error: 'Failed to authenticate user' }, 401);
+    if (getUserError || !user) {
+      console.error('Authentication failed:', getUserError);
+      return corsResponse({ error: 'Authentication failed' }, 401);
     }
 
-    if (!user) {
-      return corsResponse({ error: 'User not found' }, 404);
-    }
+    console.log(`Processing checkout for user: ${user.id}, email: ${user.email}, price: ${price_id}`);
 
-    console.log(`Processing checkout for user: ${user.id}, price: ${price_id}`);
-
-    // Get existing customer records
-    const { data: customers, error: getCustomerError } = await supabase
-      .from('stripe_customers')
-      .select('customer_id')
-      .eq('user_id', user.id)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-
-    if (getCustomerError) {
-      console.error('Failed to fetch customer information from the database:', getCustomerError);
-      return corsResponse({ error: 'Failed to fetch customer information' }, 500);
-    }
-
-    let customerId = null;
-
-    // Check if we have existing customers and verify they exist in Stripe
-    if (customers && customers.length > 0) {
-      for (const customer of customers) {
-        const isValid = await verifyStripeCustomer(customer.customer_id);
-        if (isValid) {
-          customerId = customer.customer_id;
-          console.log(`Using existing valid customer: ${customerId}`);
-          break;
-        } else {
-          // Clean up invalid customer record
-          await cleanupInvalidCustomer(user.id, customer.customer_id);
-        }
-      }
-    }
-
-    // If no valid customer found, create a new one
-    if (!customerId) {
-      console.log(`Creating new Stripe customer for user: ${user.id}`);
-      
-      try {
-        const newCustomer = await stripe.customers.create({
-          email: user.email,
-          metadata: {
-            userId: user.id,
-          },
-        });
-
-        console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
-
-        // Save customer to database
-        const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
-          user_id: user.id,
-          customer_id: newCustomer.id,
-        });
-
-        if (createCustomerError) {
-          console.error('Failed to save customer information in the database:', createCustomerError);
-          
-          // Clean up Stripe customer
-          try {
-            await stripe.customers.del(newCustomer.id);
-          } catch (deleteError) {
-            console.error('Failed to delete Stripe customer after database error:', deleteError);
-          }
-
-          return corsResponse({ error: 'Failed to create customer mapping' }, 500);
-        }
-
-        customerId = newCustomer.id;
-      } catch (stripeError) {
-        console.error('Failed to create Stripe customer:', stripeError);
-        return corsResponse({ error: 'Failed to create Stripe customer' }, 500);
-      }
-    }
-
-    // Verify the price exists in Stripe
+    // Always create a fresh Stripe customer for simplicity
+    // This avoids all the complexity with stale customer records
+    let stripeCustomer;
     try {
-      const price = await stripe.prices.retrieve(price_id);
-      console.log(`Using price: ${price.id} - ${price.unit_amount} ${price.currency}`);
-    } catch (priceError) {
-      console.error('Invalid price ID:', priceError);
+      stripeCustomer = await stripe.customers.create({
+        email: user.email,
+        metadata: {
+          userId: user.id,
+        },
+      });
+      console.log(`Created new Stripe customer: ${stripeCustomer.id}`);
+    } catch (error) {
+      console.error('Failed to create Stripe customer:', error);
+      return corsResponse({ error: 'Failed to create customer in Stripe' }, 500);
+    }
+
+    // Save customer to database
+    try {
+      const { error: dbError } = await supabase
+        .from('stripe_customers')
+        .insert({
+          user_id: user.id,
+          customer_id: stripeCustomer.id,
+        });
+
+      if (dbError) {
+        console.error('Database error saving customer:', dbError);
+        
+        // Clean up Stripe customer
+        try {
+          await stripe.customers.del(stripeCustomer.id);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup Stripe customer:', cleanupError);
+        }
+        
+        return corsResponse({ error: 'Database error saving customer' }, 500);
+      }
+      
+      console.log(`Saved customer ${stripeCustomer.id} to database`);
+    } catch (error) {
+      console.error('Unexpected error saving customer:', error);
+      return corsResponse({ error: 'Unexpected error saving customer' }, 500);
+    }
+
+    // Verify the price exists
+    try {
+      await stripe.prices.retrieve(price_id);
+    } catch (error) {
+      console.error('Invalid price ID:', error);
       return corsResponse({ error: `Invalid price ID: ${price_id}` }, 400);
     }
 
-    // Create Checkout Session for subscription
+    // Create checkout session
     try {
       const session = await stripe.checkout.sessions.create({
-        customer: customerId,
+        customer: stripeCustomer.id,
         payment_method_types: ['card'],
         line_items: [
           {
@@ -218,23 +141,24 @@ Deno.serve(async (req) => {
         billing_address_collection: 'auto',
       });
 
-      console.log(`Created checkout session ${session.id} for customer ${customerId}`);
+      console.log(`Created checkout session: ${session.id}`);
 
-      return corsResponse({ 
-        sessionId: session.id, 
-        url: session.url 
+      return corsResponse({
+        sessionId: session.id,
+        url: session.url,
       });
 
-    } catch (sessionError) {
-      console.error('Failed to create checkout session:', sessionError);
+    } catch (error) {
+      console.error('Failed to create checkout session:', error);
       return corsResponse({ 
-        error: `Failed to create checkout session: ${sessionError instanceof Error ? sessionError.message : 'Unknown error'}` 
+        error: `Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}` 
       }, 500);
     }
 
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`Checkout error: ${errorMessage}`);
-    return corsResponse({ error: `Internal server error: ${errorMessage}` }, 500);
+  } catch (error) {
+    console.error('Unexpected error in checkout function:', error);
+    return corsResponse({ 
+      error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    }, 500);
   }
 });
