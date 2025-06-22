@@ -16,6 +16,8 @@ export const useSubscriptionManagement = () => {
     setError(null);
 
     try {
+      console.log('Updating subscription:', subscriptionId, 'to price:', newPriceId);
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -35,12 +37,25 @@ export const useSubscriptionManagement = () => {
         }),
       });
 
+      console.log('Update subscription response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Update subscription error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Update subscription result:', result);
+
       return {
         success: true,
         message: result.message || 'Subscription updated successfully'
@@ -48,6 +63,7 @@ export const useSubscriptionManagement = () => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update subscription';
+      console.error('Update subscription error:', errorMessage);
       setError(errorMessage);
       return {
         success: false,
@@ -63,6 +79,8 @@ export const useSubscriptionManagement = () => {
     setError(null);
 
     try {
+      console.log('Canceling subscription:', subscriptionId);
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -81,12 +99,25 @@ export const useSubscriptionManagement = () => {
         }),
       });
 
+      console.log('Cancel subscription response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Cancel subscription error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Cancel subscription result:', result);
+
       return {
         success: true,
         message: result.message || 'Subscription canceled successfully'
@@ -94,6 +125,7 @@ export const useSubscriptionManagement = () => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to cancel subscription';
+      console.error('Cancel subscription error:', errorMessage);
       setError(errorMessage);
       return {
         success: false,
@@ -109,6 +141,8 @@ export const useSubscriptionManagement = () => {
     setError(null);
 
     try {
+      console.log('Reactivating subscription:', subscriptionId);
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -127,12 +161,25 @@ export const useSubscriptionManagement = () => {
         }),
       });
 
+      console.log('Reactivate subscription response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Reactivate subscription error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Reactivate subscription result:', result);
+
       return {
         success: true,
         message: result.message || 'Subscription reactivated successfully'
@@ -140,6 +187,7 @@ export const useSubscriptionManagement = () => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reactivate subscription';
+      console.error('Reactivate subscription error:', errorMessage);
       setError(errorMessage);
       return {
         success: false,

@@ -275,10 +275,13 @@ const PricingPage: React.FC = () => {
           const result = await reactivateSubscription(userSubscription.stripe_subscription_id);
           if (result.success) {
             setSuccessMessage(result.message || 'Subscription reactivated successfully!');
+            // Refresh subscription data
+            await fetchUserSubscription();
           } else {
             setCheckoutError(result.error || 'Failed to reactivate subscription');
           }
         } catch (error) {
+          console.error('Reactivation error:', error);
           setCheckoutError('Failed to reactivate subscription');
         } finally {
           setLoadingPlan(null);
@@ -298,10 +301,13 @@ const PricingPage: React.FC = () => {
           const result = await updateSubscription(userSubscription.stripe_subscription_id, plan.stripeProduct.priceId);
           if (result.success) {
             setSuccessMessage(result.message || 'Subscription updated successfully!');
+            // Refresh subscription data
+            await fetchUserSubscription();
           } else {
             setCheckoutError(result.error || 'Failed to update subscription');
           }
         } catch (error) {
+          console.error('Update subscription error:', error);
           setCheckoutError('Failed to update subscription');
         } finally {
           setLoadingPlan(null);
@@ -384,10 +390,13 @@ const PricingPage: React.FC = () => {
         const result = await cancelSubscription(userSubscription.stripe_subscription_id);
         if (result.success) {
           setSuccessMessage(result.message || 'Subscription canceled successfully!');
+          // Refresh subscription data
+          await fetchUserSubscription();
         } else {
           setCheckoutError(result.error || 'Failed to cancel subscription');
         }
       } catch (error) {
+        console.error('Cancel subscription error:', error);
         setCheckoutError('Failed to cancel subscription');
       }
     }
