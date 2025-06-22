@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -51,6 +51,54 @@ const PricingPage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { authState } = useAuth();
 
+  // Memoize fetchUserSubscription to prevent unnecessary re-renders
+  const fetchUserSubscription = useCallback(async (retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 1000;
+
+    try {
+      setSubscriptionLoading(true);
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', authState.user?.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        
+        // Retry logic for potential RLS or timing issues
+        if (retryCount < maxRetries) {
+          console.log(`Retrying subscription fetch... (${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserSubscription(retryCount + 1);
+          }, retryDelay * (retryCount + 1));
+          return;
+        }
+        
+        return;
+      }
+
+      setUserSubscription(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      
+      // Retry on unexpected errors too
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          fetchUserSubscription(retryCount + 1);
+        }, retryDelay * (retryCount + 1));
+        return;
+      }
+    } finally {
+      // Only set loading to false on final attempt
+      if (retryCount >= maxRetries - 1) {
+        setSubscriptionLoading(false);
+      }
+    }
+  }, [authState.user?.id]);
+
   useEffect(() => {
     // Validate Stripe configuration
     const validation = validateStripeConfig();
@@ -63,30 +111,7 @@ const PricingPage: React.FC = () => {
     } else {
       setSubscriptionLoading(false);
     }
-  }, [authState.user]);
-
-  const fetchUserSubscription = async () => {
-    try {
-      setSubscriptionLoading(true);
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', authState.user?.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        return;
-      }
-
-      setUserSubscription(data);
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
+  }, [authState.user, fetchUserSubscription]);
 
   // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
@@ -396,7 +421,7 @@ const PricingPage: React.FC = () => {
 
           {/* Current Subscription Status */}
           {authState.user && !subscriptionLoading && userSubscription && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 max-w-2xl mx-auto shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 max-w-6xl mx-auto shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">

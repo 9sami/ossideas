@@ -66,48 +66,82 @@ Deno.serve(async (req) => {
 
     console.log(`Processing checkout for user: ${user.id}, email: ${user.email}, price: ${price_id}`);
 
-    // Always create a fresh Stripe customer for simplicity
-    // This avoids all the complexity with stale customer records
-    let stripeCustomer;
-    try {
-      stripeCustomer = await stripe.customers.create({
-        email: user.email,
-        metadata: {
-          userId: user.id,
-        },
-      });
-      console.log(`Created new Stripe customer: ${stripeCustomer.id}`);
-    } catch (error) {
-      console.error('Failed to create Stripe customer:', error);
-      return corsResponse({ error: 'Failed to create customer in Stripe' }, 500);
+    // Check if customer already exists in our database
+    const { data: existingCustomer, error: customerError } = await supabase
+      .from('stripe_customers')
+      .select('customer_id')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (customerError) {
+      console.error('Error checking existing customer:', customerError);
+      return corsResponse({ error: 'Database error checking customer' }, 500);
     }
 
-    // Save customer to database
-    try {
-      const { error: dbError } = await supabase
-        .from('stripe_customers')
-        .insert({
-          user_id: user.id,
-          customer_id: stripeCustomer.id,
-        });
+    let customerId: string;
 
-      if (dbError) {
-        console.error('Database error saving customer:', dbError);
+    if (existingCustomer?.customer_id) {
+      // Use existing customer
+      customerId = existingCustomer.customer_id;
+      console.log(`Using existing Stripe customer: ${customerId}`);
+
+      // Verify the customer still exists in Stripe
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (stripeError) {
+        console.error('Existing Stripe customer not found, creating new one:', stripeError);
         
-        // Clean up Stripe customer
-        try {
-          await stripe.customers.del(stripeCustomer.id);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup Stripe customer:', cleanupError);
+        // Mark old customer as deleted and create new one
+        await supabase
+          .from('stripe_customers')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+
+        // Create new customer (will be handled below)
+        existingCustomer.customer_id = null;
+      }
+    }
+
+    if (!existingCustomer?.customer_id) {
+      // Create new Stripe customer
+      try {
+        const stripeCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            userId: user.id,
+          },
+        });
+        
+        customerId = stripeCustomer.id;
+        console.log(`Created new Stripe customer: ${customerId}`);
+
+        // Save to database
+        const { error: dbError } = await supabase
+          .from('stripe_customers')
+          .insert({
+            user_id: user.id,
+            customer_id: customerId,
+          });
+
+        if (dbError) {
+          console.error('Database error saving customer:', dbError);
+          
+          // Clean up Stripe customer
+          try {
+            await stripe.customers.del(customerId);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup Stripe customer:', cleanupError);
+          }
+          
+          return corsResponse({ error: 'Database error saving customer' }, 500);
         }
         
-        return corsResponse({ error: 'Database error saving customer' }, 500);
+        console.log(`Saved customer ${customerId} to database`);
+      } catch (error) {
+        console.error('Failed to create Stripe customer:', error);
+        return corsResponse({ error: 'Failed to create customer in Stripe' }, 500);
       }
-      
-      console.log(`Saved customer ${stripeCustomer.id} to database`);
-    } catch (error) {
-      console.error('Unexpected error saving customer:', error);
-      return corsResponse({ error: 'Unexpected error saving customer' }, 500);
     }
 
     // Verify the price exists
@@ -121,7 +155,7 @@ Deno.serve(async (req) => {
     // Create checkout session
     try {
       const session = await stripe.checkout.sessions.create({
-        customer: stripeCustomer.id,
+        customer: customerId,
         payment_method_types: ['card'],
         line_items: [
           {
