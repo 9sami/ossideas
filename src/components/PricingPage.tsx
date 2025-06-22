@@ -112,18 +112,23 @@ const PricingPage: React.FC = () => {
           table: 'subscriptions',
           filter: `user_id=eq.${authState.user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('Subscription changed:', payload);
           // Refresh subscription data when changes occur
-          fetchUserSubscription();
+          await fetchUserSubscription();
+          // Also refresh user data to ensure everything is in sync
+          await refreshUserData();
         }
       )
       .subscribe();
 
+    // Initial fetch
+    fetchUserSubscription();
+
     return () => {
       supabase.removeChannel(subscriptionChannel);
     };
-  }, [authState.user?.id, fetchUserSubscription]);
+  }, [authState.user?.id, fetchUserSubscription, refreshUserData]);
 
   // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
