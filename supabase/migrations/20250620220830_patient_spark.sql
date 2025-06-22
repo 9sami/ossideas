@@ -50,17 +50,22 @@ CREATE POLICY "Users can view their own customer data"
     TO authenticated
     USING (user_id = auth.uid() AND deleted_at IS NULL);
 
-CREATE TYPE IF NOT EXISTS stripe_subscription_status AS ENUM (
-    'not_started',
-    'incomplete',
-    'incomplete_expired',
-    'trialing',
-    'active',
-    'past_due',
-    'canceled',
-    'unpaid',
-    'paused'
-);
+-- Create enum types if they don't exist
+DO $$ BEGIN
+    CREATE TYPE stripe_subscription_status AS ENUM (
+        'not_started',
+        'incomplete',
+        'incomplete_expired',
+        'trialing',
+        'active',
+        'past_due',
+        'canceled',
+        'unpaid',
+        'paused'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS stripe_subscriptions (
   id bigint primary key generated always as identity,
@@ -93,11 +98,16 @@ CREATE POLICY "Users can view their own subscription data"
         AND deleted_at IS NULL
     );
 
-CREATE TYPE IF NOT EXISTS stripe_order_status AS ENUM (
-    'pending',
-    'completed',
-    'canceled'
-);
+-- Create enum types if they don't exist
+DO $$ BEGIN
+    CREATE TYPE stripe_order_status AS ENUM (
+        'pending',
+        'completed',
+        'canceled'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS stripe_orders (
     id bigint primary key generated always as identity,

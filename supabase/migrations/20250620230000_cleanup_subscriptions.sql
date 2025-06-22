@@ -10,10 +10,10 @@
 */
 
 -- Drop the one-time orders table since we're focusing only on subscriptions
-DROP TABLE IF EXISTS stripe_orders;
+DROP TABLE IF EXISTS stripe_orders CASCADE;
 
 -- Clean up and simplify the stripe_subscriptions table
-DROP TABLE IF EXISTS stripe_subscriptions;
+DROP TABLE IF EXISTS stripe_subscriptions CASCADE;
 
 -- Create a new, cleaner subscription table
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -76,6 +76,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create trigger for updated_at
+DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER update_subscriptions_updated_at 
   BEFORE UPDATE ON subscriptions 
   FOR EACH ROW 
