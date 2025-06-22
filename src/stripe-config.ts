@@ -3,10 +3,10 @@ export interface StripeProduct {
   priceId: string;
   name: string;
   description: string;
-  mode: 'payment' | 'subscription';
+  mode: 'subscription';
   price: number;
   currency: string;
-  interval?: 'month' | 'year';
+  interval: 'month' | 'year';
   features: string[];
   popular?: boolean;
   enterprise?: boolean;
@@ -92,22 +92,6 @@ export const stripeProducts: StripeProduct[] = [
       'Community access and networking',
       'Early access to new features'
     ]
-  },
-  {
-    id: 'one-time-report',
-    priceId: 'price_one_time_report', // Replace with your actual Stripe price ID
-    name: 'Market Report',
-    description: 'One-time purchase of comprehensive market analysis',
-    mode: 'payment',
-    price: 4999, // $49.99 in cents
-    currency: 'usd',
-    features: [
-      'Comprehensive market analysis report',
-      'Industry trends and insights',
-      'Competitive landscape overview',
-      'Growth opportunities identification',
-      'PDF download included'
-    ]
   }
 ];
 
@@ -124,9 +108,5 @@ export const getProductsByInterval = (interval: 'month' | 'year'): StripeProduct
 };
 
 export const getSubscriptionProducts = (): StripeProduct[] => {
-  return stripeProducts.filter(product => product.mode === 'subscription');
-};
-
-export const getOneTimeProducts = (): StripeProduct[] => {
-  return stripeProducts.filter(product => product.mode === 'payment');
+  return stripeProducts;
 };

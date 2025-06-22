@@ -2,7 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { stripeProducts, StripeProduct, getSubscriptionProducts, getOneTimeProducts } from '../stripe-config';
+import { StripeProduct, getSubscriptionProducts } from '../stripe-config';
+
+interface UserSubscription {
+  id: string;
+  user_id: string;
+  stripe_customer_id: string;
+  stripe_subscription_id: string;
+  stripe_price_id: string;
+  plan_name: string;
+  plan_interval: string;
+  status: string;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  payment_method_brand: string;
+  payment_method_last4: string;
+  amount_cents: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  days_until_renewal: number;
+}
 
 interface PricingPlan {
   id: string;
@@ -11,7 +33,7 @@ interface PricingPlan {
   period: string;
   description: string;
   features: string[];
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   popular?: boolean;
   enterprise?: boolean;
   stripeProduct?: StripeProduct;
@@ -24,7 +46,7 @@ interface PricingPlan {
 const PricingPage: React.FC = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const { authState } = useAuth();
 
   useEffect(() => {
@@ -36,8 +58,10 @@ const PricingPage: React.FC = () => {
   const fetchUserSubscription = async () => {
     try {
       const { data, error } = await supabase
-        .from('stripe_user_subscriptions')
+        .from('user_subscriptions')
         .select('*')
+        .eq('user_id', authState.user?.id)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (error) {
@@ -158,7 +182,7 @@ const PricingPage: React.FC = () => {
         },
         body: JSON.stringify({
           price_id: plan.stripeProduct.priceId,
-          mode: plan.stripeProduct.mode,
+          mode: 'subscription',
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/pricing`,
         }),
@@ -230,7 +254,7 @@ const PricingPage: React.FC = () => {
               <div className="flex items-center justify-center space-x-2">
                 <Check className="h-5 w-5 text-green-600" />
                 <span className="font-medium text-green-800">
-                  Current Plan: {userSubscription.subscription_status || 'Active'}
+                  Current Plan: {userSubscription.status || 'Active'}
                 </span>
               </div>
             </div>
@@ -379,61 +403,6 @@ const PricingPage: React.FC = () => {
             );
           })}
         </div>
-
-        {/* One-time Products Section */}
-        {getOneTimeProducts().length > 0 && (
-          <div className="mt-20">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">One-Time Purchases</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Get instant access to premium content without a subscription
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              {getOneTimeProducts().map((product) => (
-                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                  
-                  <div className="text-2xl font-bold text-gray-900 mb-4">
-                    {formatPrice(product.price / 100, product.currency)}
-                  </div>
-                  
-                  <ul className="space-y-2 mb-6">
-                    {product.features.map((feature, index) => (
-                      <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <button
-                    onClick={() => handleSubscribe({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price / 100,
-                      period: 'one-time',
-                      description: product.description,
-                      features: product.features,
-                      icon: Zap,
-                      stripeProduct: product,
-                      buttonText: `Buy ${product.name}`,
-                      gradient: 'from-blue-500 to-blue-600',
-                      iconBg: 'bg-blue-100',
-                      iconColor: 'text-blue-600'
-                    })}
-                    disabled={loadingPlan === product.id}
-                    className="w-full py-3 px-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingPlan === product.id ? 'Processing...' : `Buy ${product.name}`}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* FAQ Section */}
         <div className="mt-20 max-w-4xl mx-auto">

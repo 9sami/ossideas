@@ -1,6 +1,6 @@
-# Stripe Integration Setup Guide
+# Stripe Subscription Setup Guide
 
-This guide will help you set up Stripe integration for OSSIdeas, including subscriptions and one-time payments.
+This guide will help you set up Stripe subscription billing for OSSIdeas.
 
 ## Prerequisites
 
@@ -23,10 +23,6 @@ This guide will help you set up Stripe integration for OSSIdeas, including subsc
 - Name: Pro  
 - Description: Ideal for serious entrepreneurs and growing teams
 
-**Market Report**
-- Name: Market Report
-- Description: One-time purchase of comprehensive market analysis
-
 ### 1.2 Create Prices for Each Product
 
 For each product, create prices with the following details:
@@ -39,8 +35,9 @@ For each product, create prices with the following details:
 - Monthly: $20.00 USD, recurring monthly  
 - Yearly: $160.00 USD, recurring yearly (20% discount)
 
-**Market Report Price:**
-- One-time: $49.99 USD, one-time payment
+**Important:** When creating each price, add metadata to help identify the plan:
+- Key: `plan_name`, Value: `Basic` or `Pro`
+- Key: `plan_interval`, Value: `month` or `year`
 
 ### 1.3 Copy Price IDs
 
@@ -50,11 +47,28 @@ After creating each price, copy the Price ID (starts with `price_`) and update `
 export const stripeProducts: StripeProduct[] = [
   {
     id: 'basic-monthly',
-    priceId: 'price_1234567890abcdef', // Replace with your actual price ID
+    priceId: 'price_1234567890abcdef', // Replace with your actual Basic Monthly price ID
     name: 'Basic',
     // ... rest of configuration
   },
-  // ... other products
+  {
+    id: 'pro-monthly',
+    priceId: 'price_abcdef1234567890', // Replace with your actual Pro Monthly price ID
+    name: 'Pro',
+    // ... rest of configuration
+  },
+  {
+    id: 'basic-yearly',
+    priceId: 'price_9876543210fedcba', // Replace with your actual Basic Yearly price ID
+    name: 'Basic',
+    // ... rest of configuration
+  },
+  {
+    id: 'pro-yearly',
+    priceId: 'price_fedcba0987654321', // Replace with your actual Pro Yearly price ID
+    name: 'Pro',
+    // ... rest of configuration
+  }
 ];
 ```
 
@@ -70,7 +84,6 @@ export const stripeProducts: StripeProduct[] = [
    - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
-   - `payment_intent.succeeded`
 
 ### 2.2 Get Webhook Secret
 
@@ -101,9 +114,17 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-## Step 4: Test the Integration
+## Step 4: Deploy Database Schema
 
-### 4.1 Test Subscription Flow
+Run the database migrations to set up the subscription tables:
+
+```bash
+supabase db push
+```
+
+## Step 5: Test the Integration
+
+### 5.1 Test Subscription Flow
 
 1. Start your development server: `npm run dev`
 2. Navigate to `/pricing`
@@ -111,22 +132,19 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 4. Try purchasing a subscription plan
 5. Use Stripe test card: `4242 4242 4242 4242`
 
-### 4.2 Test Webhook Processing
+### 5.2 Test Webhook Processing
 
 1. Complete a test purchase
 2. Check Supabase logs for edge function execution
-3. Verify data is correctly stored in database tables:
-   - `stripe_customers`
-   - `stripe_subscriptions` 
-   - `stripe_orders`
+3. Verify data is correctly stored in the `subscriptions` table
 
-### 4.3 Test Success Page
+### 5.3 Test Success Page
 
 After successful payment, users should be redirected to `/success` with order details.
 
-## Step 5: Production Setup
+## Step 6: Production Setup
 
-### 5.1 Switch to Live Mode
+### 6.1 Switch to Live Mode
 
 1. In Stripe Dashboard, toggle to "Live mode"
 2. Create the same products and prices in live mode
@@ -134,7 +152,7 @@ After successful payment, users should be redirected to `/success` with order de
 4. Update webhook endpoint to use production URL
 5. Update environment variables with live keys
 
-### 5.2 Security Checklist
+### 6.2 Security Checklist
 
 - [ ] Webhook endpoint uses HTTPS
 - [ ] Webhook signature verification is enabled
@@ -146,6 +164,11 @@ After successful payment, users should be redirected to `/success` with order de
 ## Troubleshooting
 
 ### Common Issues
+
+**"No such price" error:**
+- Verify price IDs in `stripe-config.ts` match your Stripe dashboard
+- Check that you're using test/live keys consistently
+- Ensure prices are created in the correct Stripe mode (test/live)
 
 **Webhook not receiving events:**
 - Check webhook URL is correct
