@@ -49,7 +49,7 @@ const PricingPage: React.FC = () => {
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const { authState } = useAuth();
+  const { authState, refreshUserData } = useAuth();
 
   // Memoize fetchUserSubscription to prevent unnecessary re-renders
   const fetchUserSubscription = useCallback(async () => {
@@ -96,6 +96,34 @@ const PricingPage: React.FC = () => {
     // Fetch subscription data
     fetchUserSubscription();
   }, [fetchUserSubscription]);
+
+  // Set up real-time subscription updates
+  useEffect(() => {
+    if (!authState.user) return;
+
+    // Subscribe to subscription changes for this user
+    const subscriptionChannel = supabase
+      .channel('subscription-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${authState.user.id}`,
+        },
+        (payload) => {
+          console.log('Subscription changed:', payload);
+          // Refresh subscription data when changes occur
+          fetchUserSubscription();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel);
+    };
+  }, [authState.user?.id, fetchUserSubscription]);
 
   // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
@@ -286,7 +314,13 @@ const PricingPage: React.FC = () => {
       } else if (result.message) {
         // Handle subscription update case
         console.log('Subscription updated, refreshing data...');
-        await fetchUserSubscription();
+        
+        // Wait a moment for the webhook to process
+        setTimeout(async () => {
+          await fetchUserSubscription();
+          await refreshUserData();
+        }, 1000);
+        
         setCheckoutError(null);
         alert('Your subscription has been updated successfully!');
       } else {

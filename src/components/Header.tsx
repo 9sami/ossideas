@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, User, Menu, LogIn, LogOut, Crown } from 'lucide-react';
 import { User as UserType } from '../types/auth';
 import { supabase } from '../lib/supabase';
@@ -31,13 +31,12 @@ const Header: React.FC<HeaderProps> = ({
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [userSubscription, setUserSubscription] = useState<any>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserSubscription();
+  const fetchUserSubscription = useCallback(async () => {
+    if (!user) {
+      setUserSubscription(null);
+      return;
     }
-  }, [user]);
 
-  const fetchUserSubscription = async () => {
     try {
       // Get the most recent active subscription for this user
       const { data, error } = await supabase
@@ -50,14 +49,48 @@ const Header: React.FC<HeaderProps> = ({
 
       if (error) {
         console.error('Error fetching subscription:', error);
+        setUserSubscription(null);
         return;
       }
 
       setUserSubscription(data);
     } catch (error) {
       console.error('Error fetching subscription:', error);
+      setUserSubscription(null);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchUserSubscription();
+  }, [fetchUserSubscription]);
+
+  // Set up real-time subscription updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to subscription changes for this user
+    const subscriptionChannel = supabase
+      .channel('header-subscription-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Header: Subscription changed:', payload);
+          // Refresh subscription data when changes occur
+          fetchUserSubscription();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel);
+    };
+  }, [user?.id, fetchUserSubscription]);
 
   const getSubscriptionStatus = () => {
     if (!userSubscription) return null;
