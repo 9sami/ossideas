@@ -311,18 +311,6 @@ const PricingPage: React.FC = () => {
       if (result.url) {
         console.log('Redirecting to checkout:', result.url);
         window.location.href = result.url;
-      } else if (result.message) {
-        // Handle subscription update case
-        console.log('Subscription updated, refreshing data...');
-        
-        // Wait a moment for the webhook to process
-        setTimeout(async () => {
-          await fetchUserSubscription();
-          await refreshUserData();
-        }, 1000);
-        
-        setCheckoutError(null);
-        alert('Your subscription has been updated successfully!');
       } else {
         throw new Error('No checkout URL received from server');
       }
