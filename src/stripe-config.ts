@@ -12,10 +12,12 @@ export interface StripeProduct {
   enterprise?: boolean;
 }
 
+// IMPORTANT: Replace these placeholder price IDs with your actual Stripe price IDs
+// You need to create these prices in your Stripe Dashboard first
 export const stripeProducts: StripeProduct[] = [
   {
     id: 'basic-monthly',
-    priceId: 'price_basic_monthly', // Replace with your actual Stripe price ID
+    priceId: 'price_1QYourActualBasicMonthlyPriceId', // Replace with your actual Stripe price ID
     name: 'Basic',
     description: 'Perfect for individual entrepreneurs and small projects',
     mode: 'subscription',
@@ -33,7 +35,7 @@ export const stripeProducts: StripeProduct[] = [
   },
   {
     id: 'pro-monthly',
-    priceId: 'price_pro_monthly', // Replace with your actual Stripe price ID
+    priceId: 'price_1QYourActualProMonthlyPriceId', // Replace with your actual Stripe price ID
     name: 'Pro',
     description: 'Ideal for serious entrepreneurs and growing teams',
     mode: 'subscription',
@@ -55,7 +57,7 @@ export const stripeProducts: StripeProduct[] = [
   },
   {
     id: 'basic-yearly',
-    priceId: 'price_basic_yearly', // Replace with your actual Stripe price ID
+    priceId: 'price_1QYourActualBasicYearlyPriceId', // Replace with your actual Stripe price ID
     name: 'Basic',
     description: 'Perfect for individual entrepreneurs and small projects',
     mode: 'subscription',
@@ -73,7 +75,7 @@ export const stripeProducts: StripeProduct[] = [
   },
   {
     id: 'pro-yearly',
-    priceId: 'price_pro_yearly', // Replace with your actual Stripe price ID
+    priceId: 'price_1QYourActualProYearlyPriceId', // Replace with your actual Stripe price ID
     name: 'Pro',
     description: 'Ideal for serious entrepreneurs and growing teams',
     mode: 'subscription',
@@ -109,4 +111,20 @@ export const getProductsByInterval = (interval: 'month' | 'year'): StripeProduct
 
 export const getSubscriptionProducts = (): StripeProduct[] => {
   return stripeProducts;
+};
+
+// Helper function to validate if price IDs are properly configured
+export const validateStripeConfig = (): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  stripeProducts.forEach(product => {
+    if (product.priceId.startsWith('price_1QYourActual')) {
+      errors.push(`${product.name} ${product.interval} plan needs a real Stripe price ID`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };

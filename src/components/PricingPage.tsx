@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { StripeProduct, getSubscriptionProducts } from '../stripe-config';
+import { StripeProduct, getSubscriptionProducts, validateStripeConfig } from '../stripe-config';
 
 interface UserSubscription {
   id: string;
@@ -48,9 +48,16 @@ const PricingPage: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
   const { authState } = useAuth();
 
   useEffect(() => {
+    // Validate Stripe configuration
+    const validation = validateStripeConfig();
+    if (!validation.isValid) {
+      setConfigError(validation.errors.join(', '));
+    }
+
     if (authState.user) {
       fetchUserSubscription();
     } else {
@@ -326,6 +333,24 @@ const PricingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Configuration Error Alert */}
+        {configError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Stripe Configuration Required</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Please update your Stripe price IDs in the configuration file: {configError}
+                </p>
+                <p className="text-xs text-red-600 mt-2">
+                  Go to your Stripe Dashboard → Products → Create prices, then update src/stripe-config.ts with the real price IDs.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-full text-sm font-medium mb-6">
