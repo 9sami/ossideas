@@ -257,7 +257,7 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
       updated_at: new Date().toISOString()
     };
 
-    // First, check if this is an existing subscription update
+    // Check if this subscription already exists in our database
     const { data: existingSubscription, error: checkError } = await supabase
       .from('subscriptions')
       .select('id, stripe_subscription_id')
@@ -283,8 +283,8 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
 
       console.log(`Successfully updated existing subscription: ${subscription.id} for user: ${customerData.user_id}`);
     } else {
-      // This is a new subscription, but first cancel any existing active subscriptions for this user
-      // to prevent multiple active subscriptions
+      // This is a new subscription
+      // First, cancel any existing active subscriptions for this user to prevent multiple active subscriptions
       const { error: cancelError } = await supabase
         .from('subscriptions')
         .update({
@@ -293,7 +293,8 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
           updated_at: new Date().toISOString()
         })
         .eq('user_id', customerData.user_id)
-        .in('status', ['active', 'trialing', 'past_due']);
+        .in('status', ['active', 'trialing', 'past_due'])
+        .neq('stripe_subscription_id', subscription.id); // Don't cancel the current subscription
 
       if (cancelError) {
         console.error('Error canceling existing subscriptions:', cancelError);

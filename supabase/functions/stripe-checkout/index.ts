@@ -144,6 +144,62 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Check if user has an existing active subscription
+    const { data: existingSubscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('stripe_subscription_id, stripe_price_id, plan_name')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing'])
+      .maybeSingle();
+
+    if (subError && subError.code !== 'PGRST116') {
+      console.error('Error checking existing subscription:', subError);
+      return corsResponse({ error: 'Database error checking subscription' }, 500);
+    }
+
+    // If user has an existing subscription, modify it instead of creating a new checkout
+    if (existingSubscription?.stripe_subscription_id) {
+      console.log(`User has existing subscription: ${existingSubscription.stripe_subscription_id}`);
+      
+      // Check if they're trying to subscribe to the same plan
+      if (existingSubscription.stripe_price_id === price_id) {
+        return corsResponse({ error: 'You are already subscribed to this plan' }, 400);
+      }
+
+      try {
+        // Retrieve the current subscription from Stripe
+        const subscription = await stripe.subscriptions.retrieve(existingSubscription.stripe_subscription_id);
+        
+        // Update the subscription to the new price
+        const updatedSubscription = await stripe.subscriptions.update(existingSubscription.stripe_subscription_id, {
+          items: [{
+            id: subscription.items.data[0].id,
+            price: price_id,
+          }],
+          proration_behavior: 'create_prorations',
+          metadata: {
+            userId: user.id,
+            upgraded_from: existingSubscription.plan_name,
+          },
+        });
+
+        console.log(`Successfully updated subscription ${existingSubscription.stripe_subscription_id} to price ${price_id}`);
+
+        // Return success URL directly since the subscription was updated
+        return corsResponse({
+          url: success_url.replace('{CHECKOUT_SESSION_ID}', `sub_${updatedSubscription.id}`),
+          subscriptionId: updatedSubscription.id,
+          message: 'Subscription updated successfully'
+        });
+
+      } catch (error) {
+        console.error('Failed to update existing subscription:', error);
+        return corsResponse({ 
+          error: `Failed to update subscription: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }, 500);
+      }
+    }
+
     // Verify the price exists
     try {
       await stripe.prices.retrieve(price_id);
@@ -152,7 +208,7 @@ Deno.serve(async (req) => {
       return corsResponse({ error: `Invalid price ID: ${price_id}` }, 400);
     }
 
-    // Create checkout session
+    // Create checkout session for new subscription
     try {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,

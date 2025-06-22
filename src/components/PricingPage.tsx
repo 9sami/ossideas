@@ -186,7 +186,7 @@ const PricingPage: React.FC = () => {
     if (targetPlanValue > currentPlanValue) {
       return `Upgrade to ${product.name}`;
     } else if (targetPlanValue < currentPlanValue) {
-      return `Downgrade to ${product.name}`;
+      return `Switch to ${product.name}`;
     } else {
       // Same plan, different interval
       return `Switch to ${product.interval}ly`;
@@ -283,6 +283,12 @@ const PricingPage: React.FC = () => {
       if (result.url) {
         console.log('Redirecting to checkout:', result.url);
         window.location.href = result.url;
+      } else if (result.message) {
+        // Handle subscription update case
+        console.log('Subscription updated, refreshing data...');
+        await fetchUserSubscription();
+        setCheckoutError(null);
+        alert('Your subscription has been updated successfully!');
       } else {
         throw new Error('No checkout URL received from server');
       }
@@ -584,7 +590,7 @@ const PricingPage: React.FC = () => {
             {[
               {
                 question: "Can I change plans anytime?",
-                answer: "Yes! You can upgrade or downgrade your plan at any time. Changes will be prorated and reflected in your next billing cycle."
+                answer: "Yes! You can upgrade or downgrade your plan at any time. Changes will be prorated and reflected immediately."
               },
               {
                 question: "What payment methods do you accept?",
