@@ -44,24 +44,17 @@ Deno.serve(async (req) => {
 
     const { action, price_id, subscription_id } = await req.json();
 
-    console.log('Received request:', { action, price_id, subscription_id });
-
     // Validate required parameters
     if (!action) {
       return corsResponse({ error: 'Action is required' }, 400);
     }
 
     // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return corsResponse({ error: 'Authorization header is required' }, 401);
-    }
-
+    const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: getUserError } = await supabase.auth.getUser(token);
 
     if (getUserError || !user) {
-      console.error('Auth error:', getUserError);
       return corsResponse({ error: 'Failed to authenticate user' }, 401);
     }
 
@@ -94,8 +87,6 @@ async function handleUpdateSubscription(userId: string, subscriptionId: string, 
       return corsResponse({ error: 'Subscription ID and new price ID are required' }, 400);
     }
 
-    console.log(`Looking up subscription ${subscriptionId} for user ${userId}`);
-
     // Verify the user owns this subscription
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
@@ -105,7 +96,6 @@ async function handleUpdateSubscription(userId: string, subscriptionId: string, 
       .single();
 
     if (subError || !subscription) {
-      console.error('Subscription lookup error:', subError);
       return corsResponse({ error: 'Subscription not found or access denied' }, 404);
     }
 
@@ -122,12 +112,6 @@ async function handleUpdateSubscription(userId: string, subscriptionId: string, 
     if (!stripeSubscription) {
       return corsResponse({ error: 'Subscription not found in Stripe' }, 404);
     }
-
-    console.log('Current Stripe subscription:', {
-      id: stripeSubscription.id,
-      status: stripeSubscription.status,
-      items: stripeSubscription.items.data.length
-    });
 
     // Update the subscription in Stripe
     const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
@@ -159,8 +143,6 @@ async function handleCancelSubscription(userId: string, subscriptionId: string) 
       return corsResponse({ error: 'Subscription ID is required' }, 400);
     }
 
-    console.log(`Looking up subscription ${subscriptionId} for user ${userId}`);
-
     // Verify the user owns this subscription
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
@@ -170,7 +152,6 @@ async function handleCancelSubscription(userId: string, subscriptionId: string) 
       .single();
 
     if (subError || !subscription) {
-      console.error('Subscription lookup error:', subError);
       return corsResponse({ error: 'Subscription not found or access denied' }, 404);
     }
 
@@ -204,8 +185,6 @@ async function handleReactivateSubscription(userId: string, subscriptionId: stri
       return corsResponse({ error: 'Subscription ID is required' }, 400);
     }
 
-    console.log(`Looking up subscription ${subscriptionId} for user ${userId}`);
-
     // Verify the user owns this subscription
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
@@ -215,7 +194,6 @@ async function handleReactivateSubscription(userId: string, subscriptionId: stri
       .single();
 
     if (subError || !subscription) {
-      console.error('Subscription lookup error:', subError);
       return corsResponse({ error: 'Subscription not found or access denied' }, 404);
     }
 
