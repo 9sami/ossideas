@@ -36,29 +36,43 @@ function corsResponse(body: string | object | null, status = 200) {
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
-      return corsResponse({}, 204);
+      return corsResponse(null, 204);
     }
 
     if (req.method !== 'POST') {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    const { price_id, success_url, cancel_url } = await req.json();
-
-    const error = validateParameters(
-      { price_id, success_url, cancel_url },
-      {
-        cancel_url: 'string',
-        price_id: 'string',
-        success_url: 'string',
-      },
-    );
-
-    if (error) {
-      return corsResponse({ error }, 400);
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error('Failed to parse request body:', error);
+      return corsResponse({ error: 'Invalid JSON in request body' }, 400);
     }
 
-    const authHeader = req.headers.get('Authorization')!;
+    const { price_id, success_url, cancel_url } = requestBody;
+
+    // Validate required parameters
+    if (!price_id || typeof price_id !== 'string') {
+      return corsResponse({ error: 'price_id is required and must be a string' }, 400);
+    }
+
+    if (!success_url || typeof success_url !== 'string') {
+      return corsResponse({ error: 'success_url is required and must be a string' }, 400);
+    }
+
+    if (!cancel_url || typeof cancel_url !== 'string') {
+      return corsResponse({ error: 'cancel_url is required and must be a string' }, 400);
+    }
+
+    // Get user from authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return corsResponse({ error: 'Missing or invalid authorization header' }, 401);
+    }
+
     const token = authHeader.replace('Bearer ', '');
     const {
       data: { user },
@@ -66,12 +80,15 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (getUserError) {
+      console.error('Failed to authenticate user:', getUserError);
       return corsResponse({ error: 'Failed to authenticate user' }, 401);
     }
 
     if (!user) {
       return corsResponse({ error: 'User not found' }, 404);
     }
+
+    console.log(`Processing checkout for user: ${user.id}, price: ${price_id}`);
 
     // Get or create Stripe customer
     const { data: customer, error: getCustomerError } = await supabase
@@ -82,94 +99,103 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (getCustomerError) {
-      console.error('Failed to fetch customer information from the database', getCustomerError);
+      console.error('Failed to fetch customer information from the database:', getCustomerError);
       return corsResponse({ error: 'Failed to fetch customer information' }, 500);
     }
 
     let customerId;
 
     if (!customer || !customer.customer_id) {
+      console.log(`Creating new Stripe customer for user: ${user.id}`);
+      
       // Create new Stripe customer
-      const newCustomer = await stripe.customers.create({
-        email: user.email,
-        metadata: {
-          userId: user.id,
-        },
-      });
+      try {
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            userId: user.id,
+          },
+        });
 
-      console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
+        console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
 
-      const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
-        user_id: user.id,
-        customer_id: newCustomer.id,
-      });
+        // Save customer to database
+        const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
+          user_id: user.id,
+          customer_id: newCustomer.id,
+        });
 
-      if (createCustomerError) {
-        console.error('Failed to save customer information in the database', createCustomerError);
-        
-        // Clean up Stripe customer
-        try {
-          await stripe.customers.del(newCustomer.id);
-        } catch (deleteError) {
-          console.error('Failed to delete Stripe customer after database error:', deleteError);
+        if (createCustomerError) {
+          console.error('Failed to save customer information in the database:', createCustomerError);
+          
+          // Clean up Stripe customer
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch (deleteError) {
+            console.error('Failed to delete Stripe customer after database error:', deleteError);
+          }
+
+          return corsResponse({ error: 'Failed to create customer mapping' }, 500);
         }
 
-        return corsResponse({ error: 'Failed to create customer mapping' }, 500);
+        customerId = newCustomer.id;
+      } catch (stripeError) {
+        console.error('Failed to create Stripe customer:', stripeError);
+        return corsResponse({ error: 'Failed to create Stripe customer' }, 500);
       }
-
-      customerId = newCustomer.id;
-      console.log(`Successfully set up new customer ${customerId}`);
     } else {
       customerId = customer.customer_id;
+      console.log(`Using existing customer: ${customerId}`);
+    }
+
+    // Verify the price exists in Stripe
+    try {
+      await stripe.prices.retrieve(price_id);
+    } catch (priceError) {
+      console.error('Invalid price ID:', priceError);
+      return corsResponse({ error: 'Invalid price ID' }, 400);
     }
 
     // Create Checkout Session for subscription
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: price_id,
-          quantity: 1,
+    try {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: price_id,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url,
+        cancel_url,
+        subscription_data: {
+          metadata: {
+            userId: user.id,
+          },
         },
-      ],
-      mode: 'subscription',
-      success_url,
-      cancel_url,
-      subscription_data: {
-        metadata: {
-          userId: user.id,
-        },
-      },
-    });
+        allow_promotion_codes: true,
+        billing_address_collection: 'auto',
+      });
 
-    console.log(`Created checkout session ${session.id} for customer ${customerId}`);
+      console.log(`Created checkout session ${session.id} for customer ${customerId}`);
 
-    return corsResponse({ sessionId: session.id, url: session.url });
+      return corsResponse({ 
+        sessionId: session.id, 
+        url: session.url 
+      });
+
+    } catch (sessionError) {
+      console.error('Failed to create checkout session:', sessionError);
+      return corsResponse({ 
+        error: `Failed to create checkout session: ${sessionError instanceof Error ? sessionError.message : 'Unknown error'}` 
+      }, 500);
+    }
+
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`Checkout error: ${errorMessage}`);
-    return corsResponse({ error: errorMessage }, 500);
+    return corsResponse({ error: `Internal server error: ${errorMessage}` }, 500);
   }
 });
-
-type ExpectedType = 'string' | { values: string[] };
-type Expectations<T> = { [K in keyof T]: ExpectedType };
-
-function validateParameters<T extends Record<string, unknown>>(values: T, expected: Expectations<T>): string | undefined {
-  for (const [key, expectedType] of Object.entries(expected)) {
-    const value = values[key];
-
-    if (typeof expectedType === 'string') {
-      if (typeof value !== expectedType) {
-        return `Expected ${key} to be of type ${expectedType}`;
-      }
-    } else if (typeof expectedType === 'object' && 'values' in expectedType) {
-      if (!expectedType.values.includes(value as string)) {
-        return `Expected ${key} to be one of: ${expectedType.values.join(', ')}`;
-      }
-    }
-  }
-
-  return undefined;
-}

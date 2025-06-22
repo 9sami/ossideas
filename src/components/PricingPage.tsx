@@ -48,6 +48,7 @@ const PricingPage: React.FC = () => {
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { authState } = useAuth();
 
   useEffect(() => {
@@ -222,13 +223,25 @@ const PricingPage: React.FC = () => {
     }
 
     setLoadingPlan(plan.id);
+    setCheckoutError(null);
 
     try {
+      console.log('Starting checkout for plan:', plan.name, 'Price ID:', plan.stripeProduct.priceId);
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        throw new Error('No active session');
+        throw new Error('No active session found. Please sign in again.');
       }
+
+      const requestBody = {
+        price_id: plan.stripeProduct.priceId,
+        mode: 'subscription',
+        success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${window.location.origin}/pricing`,
+      };
+
+      console.log('Sending checkout request:', requestBody);
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
@@ -236,28 +249,38 @@ const PricingPage: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          price_id: plan.stripeProduct.priceId,
-          mode: 'subscription',
-          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}/pricing`,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      console.log('Checkout response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create checkout session');
+        const errorText = await response.text();
+        console.error('Checkout response error:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
+      const result = await response.json();
+      console.log('Checkout result:', result);
+
       if (result.url) {
+        console.log('Redirecting to checkout:', result.url);
         window.location.href = result.url;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from server');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      alert(`Failed to start checkout: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setCheckoutError(`Failed to start checkout: ${errorMessage}`);
     } finally {
       setLoadingPlan(null);
     }
@@ -331,6 +354,25 @@ const PricingPage: React.FC = () => {
                   Go to your Stripe Dashboard → Products → Create prices, then update src/stripe-config.ts with the real price IDs.
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Checkout Error Alert */}
+        {checkoutError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">Checkout Error</h3>
+                <p className="text-sm text-red-700 mt-1">{checkoutError}</p>
+              </div>
+              <button
+                onClick={() => setCheckoutError(null)}
+                className="text-red-400 hover:text-red-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}
