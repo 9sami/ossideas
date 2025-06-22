@@ -40,8 +40,9 @@ const Header: React.FC<HeaderProps> = ({
   const fetchUserSubscription = async () => {
     try {
       const { data, error } = await supabase
-        .from('stripe_user_subscriptions')
+        .from('user_subscriptions')
         .select('*')
+        .eq('is_active', true)
         .maybeSingle();
 
       if (error) {
@@ -58,11 +59,11 @@ const Header: React.FC<HeaderProps> = ({
   const getSubscriptionStatus = () => {
     if (!userSubscription) return null;
     
-    const status = userSubscription.subscription_status;
+    const status = userSubscription.status;
     if (status === 'active' || status === 'trialing') {
-      return 'Pro';
+      return userSubscription.plan_name;
     }
-    return status;
+    return null;
   };
 
   return (

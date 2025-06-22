@@ -44,7 +44,6 @@ interface PricingPlan {
 }
 
 const PricingPage: React.FC = () => {
-  const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
@@ -88,16 +87,13 @@ const PricingPage: React.FC = () => {
     }
   };
 
-  // Get subscription products based on billing period
+  // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
-  const currentPeriodProducts = subscriptionProducts.filter(product => 
-    product.interval === (isAnnual ? 'year' : 'month')
-  );
 
   // Create plans from Stripe products
   const plans: PricingPlan[] = [
     // Basic Plan
-    ...currentPeriodProducts
+    ...subscriptionProducts
       .filter(product => product.name === 'Basic')
       .map(product => ({
         id: product.id,
@@ -115,7 +111,7 @@ const PricingPage: React.FC = () => {
       })),
     
     // Pro Plan
-    ...currentPeriodProducts
+    ...subscriptionProducts
       .filter(product => product.name === 'Pro')
       .map(product => ({
         id: product.id,
@@ -153,7 +149,7 @@ const PricingPage: React.FC = () => {
       ],
       icon: Building2,
       enterprise: true,
-      buttonText: "Let's have a call",
+      buttonText: "Contact Sales",
       gradient: 'from-gray-500 to-gray-600',
       iconBg: 'bg-gray-100',
       iconColor: 'text-gray-600'
@@ -284,18 +280,6 @@ const PricingPage: React.FC = () => {
     });
   };
 
-  const getMonthlyPrice = (plan: PricingPlan) => {
-    if (plan.period === 'year') {
-      return plan.price / 12;
-    }
-    return plan.price;
-  };
-
-  const getAnnualSavings = (monthlyPrice: number, yearlyPrice: number) => {
-    const monthlyTotal = monthlyPrice * 12;
-    return monthlyTotal - yearlyPrice;
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -423,48 +407,14 @@ const PricingPage: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center space-x-4 mb-12">
-            <span className={`text-sm font-medium ${!isAnnual ? 'text-gray-900' : 'text-gray-500'}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
-                isAnnual ? 'bg-orange-600' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isAnnual ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-sm font-medium ${isAnnual ? 'text-gray-900' : 'text-gray-500'}`}>
-              Annual
-            </span>
-            {isAnnual && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Save up to 20%
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => {
             const Icon = plan.icon;
-            const monthlyPrice = getMonthlyPrice(plan);
             const currency = plan.stripeProduct?.currency || 'USD';
             const isCurrentUserPlan = isCurrentPlan(plan);
-            
-            // Calculate savings for annual plans
-            const monthlyPlan = plans.find(p => p.name === plan.name && p.period === 'month');
-            const annualSavings = monthlyPlan && plan.period === 'year' 
-              ? getAnnualSavings(monthlyPlan.price, plan.price)
-              : 0;
             
             return (
               <div
@@ -523,17 +473,6 @@ const PricingPage: React.FC = () => {
                             <span className="text-gray-500 ml-2">/{plan.period}</span>
                           )}
                         </div>
-                        
-                        {plan.period === 'year' && (
-                          <div className="text-sm text-gray-500">
-                            <div className="text-green-600 font-medium">
-                              Save {formatPrice(annualSavings, currency)} per year
-                            </div>
-                            <div className="text-xs">
-                              {formatPrice(monthlyPrice, currency)}/month when billed annually
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
