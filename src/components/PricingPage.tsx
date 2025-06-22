@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { supabase } from '../lib/supabase';
 import { StripeProduct, getSubscriptionProducts, validateStripeConfig } from '../stripe-config';
 
@@ -49,7 +50,9 @@ const PricingPage: React.FC = () => {
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { authState, refreshUserData } = useAuth();
+  const { updateSubscription, cancelSubscription, reactivateSubscription, loading: subscriptionManagementLoading } = useSubscriptionManagement();
 
   // Memoize fetchUserSubscription to prevent unnecessary re-renders
   const fetchUserSubscription = useCallback(async () => {
@@ -259,13 +262,56 @@ const PricingPage: React.FC = () => {
       return;
     }
 
-    // If this is the current plan and not canceled, don't allow resubscription
-    if (isCurrentPlan(plan) && !userSubscription?.cancel_at_period_end) {
-      return;
+    // Clear any previous messages
+    setCheckoutError(null);
+    setSuccessMessage(null);
+
+    // If user has an active subscription, handle plan changes
+    if (userSubscription && userSubscription.is_active) {
+      // If this is the current plan and not canceled, handle reactivation
+      if (isCurrentPlan(plan) && userSubscription.cancel_at_period_end) {
+        setLoadingPlan(plan.id);
+        try {
+          const result = await reactivateSubscription(userSubscription.stripe_subscription_id);
+          if (result.success) {
+            setSuccessMessage(result.message || 'Subscription reactivated successfully!');
+          } else {
+            setCheckoutError(result.error || 'Failed to reactivate subscription');
+          }
+        } catch (error) {
+          setCheckoutError('Failed to reactivate subscription');
+        } finally {
+          setLoadingPlan(null);
+        }
+        return;
+      }
+
+      // If this is the current plan and not canceled, don't allow action
+      if (isCurrentPlan(plan) && !userSubscription.cancel_at_period_end) {
+        return;
+      }
+
+      // Handle plan change (upgrade/downgrade)
+      if (!isCurrentPlan(plan)) {
+        setLoadingPlan(plan.id);
+        try {
+          const result = await updateSubscription(userSubscription.stripe_subscription_id, plan.stripeProduct.priceId);
+          if (result.success) {
+            setSuccessMessage(result.message || 'Subscription updated successfully!');
+          } else {
+            setCheckoutError(result.error || 'Failed to update subscription');
+          }
+        } catch (error) {
+          setCheckoutError('Failed to update subscription');
+        } finally {
+          setLoadingPlan(null);
+        }
+        return;
+      }
     }
 
+    // Handle new subscription creation
     setLoadingPlan(plan.id);
-    setCheckoutError(null);
 
     try {
       console.log('Starting checkout for plan:', plan.name, 'Price ID:', plan.stripeProduct.priceId);
@@ -325,6 +371,25 @@ const PricingPage: React.FC = () => {
       setCheckoutError(`Failed to start checkout: ${errorMessage}`);
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!userSubscription || !userSubscription.stripe_subscription_id) {
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')) {
+      try {
+        const result = await cancelSubscription(userSubscription.stripe_subscription_id);
+        if (result.success) {
+          setSuccessMessage(result.message || 'Subscription canceled successfully!');
+        } else {
+          setCheckoutError(result.error || 'Failed to cancel subscription');
+        }
+      } catch (error) {
+        setCheckoutError('Failed to cancel subscription');
+      }
     }
   };
 
@@ -400,13 +465,32 @@ const PricingPage: React.FC = () => {
           </div>
         )}
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start space-x-3">
+              <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-green-800">Success!</h3>
+                <p className="text-sm text-green-700 mt-1">{successMessage}</p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-400 hover:text-green-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Checkout Error Alert */}
         {checkoutError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800">Checkout Error</h3>
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
                 <p className="text-sm text-red-700 mt-1">{checkoutError}</p>
               </div>
               <button
@@ -470,14 +554,23 @@ const PricingPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                {userSubscription.cancel_at_period_end && (
-                  <div className="flex-shrink-0">
+                <div className="flex-shrink-0 space-x-2">
+                  {userSubscription.cancel_at_period_end && (
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
                       <AlertCircle className="h-3 w-3 mr-1" />
                       Ending Soon
                     </div>
-                  </div>
-                )}
+                  )}
+                  {userSubscription.is_active && !userSubscription.cancel_at_period_end && (
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={subscriptionManagementLoading}
+                      className="px-3 py-1 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -576,7 +669,7 @@ const PricingPage: React.FC = () => {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleSubscribe(plan)}
-                    disabled={loadingPlan === plan.id || (isCurrentUserPlan && !userSubscription?.cancel_at_period_end)}
+                    disabled={loadingPlan === plan.id || subscriptionManagementLoading || (isCurrentUserPlan && !userSubscription?.cancel_at_period_end)}
                     className={`w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
                       isCurrentUserPlan && !userSubscription?.cancel_at_period_end
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
@@ -587,7 +680,7 @@ const PricingPage: React.FC = () => {
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
-                    {loadingPlan === plan.id ? (
+                    {loadingPlan === plan.id || subscriptionManagementLoading ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         <span>Processing...</span>
