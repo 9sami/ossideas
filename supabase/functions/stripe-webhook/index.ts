@@ -72,8 +72,11 @@ async function handleEvent(event: Stripe.Event) {
       
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
         await handleSubscriptionEvent(stripeData as Stripe.Subscription);
+        break;
+      
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(stripeData as Stripe.Subscription);
         break;
       
       case 'invoice.payment_succeeded':
@@ -109,6 +112,47 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   console.log(`Processing subscription event for: ${subscription.id}`);
   await syncSubscriptionToDatabase(subscription);
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log(`Processing subscription deletion for: ${subscription.id}`);
+  
+  try {
+    const customerId = subscription.customer as string;
+    
+    // Get user_id from stripe_customers table
+    const { data: customerData, error: customerError } = await supabase
+      .from('stripe_customers')
+      .select('user_id')
+      .eq('customer_id', customerId)
+      .is('deleted_at', null)
+      .single();
+
+    if (customerError || !customerData) {
+      console.error('Failed to find customer in database:', customerError);
+      return;
+    }
+
+    // Update subscription status to canceled instead of deleting
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'canceled',
+        cancel_at_period_end: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('stripe_subscription_id', subscription.id);
+
+    if (updateError) {
+      console.error('Error updating canceled subscription:', updateError);
+      throw new Error(`Failed to update canceled subscription: ${updateError.message}`);
+    }
+
+    console.log(`Successfully marked subscription ${subscription.id} as canceled`);
+  } catch (error) {
+    console.error(`Failed to handle subscription deletion ${subscription.id}:`, error);
+    throw error;
+  }
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -168,6 +212,14 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
       planName = price.metadata.plan_name;
     } else if (price.metadata?.plan) {
       planName = price.metadata.plan;
+    } else {
+      // Fallback: determine from price amount
+      const amount = price.unit_amount || 0;
+      if (amount >= 2000) {
+        planName = 'Pro';
+      } else {
+        planName = 'Basic';
+      }
     }
     
     if (price.recurring?.interval) {
@@ -205,25 +257,62 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
       updated_at: new Date().toISOString()
     };
 
-    // Upsert subscription data
-    const { error: upsertError } = await supabase
+    // First, check if this is an existing subscription update
+    const { data: existingSubscription, error: checkError } = await supabase
       .from('subscriptions')
-      .upsert(subscriptionData, {
-        onConflict: 'stripe_subscription_id',
-        ignoreDuplicates: false
-      });
+      .select('id, stripe_subscription_id')
+      .eq('stripe_subscription_id', subscription.id)
+      .maybeSingle();
 
-    if (upsertError) {
-      console.error('Error upserting subscription:', upsertError);
-      throw new Error(`Failed to sync subscription: ${upsertError.message}`);
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing subscription:', checkError);
+      throw new Error(`Failed to check existing subscription: ${checkError.message}`);
     }
 
-    console.log(`Successfully synced subscription: ${subscription.id} for user: ${customerData.user_id}`);
+    if (existingSubscription) {
+      // Update existing subscription
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update(subscriptionData)
+        .eq('stripe_subscription_id', subscription.id);
 
-    // If subscription is canceled or deleted, we might want to handle cleanup
-    if (subscription.status === 'canceled') {
-      console.log(`Subscription ${subscription.id} has been canceled`);
-      // Additional cleanup logic can go here if needed
+      if (updateError) {
+        console.error('Error updating subscription:', updateError);
+        throw new Error(`Failed to update subscription: ${updateError.message}`);
+      }
+
+      console.log(`Successfully updated existing subscription: ${subscription.id} for user: ${customerData.user_id}`);
+    } else {
+      // This is a new subscription, but first cancel any existing active subscriptions for this user
+      // to prevent multiple active subscriptions
+      const { error: cancelError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'canceled',
+          cancel_at_period_end: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', customerData.user_id)
+        .in('status', ['active', 'trialing', 'past_due']);
+
+      if (cancelError) {
+        console.error('Error canceling existing subscriptions:', cancelError);
+        // Don't throw here, just log the error and continue
+      } else {
+        console.log(`Canceled existing subscriptions for user: ${customerData.user_id}`);
+      }
+
+      // Insert new subscription
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert(subscriptionData);
+
+      if (insertError) {
+        console.error('Error inserting subscription:', insertError);
+        throw new Error(`Failed to insert subscription: ${insertError.message}`);
+      }
+
+      console.log(`Successfully created new subscription: ${subscription.id} for user: ${customerData.user_id}`);
     }
 
   } catch (error) {

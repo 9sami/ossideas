@@ -39,11 +39,14 @@ const Header: React.FC<HeaderProps> = ({
 
   const fetchUserSubscription = async () => {
     try {
+      // Get the most recent active subscription for this user
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
         .eq('is_active', true)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
 
       if (error) {
         console.error('Error fetching subscription:', error);
