@@ -59,11 +59,12 @@ const PricingPage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [subscriptionNotification, setSubscriptionNotification] = useState<SubscriptionNotification | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { authState, refreshUserData } = useAuth();
   const { updateSubscription, cancelSubscription, reactivateSubscription, loading: subscriptionManagementLoading } = useSubscriptionManagement();
 
   // Memoize fetchUserSubscription to prevent unnecessary re-renders
-  const fetchUserSubscription = useCallback(async () => {
+  const fetchUserSubscription = useCallback(async (isRetry = false) => {
     if (!authState.user) {
       setSubscriptionLoading(false);
       setUserSubscription(null);
@@ -71,7 +72,9 @@ const PricingPage: React.FC = () => {
     }
 
     try {
-      setSubscriptionLoading(true);
+      if (!isRetry) {
+        setSubscriptionLoading(true);
+      }
       
       // Get the most recent active subscription for this user
       const { data, error } = await supabase
@@ -97,6 +100,18 @@ const PricingPage: React.FC = () => {
     }
   }, [authState.user?.id]);
 
+  // Polling fallback for when WebSocket fails
+  const startPolling = useCallback(() => {
+    const pollInterval = setInterval(async () => {
+      if (authState.user && (loadingPlan || subscriptionManagementLoading)) {
+        console.log('Polling for subscription updates...');
+        await fetchUserSubscription(true);
+      }
+    }, 2000); // Poll every 2 seconds when operations are in progress
+
+    return () => clearInterval(pollInterval);
+  }, [authState.user, loadingPlan, subscriptionManagementLoading, fetchUserSubscription]);
+
   useEffect(() => {
     // Validate Stripe configuration
     const validation = validateStripeConfig();
@@ -104,104 +119,163 @@ const PricingPage: React.FC = () => {
       setConfigError(validation.errors.join(', '));
     }
 
-    // Fetch subscription data
+    // Initial fetch
     fetchUserSubscription();
   }, [fetchUserSubscription]);
 
-  // Set up real-time subscription updates
+  // Set up real-time subscription updates with fallback
   useEffect(() => {
     if (!authState.user) return;
 
-    // Subscribe to subscription changes for this user
-    const subscriptionChannel = supabase
-      .channel('subscription-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subscriptions',
-          filter: `user_id=eq.${authState.user.id}`,
-        },
-        async (payload) => {
-          console.log('Subscription changed:', payload);
-          
-          // Store previous subscription data for comparison
-          const previousSubscription = userSubscription;
-          
-          // Refresh subscription data when changes occur
-          await fetchUserSubscription();
-          
-          // Show notification for subscription changes
-          if (payload.eventType === 'UPDATE' && previousSubscription) {
-            const newData = payload.new as any;
-            const oldData = payload.old as any;
-            
-            // Check if this is a plan change (price_id changed)
-            if (oldData.stripe_price_id !== newData.stripe_price_id) {
-              const oldPlan = oldData.plan_name;
-              const newPlan = newData.plan_name;
-              const oldAmount = oldData.amount_cents;
-              const newAmount = newData.amount_cents;
-              
-              if (newAmount > oldAmount) {
-                // Upgrade
-                setSubscriptionNotification({
-                  type: 'upgrade',
-                  fromPlan: oldPlan,
-                  toPlan: newPlan,
-                  message: `Successfully upgraded from ${oldPlan} to ${newPlan} plan!`
-                });
-              } else if (newAmount < oldAmount) {
-                // Downgrade
-                setSubscriptionNotification({
-                  type: 'downgrade',
-                  fromPlan: oldPlan,
-                  toPlan: newPlan,
-                  message: `Successfully switched from ${oldPlan} to ${newPlan} plan!`
-                });
-              }
-              
-              // Auto-hide notification after 5 seconds
-              setTimeout(() => {
-                setSubscriptionNotification(null);
-              }, 5000);
-            }
-            
-            // Check if cancel_at_period_end changed
-            if (oldData.cancel_at_period_end !== newData.cancel_at_period_end) {
-              if (newData.cancel_at_period_end) {
-                setSubscriptionNotification({
-                  type: 'cancel',
-                  message: `Your ${newData.plan_name} subscription will be canceled at the end of the current billing period.`
-                });
-              } else {
-                setSubscriptionNotification({
-                  type: 'reactivate',
-                  message: `Your ${newData.plan_name} subscription has been reactivated!`
-                });
-              }
-              
-              // Auto-hide notification after 5 seconds
-              setTimeout(() => {
-                setSubscriptionNotification(null);
-              }, 5000);
-            }
-          }
-          
-          // Also refresh user data to ensure everything is in sync
-          await refreshUserData();
-        }
-      )
-      .subscribe();
+    let subscriptionChannel: any = null;
+    let pollCleanup: (() => void) | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
 
-    // Initial fetch
-    fetchUserSubscription();
+    const setupRealtimeSubscription = () => {
+      try {
+        console.log('Setting up real-time subscription for user:', authState.user?.id);
+        
+        // Subscribe to subscription changes for this user
+        subscriptionChannel = supabase
+          .channel(`subscription-changes-${authState.user?.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'subscriptions',
+              filter: `user_id=eq.${authState.user?.id}`,
+            },
+            async (payload) => {
+              console.log('Real-time subscription change:', payload);
+              
+              // Store previous subscription data for comparison
+              const previousSubscription = userSubscription;
+              
+              // Refresh subscription data when changes occur
+              await fetchUserSubscription(true);
+              
+              // Show notification for subscription changes
+              if (payload.eventType === 'UPDATE' && previousSubscription && payload.new && payload.old) {
+                const newData = payload.new as any;
+                const oldData = payload.old as any;
+                
+                // Check if this is a plan change (price_id changed)
+                if (oldData.stripe_price_id !== newData.stripe_price_id) {
+                  const oldPlan = oldData.plan_name;
+                  const newPlan = newData.plan_name;
+                  const oldAmount = oldData.amount_cents;
+                  const newAmount = newData.amount_cents;
+                  
+                  if (newAmount > oldAmount) {
+                    // Upgrade
+                    setSubscriptionNotification({
+                      type: 'upgrade',
+                      fromPlan: oldPlan,
+                      toPlan: newPlan,
+                      message: `Successfully upgraded from ${oldPlan} to ${newPlan} plan!`
+                    });
+                  } else if (newAmount < oldAmount) {
+                    // Downgrade
+                    setSubscriptionNotification({
+                      type: 'downgrade',
+                      fromPlan: oldPlan,
+                      toPlan: newPlan,
+                      message: `Successfully switched from ${oldPlan} to ${newPlan} plan!`
+                    });
+                  }
+                  
+                  // Auto-hide notification after 5 seconds
+                  setTimeout(() => {
+                    setSubscriptionNotification(null);
+                  }, 5000);
+                }
+                
+                // Check if cancel_at_period_end changed
+                if (oldData.cancel_at_period_end !== newData.cancel_at_period_end) {
+                  if (newData.cancel_at_period_end) {
+                    setSubscriptionNotification({
+                      type: 'cancel',
+                      message: `Your ${newData.plan_name} subscription will be canceled at the end of the current billing period.`
+                    });
+                  } else {
+                    setSubscriptionNotification({
+                      type: 'reactivate',
+                      message: `Your ${newData.plan_name} subscription has been reactivated!`
+                    });
+                  }
+                  
+                  // Auto-hide notification after 5 seconds
+                  setTimeout(() => {
+                    setSubscriptionNotification(null);
+                  }, 5000);
+                }
+              }
+              
+              // Also refresh user data to ensure everything is in sync
+              await refreshUserData();
+            }
+          )
+          .subscribe((status) => {
+            console.log('Subscription channel status:', status);
+            
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to real-time updates');
+              setRetryCount(0);
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.warn('Real-time subscription failed, falling back to polling');
+              
+              // Start polling as fallback
+              if (!pollCleanup) {
+                pollCleanup = startPolling();
+              }
+              
+              // Retry connection after a delay
+              if (retryCount < 3) {
+                reconnectTimeout = setTimeout(() => {
+                  console.log(`Retrying real-time connection (attempt ${retryCount + 1})`);
+                  setRetryCount(prev => prev + 1);
+                  setupRealtimeSubscription();
+                }, 5000 * (retryCount + 1)); // Exponential backoff
+              }
+            } else if (status === 'CLOSED') {
+              console.log('Real-time subscription closed');
+              
+              // Start polling as fallback
+              if (!pollCleanup) {
+                pollCleanup = startPolling();
+              }
+            }
+          });
+
+      } catch (error) {
+        console.error('Error setting up real-time subscription:', error);
+        
+        // Start polling as fallback
+        if (!pollCleanup) {
+          pollCleanup = startPolling();
+        }
+      }
+    };
+
+    // Initial setup
+    setupRealtimeSubscription();
+
+    // Always start polling as a backup
+    pollCleanup = startPolling();
 
     return () => {
-      supabase.removeChannel(subscriptionChannel);
+      if (subscriptionChannel) {
+        supabase.removeChannel(subscriptionChannel);
+      }
+      if (pollCleanup) {
+        pollCleanup();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
     };
-  }, [authState.user?.id, fetchUserSubscription, refreshUserData, userSubscription]);
+  }, [authState.user?.id, fetchUserSubscription, refreshUserData, startPolling, retryCount]);
 
   // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
@@ -336,6 +410,8 @@ const PricingPage: React.FC = () => {
           const result = await reactivateSubscription(userSubscription.stripe_subscription_id);
           if (result.success) {
             setSuccessMessage(result.message || 'Subscription reactivated successfully!');
+            // Refresh subscription data after a short delay
+            setTimeout(() => fetchUserSubscription(true), 1000);
           } else {
             setCheckoutError(result.error || 'Failed to reactivate subscription');
           }
@@ -360,6 +436,8 @@ const PricingPage: React.FC = () => {
           const result = await updateSubscription(userSubscription.stripe_subscription_id, plan.stripeProduct.priceId);
           if (result.success) {
             setSuccessMessage(result.message || 'Subscription updated successfully!');
+            // Refresh subscription data after a short delay to allow webhook processing
+            setTimeout(() => fetchUserSubscription(true), 2000);
           } else {
             setCheckoutError(result.error || 'Failed to update subscription');
           }
@@ -447,6 +525,8 @@ const PricingPage: React.FC = () => {
         const result = await cancelSubscription(userSubscription.stripe_subscription_id);
         if (result.success) {
           setSuccessMessage(result.message || 'Subscription canceled successfully!');
+          // Refresh subscription data after a short delay
+          setTimeout(() => fetchUserSubscription(true), 1000);
         } else {
           setCheckoutError(result.error || 'Failed to cancel subscription');
         }
