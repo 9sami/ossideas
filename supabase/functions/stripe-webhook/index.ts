@@ -62,7 +62,7 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
-  console.log(`Processing event: ${event.type}`);
+  console.log(`Processing event: ${event.type} - ${event.id}`);
 
   try {
     switch (event.type) {
@@ -71,19 +71,27 @@ async function handleEvent(event: Stripe.Event) {
         break;
       
       case 'customer.subscription.created':
+        console.log('Subscription created event');
+        await handleSubscriptionEvent(stripeData as Stripe.Subscription, 'created');
+        break;
+        
       case 'customer.subscription.updated':
-        await handleSubscriptionEvent(stripeData as Stripe.Subscription);
+        console.log('Subscription updated event');
+        await handleSubscriptionEvent(stripeData as Stripe.Subscription, 'updated');
         break;
       
       case 'customer.subscription.deleted':
+        console.log('Subscription deleted event');
         await handleSubscriptionDeleted(stripeData as Stripe.Subscription);
         break;
       
       case 'invoice.payment_succeeded':
+        console.log('Invoice payment succeeded');
         await handleInvoicePaymentSucceeded(stripeData as Stripe.Invoice);
         break;
       
       case 'invoice.payment_failed':
+        console.log('Invoice payment failed');
         await handleInvoicePaymentFailed(stripeData as Stripe.Invoice);
         break;
       
@@ -100,18 +108,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   if (session.mode === 'subscription' && session.subscription) {
     console.log(`Processing subscription checkout session: ${session.id}`);
     
-    // Fetch the full subscription object
+    // Fetch the full subscription object with expanded data
     const subscription = await stripe.subscriptions.retrieve(session.subscription as string, {
-      expand: ['default_payment_method', 'items.data.price']
+      expand: ['default_payment_method', 'items.data.price', 'items.data.price.product']
     });
     
-    await syncSubscriptionToDatabase(subscription);
+    await syncSubscriptionToDatabase(subscription, 'checkout_completed');
   }
 }
 
-async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
-  console.log(`Processing subscription event for: ${subscription.id}`);
-  await syncSubscriptionToDatabase(subscription);
+async function handleSubscriptionEvent(subscription: Stripe.Subscription, eventType: string) {
+  console.log(`Processing subscription ${eventType} for: ${subscription.id}`);
+  
+  // Always fetch the latest subscription data with expanded fields
+  const fullSubscription = await stripe.subscriptions.retrieve(subscription.id, {
+    expand: ['default_payment_method', 'items.data.price', 'items.data.price.product']
+  });
+  
+  await syncSubscriptionToDatabase(fullSubscription, eventType);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -161,10 +175,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     
     // Fetch the subscription and sync to ensure payment method is updated
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string, {
-      expand: ['default_payment_method']
+      expand: ['default_payment_method', 'items.data.price', 'items.data.price.product']
     });
     
-    await syncSubscriptionToDatabase(subscription);
+    await syncSubscriptionToDatabase(subscription, 'payment_succeeded');
   }
 }
 
@@ -173,13 +187,18 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     console.log(`Processing failed payment for subscription: ${invoice.subscription}`);
     
     // Fetch the subscription to get updated status
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-    await syncSubscriptionToDatabase(subscription);
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string, {
+      expand: ['default_payment_method', 'items.data.price', 'items.data.price.product']
+    });
+    
+    await syncSubscriptionToDatabase(subscription, 'payment_failed');
   }
 }
 
-async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
+async function syncSubscriptionToDatabase(subscription: Stripe.Subscription, eventContext: string) {
   try {
+    console.log(`Syncing subscription ${subscription.id} to database (context: ${eventContext})`);
+    
     const customerId = subscription.customer as string;
     
     // Get user_id from stripe_customers table
@@ -202,8 +221,9 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
     }
 
     const price = subscriptionItem.price;
+    console.log(`Processing subscription with price: ${price.id}, amount: ${price.unit_amount}`);
     
-    // Extract plan information from price metadata or product
+    // Extract plan information from price metadata or determine from amount
     let planName = 'Basic';
     let planInterval = 'month';
     
@@ -215,7 +235,7 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
     } else {
       // Fallback: determine from price amount
       const amount = price.unit_amount || 0;
-      if (amount >= 2000) {
+      if (amount >= 2000) { // $20.00 or more
         planName = 'Pro';
       } else {
         planName = 'Basic';
@@ -225,6 +245,8 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
     if (price.recurring?.interval) {
       planInterval = price.recurring.interval;
     }
+
+    console.log(`Determined plan: ${planName}, interval: ${planInterval}`);
 
     // Get payment method details
     let paymentMethodBrand: string | null = null;
@@ -257,10 +279,18 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
       updated_at: new Date().toISOString()
     };
 
+    console.log(`Subscription data to sync:`, {
+      subscription_id: subscriptionData.stripe_subscription_id,
+      price_id: subscriptionData.stripe_price_id,
+      plan_name: subscriptionData.plan_name,
+      status: subscriptionData.status,
+      amount_cents: subscriptionData.amount_cents
+    });
+
     // Check if this subscription already exists in our database
     const { data: existingSubscription, error: checkError } = await supabase
       .from('subscriptions')
-      .select('id, stripe_subscription_id')
+      .select('id, stripe_subscription_id, stripe_price_id, plan_name, status')
       .eq('stripe_subscription_id', subscription.id)
       .maybeSingle();
 
@@ -270,6 +300,13 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
     }
 
     if (existingSubscription) {
+      console.log(`Updating existing subscription: ${subscription.id}`);
+      console.log(`Previous data:`, {
+        price_id: existingSubscription.stripe_price_id,
+        plan_name: existingSubscription.plan_name,
+        status: existingSubscription.status
+      });
+      
       // Update existing subscription
       const { error: updateError } = await supabase
         .from('subscriptions')
@@ -281,8 +318,10 @@ async function syncSubscriptionToDatabase(subscription: Stripe.Subscription) {
         throw new Error(`Failed to update subscription: ${updateError.message}`);
       }
 
-      console.log(`Successfully updated existing subscription: ${subscription.id} for user: ${customerData.user_id}`);
+      console.log(`Successfully updated subscription: ${subscription.id} for user: ${customerData.user_id}`);
     } else {
+      console.log(`Creating new subscription: ${subscription.id}`);
+      
       // This is a new subscription
       // First, cancel any existing active subscriptions for this user to prevent multiple active subscriptions
       const { error: cancelError } = await supabase

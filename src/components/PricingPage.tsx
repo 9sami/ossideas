@@ -207,41 +207,31 @@ const PricingPage: React.FC = () => {
       return `Start ${product.name} Plan`;
     }
 
-    // Check if this is the current plan
-    if (subscription.plan_name === product.name && subscription.plan_interval === product.interval) {
+    // Check if this is the current plan (match by price ID for accuracy)
+    if (subscription.stripe_price_id === product.priceId) {
       if (subscription.cancel_at_period_end) {
         return 'Reactivate Plan';
       }
       return 'Current Plan';
     }
 
-    // Check if it's an upgrade or downgrade
-    const currentPlanValue = getPlanValue(subscription.plan_name);
-    const targetPlanValue = getPlanValue(product.name);
+    // Check if it's an upgrade or downgrade based on price
+    const currentPlanPrice = subscription.amount_cents;
+    const targetPlanPrice = product.price;
 
-    if (targetPlanValue > currentPlanValue) {
+    if (targetPlanPrice > currentPlanPrice) {
       return `Upgrade to ${product.name}`;
-    } else if (targetPlanValue < currentPlanValue) {
-      return `Switch to ${product.name}`;
+    } else if (targetPlanPrice < currentPlanPrice) {
+      return `Downgrade to ${product.name}`;
     } else {
-      // Same plan, different interval
+      // Same price, different interval
       return `Switch to ${product.interval}ly`;
     }
   }
 
-  function getPlanValue(planName: string): number {
-    switch (planName.toLowerCase()) {
-      case 'basic': return 1;
-      case 'pro': return 2;
-      case 'enterprise': return 3;
-      default: return 0;
-    }
-  }
-
   function isCurrentPlan(plan: PricingPlan): boolean {
-    if (!userSubscription) return false;
-    return userSubscription.plan_name === plan.name && 
-           userSubscription.plan_interval === plan.period;
+    if (!userSubscription || !plan.stripeProduct) return false;
+    return userSubscription.stripe_price_id === plan.stripeProduct.priceId;
   }
 
   const handleSubscribe = async (plan: PricingPlan) => {
@@ -268,7 +258,7 @@ const PricingPage: React.FC = () => {
 
     // If user has an active subscription, handle plan changes
     if (userSubscription && userSubscription.is_active) {
-      // If this is the current plan and not canceled, handle reactivation
+      // If this is the current plan and canceled, handle reactivation
       if (isCurrentPlan(plan) && userSubscription.cancel_at_period_end) {
         setLoadingPlan(plan.id);
         try {
@@ -295,6 +285,7 @@ const PricingPage: React.FC = () => {
       if (!isCurrentPlan(plan)) {
         setLoadingPlan(plan.id);
         try {
+          console.log(`Updating subscription from ${userSubscription.stripe_price_id} to ${plan.stripeProduct.priceId}`);
           const result = await updateSubscription(userSubscription.stripe_subscription_id, plan.stripeProduct.priceId);
           if (result.success) {
             setSuccessMessage(result.message || 'Subscription updated successfully!');
@@ -302,6 +293,7 @@ const PricingPage: React.FC = () => {
             setCheckoutError(result.error || 'Failed to update subscription');
           }
         } catch (error) {
+          console.error('Error updating subscription:', error);
           setCheckoutError('Failed to update subscription');
         } finally {
           setLoadingPlan(null);

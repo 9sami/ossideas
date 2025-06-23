@@ -106,33 +106,60 @@ async function handleUpdateSubscription(userId: string, subscriptionId: string, 
 
     console.log(`Updating subscription ${subscriptionId} from ${subscription.stripe_price_id} to ${newPriceId}`);
 
-    // Get the current subscription from Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    // Get the current subscription from Stripe with expanded items
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['items.data.price']
+    });
 
     if (!stripeSubscription) {
       return corsResponse({ error: 'Subscription not found in Stripe' }, 404);
     }
 
-    // Update the subscription in Stripe
+    if (!stripeSubscription.items.data || stripeSubscription.items.data.length === 0) {
+      return corsResponse({ error: 'No subscription items found' }, 400);
+    }
+
+    // Get the current subscription item
+    const currentItem = stripeSubscription.items.data[0];
+    
+    console.log(`Current subscription item: ${currentItem.id}, price: ${currentItem.price.id}`);
+    console.log(`Updating to new price: ${newPriceId}`);
+
+    // Update the subscription using the correct Stripe API method
+    // This is the proper way according to Stripe docs
     const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
       items: [{
-        id: stripeSubscription.items.data[0].id,
+        id: currentItem.id,
         price: newPriceId,
       }],
       proration_behavior: 'create_prorations', // This will prorate the charges
+      expand: ['latest_invoice', 'items.data.price']
     });
 
     console.log(`Successfully updated subscription ${subscriptionId} in Stripe`);
+    console.log(`New subscription status: ${updatedSubscription.status}`);
+    console.log(`New price ID: ${updatedSubscription.items.data[0].price.id}`);
 
+    // The webhook will handle updating our database, but let's also return the updated info
     return corsResponse({
       success: true,
       subscription_id: updatedSubscription.id,
+      new_price_id: updatedSubscription.items.data[0].price.id,
+      status: updatedSubscription.status,
+      current_period_end: updatedSubscription.current_period_end,
       message: 'Subscription updated successfully. Changes will be reflected shortly.'
     });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`Error updating subscription: ${errorMessage}`);
+    
+    // Log more details for debugging
+    if (error instanceof Error && 'type' in error) {
+      console.error(`Stripe error type: ${(error as any).type}`);
+      console.error(`Stripe error code: ${(error as any).code}`);
+    }
+    
     return corsResponse({ error: `Failed to update subscription: ${errorMessage}` }, 500);
   }
 }
