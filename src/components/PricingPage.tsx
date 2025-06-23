@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X } from 'lucide-react';
+import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { supabase } from '../lib/supabase';
@@ -44,6 +44,13 @@ interface PricingPlan {
   iconColor: string;
 }
 
+interface SubscriptionNotification {
+  type: 'upgrade' | 'downgrade' | 'reactivate' | 'cancel';
+  fromPlan?: string;
+  toPlan?: string;
+  message: string;
+}
+
 const PricingPage: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
@@ -51,6 +58,7 @@ const PricingPage: React.FC = () => {
   const [configError, setConfigError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [subscriptionNotification, setSubscriptionNotification] = useState<SubscriptionNotification | null>(null);
   const { authState, refreshUserData } = useAuth();
   const { updateSubscription, cancelSubscription, reactivateSubscription, loading: subscriptionManagementLoading } = useSubscriptionManagement();
 
@@ -117,8 +125,70 @@ const PricingPage: React.FC = () => {
         },
         async (payload) => {
           console.log('Subscription changed:', payload);
+          
+          // Store previous subscription data for comparison
+          const previousSubscription = userSubscription;
+          
           // Refresh subscription data when changes occur
           await fetchUserSubscription();
+          
+          // Show notification for subscription changes
+          if (payload.eventType === 'UPDATE' && previousSubscription) {
+            const newData = payload.new as any;
+            const oldData = payload.old as any;
+            
+            // Check if this is a plan change (price_id changed)
+            if (oldData.stripe_price_id !== newData.stripe_price_id) {
+              const oldPlan = oldData.plan_name;
+              const newPlan = newData.plan_name;
+              const oldAmount = oldData.amount_cents;
+              const newAmount = newData.amount_cents;
+              
+              if (newAmount > oldAmount) {
+                // Upgrade
+                setSubscriptionNotification({
+                  type: 'upgrade',
+                  fromPlan: oldPlan,
+                  toPlan: newPlan,
+                  message: `Successfully upgraded from ${oldPlan} to ${newPlan} plan!`
+                });
+              } else if (newAmount < oldAmount) {
+                // Downgrade
+                setSubscriptionNotification({
+                  type: 'downgrade',
+                  fromPlan: oldPlan,
+                  toPlan: newPlan,
+                  message: `Successfully switched from ${oldPlan} to ${newPlan} plan!`
+                });
+              }
+              
+              // Auto-hide notification after 5 seconds
+              setTimeout(() => {
+                setSubscriptionNotification(null);
+              }, 5000);
+            }
+            
+            // Check if cancel_at_period_end changed
+            if (oldData.cancel_at_period_end !== newData.cancel_at_period_end) {
+              if (newData.cancel_at_period_end) {
+                setSubscriptionNotification({
+                  type: 'cancel',
+                  message: `Your ${newData.plan_name} subscription will be canceled at the end of the current billing period.`
+                });
+              } else {
+                setSubscriptionNotification({
+                  type: 'reactivate',
+                  message: `Your ${newData.plan_name} subscription has been reactivated!`
+                });
+              }
+              
+              // Auto-hide notification after 5 seconds
+              setTimeout(() => {
+                setSubscriptionNotification(null);
+              }, 5000);
+            }
+          }
+          
           // Also refresh user data to ensure everything is in sync
           await refreshUserData();
         }
@@ -131,7 +201,7 @@ const PricingPage: React.FC = () => {
     return () => {
       supabase.removeChannel(subscriptionChannel);
     };
-  }, [authState.user?.id, fetchUserSubscription, refreshUserData]);
+  }, [authState.user?.id, fetchUserSubscription, refreshUserData, userSubscription]);
 
   // Get subscription products
   const subscriptionProducts = getSubscriptionProducts();
@@ -255,6 +325,7 @@ const PricingPage: React.FC = () => {
     // Clear any previous messages
     setCheckoutError(null);
     setSuccessMessage(null);
+    setSubscriptionNotification(null);
 
     // If user has an active subscription, handle plan changes
     if (userSubscription && userSubscription.is_active) {
@@ -436,9 +507,66 @@ const PricingPage: React.FC = () => {
     }
   };
 
+  const getNotificationIcon = (type: SubscriptionNotification['type']) => {
+    switch (type) {
+      case 'upgrade':
+        return TrendingUp;
+      case 'downgrade':
+        return TrendingDown;
+      case 'reactivate':
+        return Check;
+      case 'cancel':
+        return AlertCircle;
+      default:
+        return Check;
+    }
+  };
+
+  const getNotificationColor = (type: SubscriptionNotification['type']) => {
+    switch (type) {
+      case 'upgrade':
+        return 'bg-green-50 border-green-200 text-green-800';
+      case 'downgrade':
+        return 'bg-blue-50 border-blue-200 text-blue-800';
+      case 'reactivate':
+        return 'bg-green-50 border-green-200 text-green-800';
+      case 'cancel':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      default:
+        return 'bg-green-50 border-green-200 text-green-800';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Subscription Change Notification */}
+        {subscriptionNotification && (
+          <div className={`border rounded-lg p-4 mb-8 max-w-4xl mx-auto ${getNotificationColor(subscriptionNotification.type)}`}>
+            <div className="flex items-start space-x-3">
+              {(() => {
+                const Icon = getNotificationIcon(subscriptionNotification.type);
+                return <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />;
+              })()}
+              <div className="flex-1">
+                <h3 className="text-sm font-medium">
+                  {subscriptionNotification.type === 'upgrade' && 'Plan Upgraded!'}
+                  {subscriptionNotification.type === 'downgrade' && 'Plan Changed!'}
+                  {subscriptionNotification.type === 'reactivate' && 'Subscription Reactivated!'}
+                  {subscriptionNotification.type === 'cancel' && 'Subscription Canceled'}
+                </h3>
+                <p className="text-sm mt-1">{subscriptionNotification.message}</p>
+              </div>
+              <button
+                onClick={() => setSubscriptionNotification(null)}
+                className="text-current hover:opacity-70"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Configuration Error Alert */}
         {configError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
