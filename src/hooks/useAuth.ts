@@ -12,6 +12,7 @@ const AuthContext = createContext<{
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
   completeOnboarding: (data: OnboardingData) => Promise<{ success: boolean; error?: string }>;
+  refreshUserData: () => Promise<void>;
 } | null>(null);
 
 export const useAuth = () => {
@@ -144,6 +145,28 @@ export const useAuthLogic = () => {
       
       console.error('Error converting user:', error);
       return null;
+    }
+  };
+
+  // Refresh user data function
+  const refreshUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user && user.email_confirmed_at) {
+        const updatedUser = await convertSupabaseUser(user);
+        if (updatedUser) {
+          const isOnboarded = await checkIfOnboarded(updatedUser);
+          setAuthState(prev => ({ 
+            ...prev, 
+            user: updatedUser,
+            onboardingRequired: !isOnboarded,
+            error: null
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
     }
   };
 
@@ -650,6 +673,7 @@ export const useAuthLogic = () => {
     logout,
     getCurrentUser,
     completeOnboarding,
+    refreshUserData,
   };
 };
 
