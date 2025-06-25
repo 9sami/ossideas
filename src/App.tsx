@@ -93,6 +93,16 @@ const AppContent: React.FC = () => {
     if (view === 'home') {
       setSelectedIdea(null);
     }
+    // Close sidebar when navigating
+    setSidebarOpen(false);
+  };
+
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false);
   };
 
   return (
@@ -113,13 +123,15 @@ const AppContent: React.FC = () => {
       <div className="flex">
         <Sidebar 
           isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          onToggle={handleSidebarToggle}
+          onClose={handleCloseSidebar}
           currentView={currentView}
           onNavigate={handleNavigate}
           onHomeClick={handleBackToHome}
         />
         
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        {/* Main content - no margin adjustments, sidebar overlays */}
+        <main className="flex-1">
           {currentView === 'home' && (
             <MainContent 
               searchQuery={searchQuery}

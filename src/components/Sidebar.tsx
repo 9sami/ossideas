@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   Home, 
   Grid3X3, 
@@ -14,6 +14,7 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onClose: () => void;
   currentView: string;
   onNavigate: (view: 'home' | 'detail' | 'profile' | 'pricing') => void;
   onHomeClick: () => void;
@@ -22,10 +23,13 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
+  onClose,
   currentView,
   onNavigate,
   onHomeClick
 }) => {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
   const menuItems = [
     { id: 'home', icon: Home, label: 'Home', onClick: onHomeClick },
     { id: 'categories', icon: Grid3X3, label: 'Categories', onClick: () => {} },
@@ -36,22 +40,54 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'settings', icon: Settings, label: 'Settings', onClick: () => {} },
   ];
 
+  // Handle click outside to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle escape key to close sidebar
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Overlay - appears when sidebar is open */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onToggle}
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-50 ${
-        isOpen ? 'w-64' : 'w-16'
-      }`}>
+      <div 
+        ref={sidebarRef}
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-50 ${
+          isOpen ? 'w-64' : 'w-16'
+        }`}
+      >
         {/* Toggle Button */}
-        <div className="p-4 border-b border-gray-200">
+        <div className={`border-b border-gray-200 ${isOpen ? 'p-4' : 'p-2 flex justify-center'}`}>
           <button
             onClick={onToggle}
             className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
@@ -62,7 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav className="p-4 space-y-2">
+        <nav className={`space-y-1 ${isOpen ? 'p-4' : 'p-2'}`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -71,7 +107,11 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div key={item.id} className="relative group">
                 <button
                   onClick={item.onClick}
-                  className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors relative ${
+                  className={`w-full flex items-center rounded-lg transition-colors relative ${
+                    isOpen 
+                      ? 'space-x-3 p-3' 
+                      : 'p-3 justify-center'
+                  } ${
                     isActive
                       ? 'bg-orange-50 text-orange-600 border border-orange-200'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
@@ -81,16 +121,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                   
                   {/* Label - only show when sidebar is open */}
                   {isOpen && (
-                    <span className="font-medium truncate">
-                      {item.label}
-                    </span>
-                  )}
-                  
-                  {/* Pro Badge - only show when sidebar is open */}
-                  {isOpen && item.premium && (
-                    <span className="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
-                      Pro
-                    </span>
+                    <>
+                      <span className="font-medium truncate">
+                        {item.label}
+                      </span>
+                      
+                      {/* Pro Badge - only show when sidebar is open */}
+                      {item.premium && (
+                        <span className="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                          Pro
+                        </span>
+                      )}
+                    </>
                   )}
                 </button>
                 
