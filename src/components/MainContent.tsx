@@ -9,13 +9,15 @@ interface MainContentProps {
   filterOpen: boolean;
   onIdeaSelect: (idea: IdeaData) => void;
   isLoggedIn: boolean;
+  onRegisterClick: () => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
   searchQuery,
   filterOpen,
   onIdeaSelect,
-  isLoggedIn
+  isLoggedIn,
+  onRegisterClick
 }) => {
   const [filters, setFilters] = useState<FilterOptions>({
     categories: [],
@@ -97,7 +99,10 @@ const MainContent: React.FC<MainContentProps> = ({
               <p className="text-sm text-orange-800 mb-2">
                 Get personalized recommendations
               </p>
-              <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+              <button 
+                onClick={onRegisterClick}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+              >
                 Sign Up Free
               </button>
             </div>

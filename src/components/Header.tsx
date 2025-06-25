@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Filter, User, Menu, LogIn, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, User, Menu, LogIn, LogOut, Crown } from 'lucide-react';
+import { User as UserType } from '../types/auth';
+import { supabase } from '../lib/supabase';
 
 interface HeaderProps {
   searchQuery: string;
@@ -9,7 +11,9 @@ interface HeaderProps {
   onProfileClick: () => void;
   onLogoClick: () => void;
   isLoggedIn: boolean;
-  onLoginToggle: () => void;
+  onLoginClick: () => void;
+  onLogoutClick: () => void;
+  user: UserType | null;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -20,12 +24,86 @@ const Header: React.FC<HeaderProps> = ({
   onProfileClick,
   onLogoClick,
   isLoggedIn,
-  onLoginToggle
+  onLoginClick,
+  onLogoutClick,
+  user
 }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
+
+  const fetchUserSubscription = useCallback(async () => {
+    if (!user) {
+      setUserSubscription(null);
+      return;
+    }
+
+    try {
+      // Get the most recent active subscription for this user
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        setUserSubscription(null);
+        return;
+      }
+
+      setUserSubscription(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      setUserSubscription(null);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchUserSubscription();
+  }, [fetchUserSubscription]);
+
+  // Set up real-time subscription updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to subscription changes for this user
+    const subscriptionChannel = supabase
+      .channel('header-subscription-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Header: Subscription changed:', payload);
+          // Refresh subscription data when changes occur
+          fetchUserSubscription();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel);
+    };
+  }, [user?.id, fetchUserSubscription]);
+
+  const getSubscriptionStatus = () => {
+    if (!userSubscription) return null;
+    
+    const status = userSubscription.status;
+    if (status === 'active' || status === 'trialing') {
+      return userSubscription.plan_name;
+    }
+    return null;
+  };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -72,17 +150,48 @@ const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Profile/Login */}
-            {isLoggedIn ? (
+            {isLoggedIn && user ? (
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+                  className="flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
                 >
-                  <User className="h-5 w-5" />
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.fullName || user.email}
+                      className="h-6 w-6 rounded-full"
+                    />
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium">
+                      {user.fullName || user.email.split('@')[0]}
+                    </div>
+                    {getSubscriptionStatus() && (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <Crown className="h-3 w-3 mr-1" />
+                        {getSubscriptionStatus()}
+                      </div>
+                    )}
+                  </div>
                 </button>
                 
                 {profileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user.fullName || 'User'}
+                      </p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                      {getSubscriptionStatus() && (
+                        <div className="flex items-center text-xs text-orange-600 mt-1">
+                          <Crown className="h-3 w-3 mr-1" />
+                          {getSubscriptionStatus()} Plan
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() => {
                         onProfileClick();
@@ -114,7 +223,7 @@ const Header: React.FC<HeaderProps> = ({
                     <hr className="my-1" />
                     <button
                       onClick={() => {
-                        onLoginToggle();
+                        onLogoutClick();
                         setProfileDropdownOpen(false);
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -127,7 +236,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             ) : (
               <button
-                onClick={onLoginToggle}
+                onClick={onLoginClick}
                 className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
                 <LogIn className="h-4 w-4" />
