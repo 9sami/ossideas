@@ -130,8 +130,8 @@ const AppContent: React.FC = () => {
           onHomeClick={handleBackToHome}
         />
         
-        {/* Main content - no margin adjustments, sidebar overlays */}
-        <main className="flex-1">
+        {/* Main content with left margin to account for closed sidebar */}
+        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-16'}`}>
           {currentView === 'home' && (
             <MainContent 
               searchQuery={searchQuery}

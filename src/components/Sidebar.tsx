@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'settings', icon: Settings, label: 'Settings', onClick: () => {} },
   ];
 
-  // Handle click outside to close sidebar
+  // Handle click outside to close sidebar when open
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Overlay - appears when sidebar is open */}
+      {/* Overlay - only appears when sidebar is open */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -82,23 +82,25 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-50 ${
-          isOpen ? 'w-64' : 'w-16'
+        className={`fixed left-0 top-0 transition-all duration-300 z-50 bg-white border-r border-gray-200 ${
+          isOpen ? 'w-64 h-full' : 'w-16 h-full'
         }`}
       >
-        {/* Toggle Button */}
-        <div className={`border-b border-gray-200 ${isOpen ? 'p-4' : 'p-2 flex justify-center'}`}>
-          <button
-            onClick={onToggle}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
-            title={isOpen ? 'Close sidebar' : 'Open sidebar'}
-          >
-            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+        {/* Header spacer to account for fixed header */}
+        <div className="h-16 border-b border-gray-200 flex items-center">
+          <div className={`${isOpen ? 'p-4' : 'p-2 flex justify-center'} w-full`}>
+            <button
+              onClick={onToggle}
+              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+              title={isOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {/* Navigation Items */}
-        <nav className={`space-y-1 ${isOpen ? 'p-4' : 'p-2'}`}>
+        <nav className={`space-y-1 ${isOpen ? 'p-4' : 'p-2'} h-[calc(100vh-4rem)] overflow-y-auto`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
