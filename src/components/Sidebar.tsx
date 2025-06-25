@@ -55,6 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onToggle}
             className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+            title={isOpen ? 'Close sidebar' : 'Open sidebar'}
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -67,35 +68,46 @@ const Sidebar: React.FC<SidebarProps> = ({
             const isActive = currentView === item.id;
             
             return (
-              <button
-                key={item.id}
-                onClick={item.onClick}
-                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors group relative ${
-                  isActive
-                    ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
-                }`}
-                title={!isOpen ? item.label : undefined}
-              >
-                <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
-                {isOpen && (
-                  <span className="font-medium">
-                    {item.label}
-                    {item.premium && (
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full">
-                        Pro
-                      </span>
-                    )}
-                  </span>
-                )}
+              <div key={item.id} className="relative group">
+                <button
+                  onClick={item.onClick}
+                  className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors relative ${
+                    isActive
+                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-orange-500' : ''}`} />
+                  
+                  {/* Label - only show when sidebar is open */}
+                  {isOpen && (
+                    <span className="font-medium truncate">
+                      {item.label}
+                    </span>
+                  )}
+                  
+                  {/* Pro Badge - only show when sidebar is open */}
+                  {isOpen && item.premium && (
+                    <span className="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                      Pro
+                    </span>
+                  )}
+                </button>
                 
                 {/* Tooltip for closed state */}
                 {!isOpen && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                     {item.label}
+                    {item.premium && (
+                      <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded">
+                        Pro
+                      </span>
+                    )}
+                    {/* Tooltip arrow */}
+                    <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
