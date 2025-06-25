@@ -71,10 +71,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Overlay - only appears when sidebar is open */}
+      {/* Overlay - covers everything including sticky headers */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50"
           onClick={onClose}
         />
       )}
@@ -138,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     )}
                   </button>
                   
-                  {/* Tooltip for closed state */}
+                  {/* Tooltip for closed state - NO ARROW */}
                   {!isOpen && (
                     <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                       {item.label}
@@ -147,8 +147,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                           Pro
                         </span>
                       )}
-                      {/* Tooltip arrow */}
-                      <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                     </div>
                   )}
                 </div>
