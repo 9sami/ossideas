@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Header spacer to account for fixed header */}
         <div className="h-16 border-b border-gray-200 flex items-center">
-          <div className={`${isOpen ? 'p-4' : 'p-2 flex justify-center'} w-full`}>
+          <div className={`${isOpen ? 'px-4' : 'px-2'} w-full flex ${isOpen ? 'justify-start' : 'justify-center'}`}>
             <button
               onClick={onToggle}
               className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
@@ -100,60 +100,62 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav className={`space-y-1 ${isOpen ? 'p-4' : 'p-2'} h-[calc(100vh-4rem)] overflow-y-auto`}>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            
-            return (
-              <div key={item.id} className="relative group">
-                <button
-                  onClick={item.onClick}
-                  className={`w-full flex items-center rounded-lg transition-colors relative ${
-                    isOpen 
-                      ? 'space-x-3 p-3' 
-                      : 'p-3 justify-center'
-                  } ${
-                    isActive
-                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
-                  }`}
-                >
-                  <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-orange-500' : ''}`} />
+        <nav className={`${isOpen ? 'px-4 py-4' : 'px-2 py-4'} h-[calc(100vh-4rem)] overflow-y-auto`}>
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              
+              return (
+                <div key={item.id} className="relative group">
+                  <button
+                    onClick={item.onClick}
+                    className={`w-full flex items-center py-3 rounded-lg transition-colors relative ${
+                      isOpen 
+                        ? 'px-3 space-x-3' 
+                        : 'px-3 justify-center'
+                    } ${
+                      isActive
+                        ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-orange-500' : ''}`} />
+                    
+                    {/* Label - only show when sidebar is open */}
+                    {isOpen && (
+                      <>
+                        <span className="font-medium truncate">
+                          {item.label}
+                        </span>
+                        
+                        {/* Pro Badge - only show when sidebar is open */}
+                        {item.premium && (
+                          <span className="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                            Pro
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </button>
                   
-                  {/* Label - only show when sidebar is open */}
-                  {isOpen && (
-                    <>
-                      <span className="font-medium truncate">
-                        {item.label}
-                      </span>
-                      
-                      {/* Pro Badge - only show when sidebar is open */}
+                  {/* Tooltip for closed state */}
+                  {!isOpen && (
+                    <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                      {item.label}
                       {item.premium && (
-                        <span className="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded">
                           Pro
                         </span>
                       )}
-                    </>
+                      {/* Tooltip arrow */}
+                      <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
                   )}
-                </button>
-                
-                {/* Tooltip for closed state */}
-                {!isOpen && (
-                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                    {item.label}
-                    {item.premium && (
-                      <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded">
-                        Pro
-                      </span>
-                    )}
-                    {/* Tooltip arrow */}
-                    <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
         </nav>
       </div>
     </>
