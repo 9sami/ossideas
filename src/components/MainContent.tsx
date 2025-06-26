@@ -152,7 +152,7 @@ const MainContent: React.FC<MainContentProps> = ({
       {/* Main Content */}
       <div className="p-6 pt-5">
         {/*Built with bolt */}
-        <div className="">
+        <div className="pb-2">
           <a
             href="https://bolt.new"
             target="_blank"
