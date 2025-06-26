@@ -3,7 +3,7 @@ import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
 import { IdeaData, FilterOptions } from '../types';
 import { mockIdeas } from '../data/mockData';
-import { Heart, Zap, ExternalLink } from 'lucide-react''
+import { Heart, Zap, ExternalLink } from 'lucide-react';
 interface MainContentProps {
   searchQuery: string;
   filterOpen: boolean;
