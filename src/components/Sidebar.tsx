@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-2">
             <button
               onClick={onToggle}
-              className="p-4 rounded-lg flex items-center text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+              className="rounded-lg flex items-center text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
               title={isOpen ? 'Close sidebar' : 'Open sidebar'}
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
