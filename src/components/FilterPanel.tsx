@@ -175,7 +175,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">⚡</span>
                   Opportunity Score
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3  max-h-64">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded">{filters.opportunityScore[0]}</span>
                     <span className="text-xs text-gray-500">to</span>
