@@ -168,7 +168,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             </div>
 
             {/* Opportunity Score & License */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="space-y-4">
               {/* Opportunity Score */}
               <div className="border border-orange-200 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
