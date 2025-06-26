@@ -124,6 +124,7 @@ const AppContent: React.FC = () => {
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
+        currentView={currentView} // Pass currentView to Header
       />
       
       <div className="flex">
