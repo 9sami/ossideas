@@ -101,16 +101,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Header spacer to account for fixed header */}
-        <div className="h-16 border-b border-gray-200 flex items-center">
-          <div className="px-2">
-            <button
-              onClick={onToggle}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
-              title={isOpen ? 'Close sidebar' : 'Open sidebar'}
-            >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
+        <div className="h-16 border-b border-gray-200 flex items-center justify-center">
+          <button
+            onClick={onToggle}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+            title={isOpen ? 'Close sidebar' : 'Open sidebar'}
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -124,34 +122,32 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative px-2 ${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
                     }`}
                   >
-                    {/* Icon container - fixed position and size */}
-                    <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                    {/* Icon container - always centered in the first 12 units */}
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
-                    {/* Label container - only visible when open, positioned absolutely to not affect icon */}
-                    <div 
-                      className={`absolute left-12 right-3 flex items-center justify-between transition-opacity duration-300 ${
-                        isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                      }`}
-                    >
-                      <span className="font-medium truncate">
-                        {item.label}
-                      </span>
-                      
-                      {/* Pro Badge */}
-                      {item.premium && (
-                        <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
-                          Pro
+                    {/* Label container - only visible when open */}
+                    {isOpen && (
+                      <div className="flex items-center justify-between flex-1 ml-3 min-w-0">
+                        <span className="font-medium truncate">
+                          {item.label}
                         </span>
-                      )}
-                    </div>
+                        
+                        {/* Pro Badge */}
+                        {item.premium && (
+                          <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </button>
                   
                   {/* Tooltip for closed state */}
