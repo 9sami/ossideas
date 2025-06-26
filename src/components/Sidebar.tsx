@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-16 h-12 flex items-center rounded-lg transition-colors relative ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative ${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
@@ -170,6 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           Pro
                         </span>
                       )}
+                      {/* Tooltip arrow */}
                       <div 
                         className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"
                       />
