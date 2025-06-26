@@ -151,7 +151,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">📂</span>
                   Categories
                 </h4>
-                <div className="grid grid-cols-1 gap-2 overflow-y-auto custom-scrollbar relative  max-h-64">
+                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto custom-scrollbar relative">
                   {categories.map((category) => (
                     <label key={category} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
@@ -232,12 +232,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
 
             {/* Special Filters */}
             <div className="lg:col-span-3">
-              <div className="border border-orange-200 rounded-xl p-4 bg-white">
+              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">⭐</span>
                   Special Filters
                 </h4>
-                <div className="space-y-3 max-h-64">
+                <div className="space-y-3">
                   <label className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
                     <input
                       type="checkbox"
