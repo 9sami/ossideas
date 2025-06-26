@@ -214,7 +214,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">📄</span>
                   License Type
                 </h4>
-                <div className="grid grid-cols-2 gap-2  max-h-full">
+                <div className="grid grid-cols-2 gap-2 max-h-full">
                   {licenses.map((license) => (
                     <label key={license} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
