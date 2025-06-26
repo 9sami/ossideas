@@ -11,6 +11,7 @@ import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
+import Footer from './components/Footer';
 import { useAuth } from './hooks/useAuth';
 import { IdeaData } from './types';
 
@@ -116,7 +117,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -131,7 +132,7 @@ const AppContent: React.FC = () => {
         currentView={currentView} // Pass currentView to Header
       />
       
-      <div className="flex">
+      <div className="flex flex-1">
         <Sidebar 
           isOpen={sidebarOpen}
           onToggle={handleSidebarToggle}
@@ -142,37 +143,42 @@ const AppContent: React.FC = () => {
         />
         
         {/* Main content with constant left margin for closed sidebar width */}
-        <main className="flex-1 ml-16">
-          {currentView === 'home' && (
-            <MainContent 
-              searchQuery={searchQuery}
-              filterOpen={filterOpen}
-              onIdeaSelect={handleIdeaSelect}
-              isLoggedIn={isLoggedIn}
-              onRegisterClick={handleRegisterClick}
-              onFilterToggle={handleFilterToggle}
-            />
-          )}
-          
-          {currentView === 'detail' && selectedIdea && (
-            <IdeaDetail 
-              idea={selectedIdea}
-              onBack={handleBackToHome}
-            />
-          )}
-          
-          {currentView === 'profile' && (
-            <UserProfile 
-              onIdeaSelect={handleIdeaSelect}
-              isLoggedIn={isLoggedIn}
-              onLoginClick={handleLoginClick}
-              user={authState.user}
-            />
-          )}
+        <main className="flex-1 ml-16 flex flex-col">
+          <div className="flex-1">
+            {currentView === 'home' && (
+              <MainContent 
+                searchQuery={searchQuery}
+                filterOpen={filterOpen}
+                onIdeaSelect={handleIdeaSelect}
+                isLoggedIn={isLoggedIn}
+                onRegisterClick={handleRegisterClick}
+                onFilterToggle={handleFilterToggle}
+              />
+            )}
+            
+            {currentView === 'detail' && selectedIdea && (
+              <IdeaDetail 
+                idea={selectedIdea}
+                onBack={handleBackToHome}
+              />
+            )}
+            
+            {currentView === 'profile' && (
+              <UserProfile 
+                onIdeaSelect={handleIdeaSelect}
+                isLoggedIn={isLoggedIn}
+                onLoginClick={handleLoginClick}
+                user={authState.user}
+              />
+            )}
 
-          {currentView === 'pricing' && (
-            <PricingPage />
-          )}
+            {currentView === 'pricing' && (
+              <PricingPage />
+            )}
+          </div>
+
+          {/* Footer - only show on home page */}
+          {currentView === 'home' && <Footer />}
         </main>
       </div>
 
