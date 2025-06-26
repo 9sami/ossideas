@@ -127,7 +127,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">🎯</span>
                   Apply To Sections
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64">
                   {sections.map((section) => (
                     <label key={section.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
