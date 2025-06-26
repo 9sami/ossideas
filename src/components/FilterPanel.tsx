@@ -122,12 +122,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             
             {/* Apply to Sections */}
             <div className="lg:col-span-3">
-              <div className="border border-orange-200 rounded-xl p-4 bg-white">
+              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">🎯</span>
                   Apply To Sections
                 </h4>
-                <div className="space-y-2 max-h-64">
+                <div className="space-y-2">
                   {sections.map((section) => (
                     <label key={section.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
@@ -232,7 +232,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
 
             {/* Special Filters */}
             <div className="lg:col-span-3">
-              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
+              <div className="border border-orange-200 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">⭐</span>
                   Special Filters
