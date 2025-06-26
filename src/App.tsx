@@ -111,13 +111,17 @@ const AppContent: React.FC = () => {
     setSidebarOpen(false);
   };
 
+  const handleFilterToggle = () => {
+    setFilterOpen(!filterOpen);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         filterOpen={filterOpen}
-        onFilterToggle={() => setFilterOpen(!filterOpen)}
+        onFilterToggle={handleFilterToggle}
         onProfileClick={handleProfileView}
         onLogoClick={handleBackToHome}
         isLoggedIn={isLoggedIn}
@@ -146,6 +150,7 @@ const AppContent: React.FC = () => {
               onIdeaSelect={handleIdeaSelect}
               isLoggedIn={isLoggedIn}
               onRegisterClick={handleRegisterClick}
+              onFilterToggle={handleFilterToggle}
             />
           )}
           
