@@ -159,7 +159,7 @@ const MainContent: React.FC<MainContentProps> = ({
             rel="noopener noreferrer"
             className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg"
           >
-            <div className="flex items-center space-x-1 px-4">
+            <div className="flex items-center space-x-1 px-2">
               <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
               <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
             </div>
