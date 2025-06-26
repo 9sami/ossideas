@@ -46,22 +46,34 @@ const AppContent: React.FC = () => {
     );
   }
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
     setCurrentView('detail');
+    // Scroll to top when viewing idea details
+    setTimeout(scrollToTop, 0);
   };
 
   const handleBackToHome = () => {
     setCurrentView('home');
     setSelectedIdea(null);
+    // Scroll to top when going back to home
+    setTimeout(scrollToTop, 0);
   };
 
   const handleProfileView = () => {
     setCurrentView('profile');
+    // Scroll to top when viewing profile
+    setTimeout(scrollToTop, 0);
   };
 
   const handlePricingView = () => {
     setCurrentView('pricing');
+    // Scroll to top when viewing pricing
+    setTimeout(scrollToTop, 0);
   };
 
   const handleLoginClick = () => {
@@ -96,6 +108,8 @@ const AppContent: React.FC = () => {
     }
     // Close sidebar when navigating
     setSidebarOpen(false);
+    // Scroll to top when navigating
+    setTimeout(scrollToTop, 0);
   };
 
   const handleSidebarToggle = () => {
