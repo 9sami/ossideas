@@ -142,6 +142,29 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
+        {/*Built with bolt */}
+        <div className="flex justify-center mb-8">
+          <a
+            href="https://bolt.new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          >
+            <div className="flex items-center space-x-2">
+              <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
+              <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
+            </div>
+            <div className="w-px h-6 bg-orange-300"></div>
+            <div className="flex items-center space-x-1">
+              <Heart className="h-4 w-4 text-red-200 animate-pulse" />
+              <span className="text-xs text-orange-100 group-hover:text-white transition-colors">
+                Hackathon 2024
+              </span>
+            </div>
+            <ExternalLink className="h-4 w-4 text-orange-200 group-hover:text-white transition-colors" />
+          </a>
+        </div>
+
           {/* Filter and Profile */}
           <div className="flex items-center space-x-4">
             {/* Filter Button - Only show on home page */}
