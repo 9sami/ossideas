@@ -28,6 +28,7 @@ const MainContent: React.FC<MainContentProps> = ({
     communityPick: false
   });
 
+  // Apply filters to all ideas
   const filteredIdeas = useMemo(() => {
     return mockIdeas.filter(idea => {
       // Search query filter
@@ -67,9 +68,36 @@ const MainContent: React.FC<MainContentProps> = ({
     });
   }, [searchQuery, filters]);
 
-  const trendingIdeas = mockIdeas.filter(idea => idea.isTrending);
-  const communityPicks = mockIdeas.filter(idea => idea.communityPick);
-  const newArrivals = mockIdeas.filter(idea => idea.isNew);
+  // Apply the same filtering logic to each section
+  const trendingIdeas = useMemo(() => {
+    return filteredIdeas.filter(idea => idea.isTrending);
+  }, [filteredIdeas]);
+
+  const communityPicks = useMemo(() => {
+    return filteredIdeas.filter(idea => idea.communityPick);
+  }, [filteredIdeas]);
+
+  const newArrivals = useMemo(() => {
+    return filteredIdeas.filter(idea => idea.isNew);
+  }, [filteredIdeas]);
+
+  // Personalized recommendations (filtered)
+  const personalizedIdeas = useMemo(() => {
+    // For demo purposes, we'll use the first 6 filtered ideas
+    // In a real app, this would be based on user preferences
+    return filteredIdeas.slice(0, 6);
+  }, [filteredIdeas]);
+
+  // Check if any filters are active
+  const hasActiveFilters = 
+    searchQuery ||
+    filters.categories.length > 0 ||
+    filters.license.length > 0 ||
+    filters.isNew ||
+    filters.isTrending ||
+    filters.communityPick ||
+    filters.opportunityScore[0] > 0 ||
+    filters.opportunityScore[1] < 100;
 
   return (
     <div className="p-6">
@@ -80,7 +108,124 @@ const MainContent: React.FC<MainContentProps> = ({
         />
       )}
 
-      {/* Hero Section - Main Idea Grid */}
+      {/* Trending Ideas */}
+      {trendingIdeas.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">🔥 Trending Ideas</h2>
+              <p className="text-gray-600">
+                {hasActiveFilters 
+                  ? `${trendingIdeas.length} trending ideas match your filters`
+                  : `${trendingIdeas.length} hot ideas gaining momentum`
+                }
+              </p>
+            </div>
+            {!isLoggedIn && (
+              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-sm text-orange-800 mb-2">
+                  Get personalized recommendations
+                </p>
+                <button 
+                  onClick={onRegisterClick}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                >
+                  Sign Up Free
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {trendingIdeas.slice(0, 8).map((idea) => (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                onClick={() => onIdeaSelect(idea)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Community Picks */}
+      {communityPicks.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">👥 Community Picks</h2>
+              <p className="text-gray-600">
+                {hasActiveFilters 
+                  ? `${communityPicks.length} community favorites match your filters`
+                  : `${communityPicks.length} ideas loved by our community`
+                }
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {communityPicks.slice(0, 8).map((idea) => (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                onClick={() => onIdeaSelect(idea)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* New Arrivals */}
+      {newArrivals.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">✨ New Arrivals</h2>
+              <p className="text-gray-600">
+                {hasActiveFilters 
+                  ? `${newArrivals.length} fresh ideas match your filters`
+                  : `${newArrivals.length} recently added opportunities`
+                }
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {newArrivals.slice(0, 8).map((idea) => (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                onClick={() => onIdeaSelect(idea)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Personalized Recommendations (if logged in) */}
+      {isLoggedIn && personalizedIdeas.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">🎯 Recommended For You</h2>
+              <p className="text-gray-600">
+                {hasActiveFilters 
+                  ? `${personalizedIdeas.length} personalized recommendations match your filters`
+                  : `${personalizedIdeas.length} ideas tailored to your interests`
+                }
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {personalizedIdeas.map((idea) => (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                onClick={() => onIdeaSelect(idea)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Discovery Section - MOVED TO BOTTOM */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -88,8 +233,8 @@ const MainContent: React.FC<MainContentProps> = ({
               Discover Your Next Big Idea
             </h1>
             <p className="text-gray-600">
-              {searchQuery 
-                ? `${filteredIdeas.length} ideas found for "${searchQuery}"`
+              {hasActiveFilters 
+                ? `${filteredIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
                 : `${filteredIdeas.length} curated startup opportunities from open source projects`
               }
             </p>
@@ -120,70 +265,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </div>
 
-      {/* Trending Ideas */}
-      {trendingIdeas.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">🔥 Trending Ideas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trendingIdeas.slice(0, 6).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Community Picks */}
-      {communityPicks.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">👥 Community Picks</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {communityPicks.slice(0, 6).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">✨ New Arrivals</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {newArrivals.slice(0, 6).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Personalized Recommendations (if logged in) */}
-      {isLoggedIn && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">🎯 Recommended For You</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockIdeas.slice(0, 6).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* No Results State */}
       {filteredIdeas.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
@@ -192,7 +274,29 @@ const MainContent: React.FC<MainContentProps> = ({
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No ideas found</h3>
-          <p className="text-gray-600">Try adjusting your search or filters to find more ideas.</p>
+          <p className="text-gray-600 mb-4">
+            {hasActiveFilters 
+              ? 'Try adjusting your search or filters to find more ideas.'
+              : 'No ideas are currently available.'
+            }
+          </p>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setFilters({
+                  categories: [],
+                  opportunityScore: [0, 100],
+                  license: [],
+                  isNew: false,
+                  isTrending: false,
+                  communityPick: false
+                });
+              }}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              Clear All Filters
+            </button>
+          )}
         </div>
       )}
     </div>
