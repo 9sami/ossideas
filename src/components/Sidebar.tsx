@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative overflow-x-hidden ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative overflow-hidden ${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
