@@ -150,9 +150,9 @@ const MainContent: React.FC<MainContentProps> = ({
       />
 
       {/* Main Content */}
-      <div className="p-6 inline-block">
+      <div className="p-6>
         {/*Built with bolt */}
-        <div>
+        <div clas>
           <a
             href="https://bolt.new"
             target="_blank"
