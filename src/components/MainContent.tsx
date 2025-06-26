@@ -150,7 +150,7 @@ const MainContent: React.FC<MainContentProps> = ({
       />
 
       {/* Main Content */}
-      <div className="p-6">
+      <div className="p-6 pt-4">
         {/*Built with bolt */}
         <div className="flex justify-center">
           <a
