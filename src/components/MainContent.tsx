@@ -162,6 +162,8 @@ const MainContent: React.FC<MainContentProps> = ({
             <div className="flex items-center space-x-1 px-6">
               <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
               <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
+              <div className="w-px h-6 bg-orange-300"></div>
+              <ExternalLink className="h-4 w-4 text-orange-200 group-hover:text-white transition-colors" />
             </div>
           </a>
         </div>
