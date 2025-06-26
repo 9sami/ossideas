@@ -152,7 +152,7 @@ const MainContent: React.FC<MainContentProps> = ({
       {/* Main Content */}
       <div className="p-6 pt-5">
         {/*Built with bolt */}
-        <div className="flex justify-center">
+        <div className="">
           <a
             href="https://bolt.new"
             target="_blank"
