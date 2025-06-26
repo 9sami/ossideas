@@ -10,6 +10,7 @@ import PricingPage from './components/PricingPage';
 import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
+import ScrollToTop from './components/ScrollToTop';
 import { useAuth } from './hooks/useAuth';
 import { IdeaData } from './types';
 
@@ -177,6 +178,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ScrollToTop />
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/success" element={<SuccessPage />} />
