@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { 
   Home, 
@@ -97,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 overflow-hidden ${
+        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 ${
           isOpen ? 'w-64 h-full' : 'w-16 h-full'
         }`}
       >
@@ -117,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation Items */}
         <nav className="px-2 py-4 h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="space-y-1">
-            {menuItems.map((item, index) => {
+            {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = isMenuItemActive(item.id);
               
@@ -125,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative overflow-hidden ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative ${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
@@ -155,10 +154,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </button>
                   
-                  {/* Tooltip for closed state - Positioned relative to viewport */}
+                  {/* Tooltip for closed state - Fixed positioning to prevent overflow */}
                   {!isOpen && (
                     <div 
-                      className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-[60]"
+                      className="fixed px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-[60]"
+                      style={{
+                        left: '72px', // 64px (sidebar width) + 8px (gap)
+                        top: `${item.id === 'home' ? '88' : item.id === 'categories' ? '136' : item.id === 'profile' ? '184' : item.id === 'community' ? '232' : item.id === 'pricing' ? '280' : item.id === 'submit' ? '328' : '376'}px`,
+                        transform: 'translateY(-50%)'
+                      }}
                     >
                       {item.label}
                       {item.premium && (
@@ -166,9 +170,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           Pro
                         </span>
                       )}
-                      {/* Tooltip arrow */}
                       <div 
-                        className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"
+                        className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"
                       />
                     </div>
                   )}
