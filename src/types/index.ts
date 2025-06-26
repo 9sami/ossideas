@@ -26,4 +26,5 @@ export interface FilterOptions {
   isNew: boolean;
   isTrending: boolean;
   communityPick: boolean;
+  appliedSections?: string[];
 }
