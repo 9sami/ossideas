@@ -150,7 +150,7 @@ const MainContent: React.FC<MainContentProps> = ({
       />
 
       {/* Main Content */}
-      <div className="p-6">
+      <div className="p-6 inline-block">
         {/*Built with bolt */}
         <div>
           <a
