@@ -10,7 +10,6 @@ interface MainContentProps {
   onIdeaSelect: (idea: IdeaData) => void;
   isLoggedIn: boolean;
   onRegisterClick: () => void;
-  onFilterToggle: () => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -18,8 +17,7 @@ const MainContent: React.FC<MainContentProps> = ({
   filterOpen,
   onIdeaSelect,
   isLoggedIn,
-  onRegisterClick,
-  onFilterToggle
+  onRegisterClick
 }) => {
   const [filters, setFilters] = useState<FilterOptions>({
     categories: [],
@@ -27,13 +25,12 @@ const MainContent: React.FC<MainContentProps> = ({
     license: [],
     isNew: false,
     isTrending: false,
-    communityPick: false,
-    appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
+    communityPick: false
   });
 
-  // Helper function to apply filters to ideas
-  const applyFilters = (ideas: IdeaData[]) => {
-    return ideas.filter(idea => {
+  // Apply filters to all ideas
+  const filteredIdeas = useMemo(() => {
+    return mockIdeas.filter(idea => {
       // Search query filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -69,39 +66,27 @@ const MainContent: React.FC<MainContentProps> = ({
 
       return true;
     });
-  };
-
-  // Helper function to check if a section should be filtered
-  const shouldFilterSection = (sectionId: string) => {
-    return (filters.appliedSections || []).includes(sectionId);
-  };
-
-  // Apply filtering based on section settings
-  const trendingIdeas = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.isTrending);
-    return shouldFilterSection('trending') ? applyFilters(baseIdeas) : baseIdeas;
   }, [searchQuery, filters]);
+
+  // Apply the same filtering logic to each section
+  const trendingIdeas = useMemo(() => {
+    return filteredIdeas.filter(idea => idea.isTrending);
+  }, [filteredIdeas]);
 
   const communityPicks = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.communityPick);
-    return shouldFilterSection('community') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+    return filteredIdeas.filter(idea => idea.communityPick);
+  }, [filteredIdeas]);
 
   const newArrivals = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.isNew);
-    return shouldFilterSection('newArrivals') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+    return filteredIdeas.filter(idea => idea.isNew);
+  }, [filteredIdeas]);
 
-  // Personalized recommendations (filtered based on settings)
+  // Personalized recommendations (filtered)
   const personalizedIdeas = useMemo(() => {
-    const baseIdeas = mockIdeas.slice(0, 6);
-    return shouldFilterSection('personalized') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
-
-  // Main discovery section (always respects filters if enabled)
-  const discoveryIdeas = useMemo(() => {
-    return shouldFilterSection('discovery') ? applyFilters(mockIdeas) : mockIdeas;
-  }, [searchQuery, filters]);
+    // For demo purposes, we'll use the first 6 filtered ideas
+    // In a real app, this would be based on user preferences
+    return filteredIdeas.slice(0, 6);
+  }, [filteredIdeas]);
 
   // Check if any filters are active
   const hasActiveFilters = 
@@ -114,55 +99,26 @@ const MainContent: React.FC<MainContentProps> = ({
     filters.opportunityScore[0] > 0 ||
     filters.opportunityScore[1] < 100;
 
-  // Helper function to get section description
-  const getSectionDescription = (sectionId: string, count: number, baseCount: number) => {
-    const isFiltered = shouldFilterSection(sectionId);
-    if (hasActiveFilters && isFiltered) {
-      return `${count} ${sectionId === 'trending' ? 'trending ideas' : 
-                     sectionId === 'community' ? 'community favorites' :
-                     sectionId === 'newArrivals' ? 'fresh ideas' :
-                     sectionId === 'personalized' ? 'personalized recommendations' :
-                     'ideas'} match your filters`;
-    }
-    
-    switch (sectionId) {
-      case 'trending':
-        return `${count} hot ideas gaining momentum`;
-      case 'community':
-        return `${count} ideas loved by our community`;
-      case 'newArrivals':
-        return `${count} recently added opportunities`;
-      case 'personalized':
-        return `${count} ideas tailored to your interests`;
-      default:
-        return `${count} curated startup opportunities from open source projects`;
-    }
-  };
-
   return (
     <div className="p-6">
-      <FilterPanel 
-        filters={filters}
-        onFilterChange={setFilters}
-        isOpen={filterOpen}
-        onClose={onFilterToggle}
-      />
+      {filterOpen && (
+        <FilterPanel 
+          filters={filters}
+          onFilterChange={setFilters}
+        />
+      )}
 
       {/* Trending Ideas */}
       {trendingIdeas.length > 0 && (
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                🔥 Trending Ideas
-                {shouldFilterSection('trending') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">🔥 Trending Ideas</h2>
               <p className="text-gray-600">
-                {getSectionDescription('trending', trendingIdeas.length, mockIdeas.filter(i => i.isTrending).length)}
+                {hasActiveFilters 
+                  ? `${trendingIdeas.length} trending ideas match your filters`
+                  : `${trendingIdeas.length} hot ideas gaining momentum`
+                }
               </p>
             </div>
             {!isLoggedIn && (
@@ -196,16 +152,12 @@ const MainContent: React.FC<MainContentProps> = ({
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                👥 Community Picks
-                {shouldFilterSection('community') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">👥 Community Picks</h2>
               <p className="text-gray-600">
-                {getSectionDescription('community', communityPicks.length, mockIdeas.filter(i => i.communityPick).length)}
+                {hasActiveFilters 
+                  ? `${communityPicks.length} community favorites match your filters`
+                  : `${communityPicks.length} ideas loved by our community`
+                }
               </p>
             </div>
           </div>
@@ -226,16 +178,12 @@ const MainContent: React.FC<MainContentProps> = ({
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                ✨ New Arrivals
-                {shouldFilterSection('newArrivals') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">✨ New Arrivals</h2>
               <p className="text-gray-600">
-                {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length)}
+                {hasActiveFilters 
+                  ? `${newArrivals.length} fresh ideas match your filters`
+                  : `${newArrivals.length} recently added opportunities`
+                }
               </p>
             </div>
           </div>
@@ -256,16 +204,12 @@ const MainContent: React.FC<MainContentProps> = ({
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                🎯 Recommended For You
-                {shouldFilterSection('personalized') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">🎯 Recommended For You</h2>
               <p className="text-gray-600">
-                {getSectionDescription('personalized', personalizedIdeas.length, 6)}
+                {hasActiveFilters 
+                  ? `${personalizedIdeas.length} personalized recommendations match your filters`
+                  : `${personalizedIdeas.length} ideas tailored to your interests`
+                }
               </p>
             </div>
           </div>
@@ -285,18 +229,13 @@ const MainContent: React.FC<MainContentProps> = ({
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Discover Your Next Big Idea
-              {shouldFilterSection('discovery') && hasActiveFilters && (
-                <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                  Filtered
-                </span>
-              )}
             </h1>
             <p className="text-gray-600">
-              {hasActiveFilters && shouldFilterSection('discovery')
-                ? `${discoveryIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
-                : `${discoveryIdeas.length} curated startup opportunities from open source projects`
+              {hasActiveFilters 
+                ? `${filteredIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
+                : `${filteredIdeas.length} curated startup opportunities from open source projects`
               }
             </p>
           </div>
@@ -316,7 +255,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {discoveryIdeas.map((idea) => (
+          {filteredIdeas.map((idea) => (
             <IdeaCard
               key={idea.id}
               idea={idea}
@@ -327,7 +266,7 @@ const MainContent: React.FC<MainContentProps> = ({
       </div>
 
       {/* No Results State */}
-      {discoveryIdeas.length === 0 && shouldFilterSection('discovery') && (
+      {filteredIdeas.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -350,8 +289,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   license: [],
                   isNew: false,
                   isTrending: false,
-                  communityPick: false,
-                  appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
+                  communityPick: false
                 });
               }}
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
