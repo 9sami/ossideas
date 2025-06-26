@@ -1,0 +1,49 @@
+# GitHub Actions Workflow for Repository Synchronization
+
+name: Repository Sync
+
+# This workflow is triggered on pushes to a specific branch (e.g., 'main' or 'develop')
+# in the source repository.
+on:
+  push:
+    branches:
+      # Define the branch in the source repository that will trigger this workflow.
+      # Replace 'main' with your desired source branch (e.g., 'develop', 'release').
+      - main # <<<--- Configure your source branch here
+
+# Environment variables that can be used throughout the workflow.
+# These provide configuration options for the synchronization process.
+
+jobs:
+  sync:
+    # Optional: Add a condition to restrict workflow execution to a specific repository owner.
+    # This ensures the workflow only runs for repositories owned by a certain user or organization.
+    if: github.repository_owner == 'devkindhq' 
+    # ^^--- Configured to run only for 'devkindhq' owner
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Repository
+        # Uses the latest recommended actions/checkout to clone the source repository.
+        # This step is essential to get the content that needs to be synchronized.
+        uses: actions/checkout@v4
+        with:
+          # Fetches the entire history for force push operations.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push to Destination Repository
+        # This step performs the actual synchronization by pushing the changes
+        # from the source repository to the destination repository.
+        run: |
+          git config user.name "${{ env.GIT_BOT_NAME }}"
+          git config user.email "${{ env.GIT_BOT_EMAIL }}"
+          git commit --allow-empty -m "Blank commit before sync"
+          # Use the pre-configured authenticated URL from the environment variable.
+          # This variable is now assumed to be a secret that already contains the PAT within its value.
+          git push --force "${{ secrets.VERCEL_REPO_AUTH_URL }}" HEAD:main # <<<--- Using the authenticated URL from the environment variable
+        env:
+          GITHUB_TOKEN: ${{ secrets.VERCEL_REPO_PAT }}
+          GIT_BOT_NAME: 'GitHub Actions Bot'
+          GIT_BOT_EMAIL: 'actions@github.com'
