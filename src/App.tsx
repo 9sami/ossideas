@@ -46,34 +46,22 @@ const AppContent: React.FC = () => {
     );
   }
 
-  const scrollToTop = () => {
-    window.scrollTo(0, 0);
-  };
-
   const handleIdeaSelect = (idea: IdeaData) => {
     setSelectedIdea(idea);
     setCurrentView('detail');
-    // Scroll to top when viewing idea details
-    setTimeout(scrollToTop, 0);
   };
 
   const handleBackToHome = () => {
     setCurrentView('home');
     setSelectedIdea(null);
-    // Scroll to top when going back to home
-    setTimeout(scrollToTop, 0);
   };
 
   const handleProfileView = () => {
     setCurrentView('profile');
-    // Scroll to top when viewing profile
-    setTimeout(scrollToTop, 0);
   };
 
   const handlePricingView = () => {
     setCurrentView('pricing');
-    // Scroll to top when viewing pricing
-    setTimeout(scrollToTop, 0);
   };
 
   const handleLoginClick = () => {
@@ -108,8 +96,6 @@ const AppContent: React.FC = () => {
     }
     // Close sidebar when navigating
     setSidebarOpen(false);
-    // Scroll to top when navigating
-    setTimeout(scrollToTop, 0);
   };
 
   const handleSidebarToggle = () => {
@@ -119,6 +105,11 @@ const AppContent: React.FC = () => {
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
   };
+
+  // Scroll to top whenever the view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView, selectedIdea]);
 
   return (
     <div className="min-h-screen bg-gray-50">
