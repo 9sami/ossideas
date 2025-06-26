@@ -159,7 +159,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div 
                       className="fixed px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-[60]"
                       style={{
-                        left: '60px', // 64px (sidebar width) + 8px (gap)
                         top: `${item.id === 'home' ? '88' : item.id === 'categories' ? '136' : item.id === 'profile' ? '184' : item.id === 'community' ? '232' : item.id === 'pricing' ? '280' : item.id === 'submit' ? '328' : '376'}px`,
                         transform: 'translateY(-50%)'
                       }}
