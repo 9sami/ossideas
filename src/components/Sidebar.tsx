@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           isOpen ? 'w-64 h-full' : 'w-16 h-full'
         }`}
       >
-        {/* Header spacer to account for fixed header  */}
+        {/* Header spacer to account for fixed header */}
         <div className="h-16 border-b border-gray-200 flex items-center">
           <div className="px-2">
             <button
@@ -131,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                   >
                     {/* Icon container - fixed position and size */}
-                    <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                    <div className=" h-12 flex items-center justify-center flex-shrink-0">
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
