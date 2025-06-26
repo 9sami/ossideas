@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, User, Menu, LogIn, LogOut, Crown, Heart, Zap } from 'lucide-react';
+import { Search, Filter, User, Menu, LogIn, LogOut, Crown, Heart, Zap, ExternalLink } from 'lucide-react';
 import { User as UserType } from '../types/auth';
 import { supabase } from '../lib/supabase';
 
