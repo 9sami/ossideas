@@ -131,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                   >
                     {/* Icon container - fixed position and size */}
-                    <div className=" h-12 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12  h-12 flex items-center justify-center flex-shrink-0">
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
