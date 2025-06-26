@@ -176,7 +176,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   Opportunity Score
                 </h4>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between flex-wrap">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded">{filters.opportunityScore[0]}</span>
                     <span className="text-xs text-gray-500">to</span>
                     <span className="text-sm font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded">{filters.opportunityScore[1]}</span>
@@ -202,7 +202,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                         ...filters,
                         opportunityScore: [filters.opportunityScore[0], parseInt(e.target.value)]
                       })}
-                      className="absolute top-0 w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer slider-thumb-orange"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb-orange"
                     />
                   </div>
                 </div>
