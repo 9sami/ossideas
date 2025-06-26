@@ -164,12 +164,6 @@ const MainContent: React.FC<MainContentProps> = ({
               <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
             </div>
             <div className="w-px h-6 bg-orange-300"></div>
-            <div className="flex items-center space-x-1">
-              <Heart className="h-4 w-4 text-red-200 animate-pulse" />
-              <span className="text-xs text-orange-100 group-hover:text-white transition-colors">
-                Hackathon 2024
-              </span>
-            </div>
             <ExternalLink className="h-4 w-4 text-orange-200 group-hover:text-white transition-colors" />
           </a>
         </div>
