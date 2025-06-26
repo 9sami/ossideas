@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 !overflow-x-hidden${
+        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 ${
           isOpen ? 'w-64 h-full' : 'w-16 h-full'
         }`}
       >
@@ -159,6 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div 
                       className="fixed px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-[60]"
                       style={{
+                        left: '72px', // 64px (sidebar width) + 8px (gap)
                         top: `${item.id === 'home' ? '88' : item.id === 'categories' ? '136' : item.id === 'profile' ? '184' : item.id === 'community' ? '232' : item.id === 'pricing' ? '280' : item.id === 'submit' ? '328' : '376'}px`,
                         transform: 'translateY(-50%)'
                       }}
