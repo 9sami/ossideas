@@ -192,7 +192,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 </p>
               </div>
               {!isLoggedIn && (
-                <div className="text-center display-inline p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-center inline-block p-4 bg-orange-50 rounded-lg border border-orange-200">
                   <p className="text-sm text-orange-800 mb-2">
                     Get personalized recommendations
                   </p>
