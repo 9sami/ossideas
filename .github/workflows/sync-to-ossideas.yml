@@ -1,0 +1,62 @@
+name: Sync to devkindhq/ossideas
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [closed]
+
+jobs:
+  sync-to-remote:
+    # Only run if:
+    # - It's a direct push to main, OR
+    # - It's a PR that was merged (closed + merged=true)
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          # so that configs of git are not going forward from this action.
+          persist-credentials: false
+
+      - name: Get GitHub username
+        id: username
+        run: |
+          # For PRs, use the PR author; for pushes, use the pusher
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "username=$(echo ${{ github.event.pull_request.user.login }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          else
+            echo "username=$(echo $GITHUB_ACTOR | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Add remote
+        run: git remote add target https://${{ secrets.TARGET_REPO_TOKEN }}@github.com/devkindhq/ossideas.git
+
+      - name: Fetch from target
+        run: git fetch target
+
+      - name: Create or checkout user branch
+        run: |
+          if git show-ref --verify --quiet refs/remotes/target/${{ steps.username.outputs.username }}/main; then
+            git checkout -b ${{ steps.username.outputs.username }}/main target/${{ steps.username.outputs.username }}/main
+          else
+            git checkout -b ${{ steps.username.outputs.username }}/main
+          fi
+
+      - name: Sync changes to user branch
+        run: |
+          git merge --ff-only origin/main
+          git commit --allow-empty -m "Empty commit from Github Actions"
+          git push target ${{ steps.username.outputs.username }}/main
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}

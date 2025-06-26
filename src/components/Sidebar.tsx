@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = [
     { id: 'home', icon: Home, label: 'Home', onClick: onHomeClick },
     { id: 'categories', icon: Grid3X3, label: 'Categories', onClick: () => {} },
-    { id: 'saved', icon: Heart, label: 'Saved Ideas', onClick: () => onNavigate('profile') },
+    { id: 'profile', icon: Heart, label: 'Saved Ideas', onClick: () => onNavigate('profile') },
     { id: 'community', icon: Users, label: 'Community', onClick: () => {} },
     { id: 'pricing', icon: CreditCard, label: 'Pricing', onClick: () => onNavigate('pricing') },
     { id: 'submit', icon: Plus, label: 'Submit Idea', onClick: () => {}, premium: true },
@@ -69,6 +69,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
+  // Function to determine if a menu item is active
+  const isMenuItemActive = (itemId: string) => {
+    switch (itemId) {
+      case 'home':
+        return currentView === 'home' || currentView === 'detail';
+      case 'profile':
+        return currentView === 'profile';
+      case 'pricing':
+        return currentView === 'pricing';
+      default:
+        return false;
+    }
+  };
+
   return (
     <>
       {/* Overlay - covers everything including sticky headers */}
@@ -82,16 +96,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed left-0 top-0 transition-all duration-300 z-50 bg-white border-r border-gray-200 ${
+        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 ${
           isOpen ? 'w-64 h-full' : 'w-16 h-full'
         }`}
       >
         {/* Header spacer to account for fixed header */}
         <div className="h-16 border-b border-gray-200 flex items-center">
-          <div className={`${isOpen ? 'px-4' : 'px-2'} w-full flex ${isOpen ? 'justify-start' : 'justify-center'}`}>
+          <div className="px-2">
             <button
               onClick={onToggle}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
+              className="p-3 rounded-lg flex items-center text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
               title={isOpen ? 'Close sidebar' : 'Open sidebar'}
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -104,41 +118,43 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id;
+              const isActive = isMenuItemActive(item.id);
               
               return (
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-full h-12 flex items-center px-3 rounded-lg transition-colors relative ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative ${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
                     }`}
                   >
-                    {/* Icon container - always same size and position */}
-                    <div className={`flex items-center justify-center w-5 h-5 flex-shrink-0 ${isOpen ? '' : 'mx-auto'}`}>
+                    {/* Icon container - fixed position and size */}
+                    <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
-                    {/* Label container - only visible when open */}
-                    {isOpen && (
-                      <div className="flex items-center justify-between flex-1 ml-3 min-w-0">
-                        <span className="font-medium truncate">
-                          {item.label}
+                    {/* Label container - only visible when open, positioned absolutely to not affect icon */}
+                    <div 
+                      className={`absolute left-12 right-3 flex items-center justify-between transition-opacity duration-300 ${
+                        isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <span className="font-medium truncate">
+                        {item.label}
+                      </span>
+                      
+                      {/* Pro Badge */}
+                      {item.premium && (
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
+                          Pro
                         </span>
-                        
-                        {/* Pro Badge */}
-                        {item.premium && (
-                          <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
-                            Pro
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </button>
                   
-                  {/* Tooltip for closed state - NO ARROW */}
+                  {/* Tooltip for closed state */}
                   {!isOpen && (
                     <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                       {item.label}

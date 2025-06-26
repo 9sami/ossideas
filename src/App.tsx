@@ -10,6 +10,7 @@ import PricingPage from './components/PricingPage';
 import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
+import ScrollToTop from './components/ScrollToTop';
 import { useAuth } from './hooks/useAuth';
 import { IdeaData } from './types';
 
@@ -32,6 +33,11 @@ const AppContent: React.FC = () => {
       setAuthModalOpen(true);
     }
   }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
+
+  // Scroll to top whenever the view changes - MOVED BEFORE CONDITIONAL RETURN
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView, selectedIdea]);
 
   // Show loading spinner while auth state is initializing
   if (authState.loading) {
@@ -105,19 +111,24 @@ const AppContent: React.FC = () => {
     setSidebarOpen(false);
   };
 
+  const handleFilterToggle = () => {
+    setFilterOpen(!filterOpen);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         filterOpen={filterOpen}
-        onFilterToggle={() => setFilterOpen(!filterOpen)}
+        onFilterToggle={handleFilterToggle}
         onProfileClick={handleProfileView}
         onLogoClick={handleBackToHome}
         isLoggedIn={isLoggedIn}
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
+        currentView={currentView} // Pass currentView to Header
       />
       
       <div className="flex">
@@ -139,6 +150,7 @@ const AppContent: React.FC = () => {
               onIdeaSelect={handleIdeaSelect}
               isLoggedIn={isLoggedIn}
               onRegisterClick={handleRegisterClick}
+              onFilterToggle={handleFilterToggle}
             />
           )}
           
@@ -177,6 +189,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ScrollToTop />
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/success" element={<SuccessPage />} />
