@@ -146,12 +146,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
 
             {/* Categories */}
             <div className="md:col-span-1 lg:col-span-3">
-              <div className="border border-orange-200 rounded-xl p-4 bg-white">
+              <div className="border border-orange-200 pb-8 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">📂</span>
                   Categories
                 </h4>
-                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
                   {categories.map((category) => (
                     <label key={category} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
