@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Overlay - covers everything including sticky headers */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
           onClick={onClose}
         />
       )}
@@ -96,12 +96,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 ${
-          isOpen ? 'w-64 h-full' : 'w-16 h-full'
+        className={`fixed left-0 top-0 h-full transition-all duration-300 ease-in-out z-50 bg-white border-r border-gray-200 flex flex-col ${
+          isOpen ? 'w-64' : 'w-16'
         }`}
       >
-        {/* Header spacer to account for fixed header */}
-        <div className="h-16 border-b border-gray-200 flex items-center">
+        {/* Header - Fixed height */}
+        <div className="h-16 border-b border-gray-200 flex items-center flex-shrink-0">
           <div className="px-2">
             <button
               onClick={onToggle}
@@ -113,8 +113,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="px-2 py-4 h-[calc(100vh-4rem)] overflow-y-auto">
+        {/* Navigation Items - Flexible container */}
+        <nav className="flex-1 px-2 py-4">
           <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -135,7 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
-                    {/* Label container - only visible when open, positioned absolutely to not affect icon */}
+                    {/* Label container - only visible when open */}
                     <div 
                       className={`absolute left-12 right-3 flex items-center justify-between transition-opacity duration-300 ${
                         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
