@@ -124,14 +124,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="relative group">
                   <button
                     onClick={item.onClick}
-                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative ${
+                    className={`w-full h-12 flex items-center rounded-lg transition-colors relative overflow-x-hidden${
                       isActive
                         ? 'bg-orange-50 text-orange-600 border border-orange-200'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
                     }`}
                   >
                     {/* Icon container - fixed position and size */}
-                    <div className="w-12  h-12 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
                       <Icon className={`h-5 w-5 ${isActive ? 'text-orange-500' : ''}`} />
                     </div>
                     
