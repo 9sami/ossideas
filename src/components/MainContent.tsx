@@ -140,7 +140,8 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   return (
-    <div className="p-6">
+    <div>
+      {/* Filter Panel - Top Bar */}
       <FilterPanel 
         filters={filters}
         onFilterChange={setFilters}
@@ -148,21 +149,158 @@ const MainContent: React.FC<MainContentProps> = ({
         onClose={onFilterToggle}
       />
 
-      {/* Trending Ideas */}
-      {trendingIdeas.length > 0 && (
+      {/* Main Content */}
+      <div className="p-6">
+        {/* Trending Ideas */}
+        {trendingIdeas.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                  🔥 Trending Ideas
+                  {shouldFilterSection('trending') && hasActiveFilters && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
+                      Filtered
+                    </span>
+                  )}
+                </h2>
+                <p className="text-gray-600">
+                  {getSectionDescription('trending', trendingIdeas.length, mockIdeas.filter(i => i.isTrending).length)}
+                </p>
+              </div>
+              {!isLoggedIn && (
+                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm text-orange-800 mb-2">
+                    Get personalized recommendations
+                  </p>
+                  <button 
+                    onClick={onRegisterClick}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                  >
+                    Sign Up Free
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {trendingIdeas.slice(0, 8).map((idea) => (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  onClick={() => onIdeaSelect(idea)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Community Picks */}
+        {communityPicks.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                  👥 Community Picks
+                  {shouldFilterSection('community') && hasActiveFilters && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
+                      Filtered
+                    </span>
+                  )}
+                </h2>
+                <p className="text-gray-600">
+                  {getSectionDescription('community', communityPicks.length, mockIdeas.filter(i => i.communityPick).length)}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {communityPicks.slice(0, 8).map((idea) => (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  onClick={() => onIdeaSelect(idea)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* New Arrivals */}
+        {newArrivals.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                  ✨ New Arrivals
+                  {shouldFilterSection('newArrivals') && hasActiveFilters && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
+                      Filtered
+                    </span>
+                  )}
+                </h2>
+                <p className="text-gray-600">
+                  {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length)}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {newArrivals.slice(0, 8).map((idea) => (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  onClick={() => onIdeaSelect(idea)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Personalized Recommendations (if logged in) */}
+        {isLoggedIn && personalizedIdeas.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                  🎯 Recommended For You
+                  {shouldFilterSection('personalized') && hasActiveFilters && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
+                      Filtered
+                    </span>
+                  )}
+                </h2>
+                <p className="text-gray-600">
+                  {getSectionDescription('personalized', personalizedIdeas.length, 6)}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {personalizedIdeas.map((idea) => (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  onClick={() => onIdeaSelect(idea)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Main Discovery Section - MOVED TO BOTTOM */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                🔥 Trending Ideas
-                {shouldFilterSection('trending') && hasActiveFilters && (
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                Discover Your Next Big Idea
+                {shouldFilterSection('discovery') && hasActiveFilters && (
                   <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
                     Filtered
                   </span>
                 )}
-              </h2>
+              </h1>
               <p className="text-gray-600">
-                {getSectionDescription('trending', trendingIdeas.length, mockIdeas.filter(i => i.isTrending).length)}
+                {hasActiveFilters && shouldFilterSection('discovery')
+                  ? `${discoveryIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
+                  : `${discoveryIdeas.length} curated startup opportunities from open source projects`
+                }
               </p>
             </div>
             {!isLoggedIn && (
@@ -179,8 +317,9 @@ const MainContent: React.FC<MainContentProps> = ({
               </div>
             )}
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {trendingIdeas.slice(0, 8).map((idea) => (
+            {discoveryIdeas.map((idea) => (
               <IdeaCard
                 key={idea.id}
                 idea={idea}
@@ -189,178 +328,43 @@ const MainContent: React.FC<MainContentProps> = ({
             ))}
           </div>
         </div>
-      )}
 
-      {/* Community Picks */}
-      {communityPicks.length > 0 && (
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                👥 Community Picks
-                {shouldFilterSection('community') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
-              <p className="text-gray-600">
-                {getSectionDescription('community', communityPicks.length, mockIdeas.filter(i => i.communityPick).length)}
-              </p>
+        {/* No Results State */}
+        {discoveryIdeas.length === 0 && shouldFilterSection('discovery') && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+              </svg>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {communityPicks.slice(0, 8).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                ✨ New Arrivals
-                {shouldFilterSection('newArrivals') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
-              <p className="text-gray-600">
-                {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length)}
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {newArrivals.slice(0, 8).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Personalized Recommendations (if logged in) */}
-      {isLoggedIn && personalizedIdeas.length > 0 && (
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                🎯 Recommended For You
-                {shouldFilterSection('personalized') && hasActiveFilters && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                    Filtered
-                  </span>
-                )}
-              </h2>
-              <p className="text-gray-600">
-                {getSectionDescription('personalized', personalizedIdeas.length, 6)}
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {personalizedIdeas.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Main Discovery Section - MOVED TO BOTTOM */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-              Discover Your Next Big Idea
-              {shouldFilterSection('discovery') && hasActiveFilters && (
-                <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
-                  Filtered
-                </span>
-              )}
-            </h1>
-            <p className="text-gray-600">
-              {hasActiveFilters && shouldFilterSection('discovery')
-                ? `${discoveryIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
-                : `${discoveryIdeas.length} curated startup opportunities from open source projects`
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No ideas found</h3>
+            <p className="text-gray-600 mb-4">
+              {hasActiveFilters 
+                ? 'Try adjusting your search or filters to find more ideas.'
+                : 'No ideas are currently available.'
               }
             </p>
-          </div>
-          {!isLoggedIn && (
-            <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <p className="text-sm text-orange-800 mb-2">
-                Get personalized recommendations
-              </p>
-              <button 
-                onClick={onRegisterClick}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setFilters({
+                    categories: [],
+                    opportunityScore: [0, 100],
+                    license: [],
+                    isNew: false,
+                    isTrending: false,
+                    communityPick: false,
+                    appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
+                  });
+                }}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
-                Sign Up Free
+                Clear All Filters
               </button>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {discoveryIdeas.map((idea) => (
-            <IdeaCard
-              key={idea.id}
-              idea={idea}
-              onClick={() => onIdeaSelect(idea)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* No Results State */}
-      {discoveryIdeas.length === 0 && shouldFilterSection('discovery') && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
-            </svg>
+            )}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No ideas found</h3>
-          <p className="text-gray-600 mb-4">
-            {hasActiveFilters 
-              ? 'Try adjusting your search or filters to find more ideas.'
-              : 'No ideas are currently available.'
-            }
-          </p>
-          {hasActiveFilters && (
-            <button
-              onClick={() => {
-                setFilters({
-                  categories: [],
-                  opportunityScore: [0, 100],
-                  license: [],
-                  isNew: false,
-                  isTrending: false,
-                  communityPick: false,
-                  appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
-                });
-              }}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Clear All Filters
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

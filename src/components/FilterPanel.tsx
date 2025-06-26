@@ -74,26 +74,26 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
-        onClick={onClose}
-      />
-      
-      {/* Compact Sidebar Filter */}
-      <div className="fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] bg-white shadow-2xl border-l border-gray-200 z-50 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+    <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Row */}
+        <div className="flex items-center justify-between py-3 border-b border-gray-100">
           <div className="flex items-center space-x-2">
             <Sliders className="h-4 w-4 text-orange-500" />
-            <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Advanced Filters</h3>
+            <div className="flex items-center space-x-1 ml-4">
+              <Check className="h-3 w-3 text-green-500" />
+              <span className="text-xs text-green-600 font-medium">Live</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <span className="text-xs text-gray-600">
+              {hasActiveFilters ? 'Filters active' : 'No filters applied'}
+            </span>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="text-xs text-orange-600 hover:text-orange-700 font-medium px-2 py-1 rounded hover:bg-orange-50"
+                className="text-xs text-orange-600 hover:text-orange-700 font-medium px-2 py-1 rounded hover:bg-orange-50 transition-colors"
               >
                 Clear All
               </button>
@@ -107,45 +107,45 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-5">
+        {/* Filters Content */}
+        <div className="py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
             {/* Apply to Sections */}
-            <div>
+            <div className="lg:col-span-2">
               <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center uppercase tracking-wide">
                 <span className="mr-1">🎯</span>
                 Apply To Sections
               </h4>
-              <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-1">
                 {sections.map((section) => (
-                  <label key={section.id} className="flex items-center py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer group">
+                  <label key={section.id} className="flex items-center py-1 px-2 rounded hover:bg-gray-50 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={(filters.appliedSections || []).includes(section.id)}
                       onChange={() => handleSectionToggle(section.id)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                     />
-                    <span className="text-xs mr-1.5">{section.icon}</span>
-                    <span className="text-xs text-gray-700 group-hover:text-gray-900">{section.label}</span>
+                    <span className="text-xs mr-1">{section.icon}</span>
+                    <span className="text-xs text-gray-700 group-hover:text-gray-900 truncate">{section.label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Categories */}
-            <div>
+            <div className="lg:col-span-2">
               <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center uppercase tracking-wide">
                 <span className="mr-1">📂</span>
                 Categories
               </h4>
-              <div className="grid grid-cols-1 gap-1 max-h-28 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto">
                 {categories.map((category) => (
                   <label key={category} className="flex items-center py-1 px-2 rounded hover:bg-gray-50 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={filters.categories.includes(category)}
                       onChange={() => handleCategoryToggle(category)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                     />
                     <span className="text-xs text-gray-700 group-hover:text-gray-900 truncate">{category}</span>
                   </label>
@@ -157,14 +157,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             <div>
               <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center uppercase tracking-wide">
                 <span className="mr-1">⚡</span>
-                Opportunity Score
+                Score Range
               </h4>
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-gray-600 px-1">
+                <div className="flex items-center justify-between text-xs text-gray-600">
                   <span className="font-medium">{filters.opportunityScore[0]}</span>
                   <span className="font-medium">{filters.opportunityScore[1]}</span>
                 </div>
-                <div className="relative px-1">
+                <div className="relative">
                   <input
                     type="range"
                     min="0"
@@ -185,7 +185,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                       ...filters,
                       opportunityScore: [filters.opportunityScore[0], parseInt(e.target.value)]
                     })}
-                    className="absolute top-0 w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb-orange"
+                    className="absolute top-0 w-full h-1.5 bg-transparent rounded-lg appearance-none cursor-pointer slider-thumb-orange"
                   />
                 </div>
               </div>
@@ -204,7 +204,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                       type="checkbox"
                       checked={filters.license.includes(license)}
                       onChange={() => handleLicenseToggle(license)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                     />
                     <span className="text-xs text-gray-700 group-hover:text-gray-900">{license}</span>
                   </label>
@@ -219,55 +219,42 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                 Special
               </h4>
               <div className="space-y-1">
-                <label className="flex items-center py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer group">
+                <label className="flex items-center py-1 px-2 rounded hover:bg-gray-50 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={filters.isNew}
                     onChange={(e) => onFilterChange({ ...filters, isNew: e.target.checked })}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                   />
-                  <span className="text-xs mr-1.5">✨</span>
-                  <span className="text-xs text-gray-700 group-hover:text-gray-900">New Arrivals</span>
+                  <span className="text-xs mr-1">✨</span>
+                  <span className="text-xs text-gray-700 group-hover:text-gray-900">New</span>
                 </label>
-                <label className="flex items-center py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer group">
+                <label className="flex items-center py-1 px-2 rounded hover:bg-gray-50 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={filters.isTrending}
                     onChange={(e) => onFilterChange({ ...filters, isTrending: e.target.checked })}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                   />
-                  <span className="text-xs mr-1.5">🔥</span>
+                  <span className="text-xs mr-1">🔥</span>
                   <span className="text-xs text-gray-700 group-hover:text-gray-900">Trending</span>
                 </label>
-                <label className="flex items-center py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer group">
+                <label className="flex items-center py-1 px-2 rounded hover:bg-gray-50 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={filters.communityPick}
                     onChange={(e) => onFilterChange({ ...filters, communityPick: e.target.checked })}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2"
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 w-3 h-3 mr-2 flex-shrink-0"
                   />
-                  <span className="text-xs mr-1.5">👥</span>
-                  <span className="text-xs text-gray-700 group-hover:text-gray-900">Community Pick</span>
+                  <span className="text-xs mr-1">👥</span>
+                  <span className="text-xs text-gray-700 group-hover:text-gray-900">Community</span>
                 </label>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-4 py-2 bg-gray-50 flex-shrink-0">
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <span className="font-medium">
-              {hasActiveFilters ? 'Filters active' : 'No filters applied'}
-            </span>
-            <div className="flex items-center space-x-1">
-              <Check className="h-3 w-3 text-green-500" />
-              <span className="text-green-600 font-medium">Live</span>
-            </div>
-          </div>
-        </div>
       </div>
-    </>
+    </div>
   );
 };
 
