@@ -146,7 +146,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
 
             {/* Categories */}
             <div className="lg:col-span-3">
-              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
+              <div className="border border-orange-200 rounded-xl p-4 h-52 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">📂</span>
                   Categories
