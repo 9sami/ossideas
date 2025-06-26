@@ -141,7 +141,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
   return (
     <div>
-      {/* Filter Panel - Top Bar */}
+      {/* Filter Panel - Fixed Top Bar */}
       <FilterPanel 
         filters={filters}
         onFilterChange={setFilters}
@@ -149,8 +149,8 @@ const MainContent: React.FC<MainContentProps> = ({
         onClose={onFilterToggle}
       />
 
-      {/* Main Content */}
-      <div className="p-6">
+      {/* Main Content - Add top margin when filter is open */}
+      <div className={`p-6 ${filterOpen ? 'mt-64' : ''}`}>
         {/* Trending Ideas */}
         {trendingIdeas.length > 0 && (
           <div className="mb-12">
