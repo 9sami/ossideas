@@ -152,6 +152,7 @@ const MainContent: React.FC<MainContentProps> = ({
       {/* Main Content */}
       <div className="p-6">
         {/*Built with bolt */}
+        <div className="flex justify-center">
           <a
             href="https://bolt.new"
             target="_blank"
@@ -171,6 +172,7 @@ const MainContent: React.FC<MainContentProps> = ({
             </div>
             <ExternalLink className="h-4 w-4 text-orange-200 group-hover:text-white transition-colors" />
           </a>
+        </div>
         
         {/* Trending Ideas */}
         {trendingIdeas.length > 0 && (
