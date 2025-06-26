@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = [
     { id: 'home', icon: Home, label: 'Home', onClick: onHomeClick },
     { id: 'categories', icon: Grid3X3, label: 'Categories', onClick: () => {} },
-    { id: 'saved', icon: Heart, label: 'Saved Ideas', onClick: () => onNavigate('profile') },
+    { id: 'profile', icon: Heart, label: 'Saved Ideas', onClick: () => onNavigate('profile') },
     { id: 'community', icon: Users, label: 'Community', onClick: () => {} },
     { id: 'pricing', icon: CreditCard, label: 'Pricing', onClick: () => onNavigate('pricing') },
     { id: 'submit', icon: Plus, label: 'Submit Idea', onClick: () => {}, premium: true },
@@ -68,6 +68,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
+
+  // Function to determine if a menu item is active
+  const isMenuItemActive = (itemId: string) => {
+    switch (itemId) {
+      case 'home':
+        return currentView === 'home' || currentView === 'detail';
+      case 'profile':
+        return currentView === 'profile';
+      case 'pricing':
+        return currentView === 'pricing';
+      default:
+        return false;
+    }
+  };
 
   return (
     <>
@@ -104,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id;
+              const isActive = isMenuItemActive(item.id);
               
               return (
                 <div key={item.id} className="relative group">
