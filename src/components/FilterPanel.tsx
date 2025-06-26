@@ -151,7 +151,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">📂</span>
                   Categories
                 </h4>
-                <div className="grid grid-cols-1 gap-2 h-full overflow-y-auto custom-scrollbar">
+                <div className="z-0 grid grid-cols-1 gap-2 h-full overflow-y-auto custom-scrollbar">
                   {categories.map((category) => (
                     <label key={category} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
