@@ -191,19 +191,6 @@ const MainContent: React.FC<MainContentProps> = ({
                   {getSectionDescription('trending', trendingIdeas.length, mockIdeas.filter(i => i.isTrending).length)}
                 </p>
               </div>
-              {!isLoggedIn && (
-                <div className="text-center inline-block p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-orange-800 mb-2">
-                    Get personalized recommendations
-                  </p>
-                  <button 
-                    onClick={onRegisterClick}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
-                  >
-                    Sign Up Free
-                  </button>
-                </div>
-              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {trendingIdeas.slice(0, 8).map((idea) => (
