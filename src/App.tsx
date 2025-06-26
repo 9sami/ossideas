@@ -34,6 +34,11 @@ const AppContent: React.FC = () => {
     }
   }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
 
+  // Scroll to top whenever the view changes - MOVED BEFORE CONDITIONAL RETURN
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView, selectedIdea]);
+
   // Show loading spinner while auth state is initializing
   if (authState.loading) {
     return (
@@ -105,11 +110,6 @@ const AppContent: React.FC = () => {
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
   };
-
-  // Scroll to top whenever the view changes
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentView, selectedIdea]);
 
   return (
     <div className="min-h-screen bg-gray-50">
