@@ -237,7 +237,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-lg mr-2">⭐</span>
                   Special Filters
                 </h4>
-                <div className="space-y-3 max-h-64 ">
+                <div className="space-y-3 max-h-64">
                   <label className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
                     <input
                       type="checkbox"
