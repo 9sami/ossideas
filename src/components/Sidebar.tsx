@@ -154,15 +154,26 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </button>
                   
-                  {/* Tooltip for closed state */}
+                  {/* Tooltip for closed state - Fixed positioning to prevent overflow */}
                   {!isOpen && (
-                    <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                    <div 
+                      className="fixed px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-[60]"
+                      style={{
+                        left: '72px', // 64px (sidebar width) + 8px (gap)
+                        top: `${item.id === 'home' ? '88' : item.id === 'categories' ? '136' : item.id === 'profile' ? '184' : item.id === 'community' ? '232' : item.id === 'pricing' ? '280' : item.id === 'submit' ? '328' : '376'}px`,
+                        transform: 'translateY(-50%)'
+                      }}
+                    >
                       {item.label}
                       {item.premium && (
                         <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded">
                           Pro
                         </span>
                       )}
+                      {/* Tooltip arrow */}
+                      <div 
+                        className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"
+                      />
                     </div>
                   )}
                 </div>
