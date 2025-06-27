@@ -75,15 +75,15 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
   if (!isOpen) return null;
 
   return (
-    <div className="bg-white border-b border-gray-200 shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="fixed top-16 left-16 right-0 bg-white border-b border-gray-200 shadow-lg z-20 max-h-[calc(100vh-4rem)] overflow-y-auto">
+      <div className="mx-auto px-4 sm:px-6 py-4">
         {/* Header Section */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg flex-shrink-0">
               <Sliders className="h-4 w-4 text-orange-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
               <div className="flex items-center space-x-2 mt-0.5">
                 <div className="flex items-center space-x-1">
@@ -91,18 +91,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                   <span className="text-xs text-green-600 font-medium">Live</span>
                 </div>
                 <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 truncate">
                   {hasActiveFilters ? `${filters.categories.length + filters.license.length + (filters.isNew ? 1 : 0) + (filters.isTrending ? 1 : 0) + (filters.communityPick ? 1 : 0)} filters active` : 'No filters applied'}
                 </span>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
               >
                 Clear All
               </button>
@@ -118,18 +118,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
 
         {/* Filters Grid */}
         <div className="pt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-8">
             
             {/* Apply to Sections */}
-            <div className="lg:col-span-3">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 h-full">
+            <div className="md:col-span-1 lg:col-span-3">
+              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">🎯</span>
                   Apply To Sections
                 </h4>
                 <div className="space-y-2">
                   {sections.map((section) => (
-                    <label key={section.id} className="flex items-center p-2 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150">
+                    <label key={section.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
                         type="checkbox"
                         checked={(filters.appliedSections || []).includes(section.id)}
@@ -145,15 +145,15 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             </div>
 
             {/* Categories */}
-            <div className="lg:col-span-3">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 h-full">
+            <div className="md:col-span-1 lg:col-span-3">
+              <div className="border border-orange-200 pb-8 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">📂</span>
                   Categories
                 </h4>
-                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
                   {categories.map((category) => (
-                    <label key={category} className="flex items-center p-2 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150">
+                    <label key={category} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
                         type="checkbox"
                         checked={filters.categories.includes(category)}
@@ -168,18 +168,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             </div>
 
             {/* Opportunity Score & License */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="md:col-span-2 lg:col-span-3 space-y-4">
               {/* Opportunity Score */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4">
+              <div className="border border-orange-200 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">⚡</span>
                   Opportunity Score
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-600 bg-white px-2 py-1 rounded">{filters.opportunityScore[0]}</span>
+                    <span className="text-sm font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded">{filters.opportunityScore[0]}</span>
                     <span className="text-xs text-gray-500">to</span>
-                    <span className="text-sm font-semibold text-gray-600 bg-white px-2 py-1 rounded">{filters.opportunityScore[1]}</span>
+                    <span className="text-sm font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded">{filters.opportunityScore[1]}</span>
                   </div>
                   <div className="relative">
                     <input
@@ -202,21 +202,21 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                         ...filters,
                         opportunityScore: [filters.opportunityScore[0], parseInt(e.target.value)]
                       })}
-                      className="absolute top-0 w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer slider-thumb-orange"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb-orange"
                     />
                   </div>
                 </div>
               </div>
 
               {/* License */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
+              <div className="border border-orange-200 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">📄</span>
                   License Type
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2">
                   {licenses.map((license) => (
-                    <label key={license} className="flex items-center p-2 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150">
+                    <label key={license} className="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150">
                       <input
                         type="checkbox"
                         checked={filters.license.includes(license)}
@@ -231,14 +231,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
             </div>
 
             {/* Special Filters */}
-            <div className="lg:col-span-3">
-              <div className="bg-gradient-to-r from-rose-50 to-red-50 rounded-xl p-4 h-full">
+            <div className="md:col-span-2 lg:col-span-3">
+              <div className="border border-orange-200 rounded-xl p-4 h-full bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">⭐</span>
                   Special Filters
                 </h4>
                 <div className="space-y-3">
-                  <label className="flex items-center p-3 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
+                  <label className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
                     <input
                       type="checkbox"
                       checked={filters.isNew}
@@ -252,7 +252,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                     </div>
                   </label>
                   
-                  <label className="flex items-center p-3 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
+                  <label className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
                     <input
                       type="checkbox"
                       checked={filters.isTrending}
@@ -266,7 +266,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
                     </div>
                   </label>
                   
-                  <label className="flex items-center p-3 rounded-lg hover:bg-white/50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
+                  <label className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors duration-150 border-2 border-transparent hover:border-orange-200">
                     <input
                       type="checkbox"
                       checked={filters.communityPick}
@@ -285,44 +285,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-        
-        .slider-thumb-orange::-webkit-slider-thumb {
-          appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #ea580c;
-          cursor: pointer;
-          border: 2px solid #fff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .slider-thumb-orange::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #ea580c;
-          cursor: pointer;
-          border: 2px solid #fff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-      `}</style>
     </div>
   );
 };
