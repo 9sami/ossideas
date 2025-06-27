@@ -246,11 +246,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     setFormData(prev => ({ ...prev, password: '', confirmPassword: '', fullName: '' }));
   };
 
-  // Add skip onboarding function
-  const handleSkipOnboarding = () => {
-    onClose();
-  };
-
   if (!isOpen) return null;
 
   // Show email verification screen
@@ -352,12 +347,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 {MODAL_CONTENT[mode].subtitle}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">
@@ -375,11 +364,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   value={onboardingData.phoneNumber}
                   onChange={handleOnboardingChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                  placeholder="+1234567890"
+                  placeholder="Include country code (e.g., +1 for US)"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+              <p className="text-xs text-gray-500 mt-1">Get <strong>exclusive updates & early access</strong> via SMS. Your number stays private.</p>
             </div>
 
             {/* Location */}
@@ -493,17 +482,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             >
               {authState.loading ? 'Completing Setup...' : 'Complete Setup'}
             </button>
-
-            {/* Skip option for onboarding */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleSkipOnboarding}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
-              >
-                Skip for now
-              </button>
-            </div>
           </form>
         </div>
       </div>

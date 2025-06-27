@@ -131,7 +131,7 @@ export const useAuthLogic = () => {
         avatarUrl: profile.avatar_url,
         phoneNumber: profile.phone_number,
         usagePurpose: profile.usage_purpose,
-        industries: profile.industries,
+        industries: profile.industries || [],
         referralSource: profile.referral_source,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
@@ -366,7 +366,7 @@ export const useAuthLogic = () => {
         }
 
         const user = await convertSupabaseUser(data.user);
-        const isOnboarded = user ? checkIfOnboarded(user) : true;
+        const isOnboarded = user ? await checkIfOnboarded(user) : true;
         
         setAuthState({ 
           user, 
@@ -489,7 +489,7 @@ export const useAuthLogic = () => {
 
         // Email is already confirmed, user will need onboarding
         const user = await convertSupabaseUser(data.user);
-        const isOnboarded = user ? checkIfOnboarded(user) : false;
+        const isOnboarded = user ? await checkIfOnboarded(user) : false;
         
         setAuthState({ 
           user, 
@@ -523,6 +523,7 @@ export const useAuthLogic = () => {
   // Complete onboarding
   const completeOnboarding = async (data: OnboardingData): Promise<{ success: boolean; error?: string }> => {
     try {
+      console.log('Starting onboarding completion with data:', data);
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -531,22 +532,35 @@ export const useAuthLogic = () => {
         throw new Error('No authenticated user found');
       }
 
-      const { error } = await supabase
+      console.log('Updating profile for user:', user.id);
+
+      // Ensure industries is an array and not empty
+      const industriesArray = Array.isArray(data.industries) ? data.industries : [];
+      
+      const updateData = {
+        phone_number: data.phoneNumber,
+        location: data.location,
+        usage_purpose: data.usagePurpose,
+        industries: industriesArray,
+        referral_source: data.referralSource,
+        updated_at: new Date().toISOString(),
+        onboarding_completed: true
+      };
+
+      console.log('Update data to be sent:', updateData);
+
+      const { data: updateResult, error } = await supabase
         .from('profiles')
-        .update({
-          phone_number: data.phoneNumber,
-          location: data.location,
-          usage_purpose: data.usagePurpose,
-          industries: data.industries,
-          referral_source: data.referralSource,
-          updated_at: new Date().toISOString(),
-          onboarding_completed: true
-        })
-        .eq('id', user.id);
+        .update(updateData)
+        .eq('id', user.id)
+        .select();
 
       if (error) {
+        console.error('Database update error:', error);
         throw error;
       }
+
+      console.log('Update result:', updateResult);
 
       // Refresh user data
       const updatedUser = await convertSupabaseUser(user);
@@ -564,8 +578,10 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false
       }));
 
+      console.log('Onboarding completed successfully');
       return { success: true };
     } catch (error) {
+      console.error('Onboarding completion error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete onboarding';
       setAuthState(prev => ({ 
         ...prev, 
@@ -635,8 +651,22 @@ export const useAuthLogic = () => {
       }));
       
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('Logout error:', error);
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          emailVerificationRequired: false,
+          onboardingRequired: false,
+        }));
+        return;
+      }
+
+      // Successfully logged out - the auth state change listener will handle updating the state
+      console.log('Logout successful');
     } catch (error) {
+      console.error('Logout catch error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       setAuthState(prev => ({ 
         ...prev, 
@@ -645,7 +675,6 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false,
         onboardingRequired: false,
       }));
-      throw new Error(errorMessage);
     }
   };
 
