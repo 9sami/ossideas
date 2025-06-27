@@ -368,7 +368,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Get exclusive updates & early access via SMS. Your number stays private.</p>
+              <p className="text-xs text-gray-500 mt-1">Get <strong>exclusive updates & early access</strong> via SMS. Your number stays private.</p>
             </div>
 
             {/* Location */}
