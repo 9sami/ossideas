@@ -246,11 +246,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     setFormData(prev => ({ ...prev, password: '', confirmPassword: '', fullName: '' }));
   };
 
-  // Add skip onboarding function
-  const handleSkipOnboarding = () => {
-    onClose();
-  };
-
   if (!isOpen) return null;
 
   // Show email verification screen
@@ -352,12 +347,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 {MODAL_CONTENT[mode].subtitle}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">
@@ -493,17 +482,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             >
               {authState.loading ? 'Completing Setup...' : 'Complete Setup'}
             </button>
-
-            {/* Skip option for onboarding */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleSkipOnboarding}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
-              >
-                Skip for now
-              </button>
-            </div>
           </form>
         </div>
       </div>
