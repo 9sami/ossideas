@@ -364,11 +364,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   value={onboardingData.phoneNumber}
                   onChange={handleOnboardingChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                  placeholder="+1234567890"
+                  placeholder="Include country code (e.g., +1 for US)"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US)</p>
+              <p className="text-xs text-gray-500 mt-1">Get exclusive updates & early access via SMS. Your number stays private.</p>
             </div>
 
             {/* Location */}
