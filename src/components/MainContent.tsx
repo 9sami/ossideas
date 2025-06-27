@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
 import { IdeaData, FilterOptions } from '../types';
-import { mockIdeas } from '../data/mockData';
 import { 
   useRepositories, 
   useNewRepositories, 
@@ -219,7 +218,7 @@ const MainContent: React.FC<MainContentProps> = ({
     };
   }, [loading, hasMore, loadMore]);
 
-  // Helper function to apply filters to ideas (both mock and repository-based)
+  // Helper function to apply filters to ideas
   const applyFilters = (ideas: IdeaData[]) => {
     return ideas.filter(idea => {
       // Search query filter
@@ -264,17 +263,15 @@ const MainContent: React.FC<MainContentProps> = ({
     return (filters.appliedSections || []).includes(sectionId);
   };
 
-  // Apply filtering based on section settings
+  // Apply filtering based on section settings - NOW ONLY USING BACKEND DATA
   const trendingIdeas = useMemo(() => {
-    // Combine mock ideas and trending repository ideas
-    const allIdeas = [...mockIdeas.filter(idea => idea.isTrending), ...trendingRepositoryIdeas];
-    return shouldFilterSection('trending') ? applyFilters(allIdeas) : allIdeas;
+    // Only use trending repository ideas from backend
+    return shouldFilterSection('trending') ? applyFilters(trendingRepositoryIdeas) : trendingRepositoryIdeas;
   }, [searchQuery, filters, trendingRepositoryIdeas]);
 
   const communityPicks = useMemo(() => {
-    // Combine mock ideas and community repository ideas
-    const allIdeas = [...mockIdeas.filter(idea => idea.communityPick), ...communityRepositoryIdeas];
-    return shouldFilterSection('community') ? applyFilters(allIdeas) : allIdeas;
+    // Only use community repository ideas from backend
+    return shouldFilterSection('community') ? applyFilters(communityRepositoryIdeas) : communityRepositoryIdeas;
   }, [searchQuery, filters, communityRepositoryIdeas]);
 
   const newArrivals = useMemo(() => {
@@ -282,11 +279,10 @@ const MainContent: React.FC<MainContentProps> = ({
     return shouldFilterSection('newArrivals') ? applyFilters(newRepositoryIdeas) : newRepositoryIdeas;
   }, [searchQuery, filters, newRepositoryIdeas]);
 
-  // Personalized recommendations (filtered based on settings) - mix of both
+  // Personalized recommendations (filtered based on settings) - only repository ideas
   const personalizedIdeas = useMemo(() => {
-    // Combine mock ideas and repository ideas for personalized recommendations
-    const allIdeas = [...mockIdeas, ...repositoryIdeas];
-    const baseIdeas = allIdeas.slice(0, 6);
+    // Only use repository ideas for personalized recommendations
+    const baseIdeas = repositoryIdeas.slice(0, 6);
     return shouldFilterSection('personalized') ? applyFilters(baseIdeas) : baseIdeas;
   }, [searchQuery, filters, repositoryIdeas]);
 
@@ -305,22 +301,22 @@ const MainContent: React.FC<MainContentProps> = ({
   const getSectionDescription = (sectionId: string, count: number, baseCount?: number) => {
     const isFiltered = shouldFilterSection(sectionId);
     if (hasActiveFilters && isFiltered) {
-      return `${count} ${sectionId === 'trending' ? 'trending ideas' : 
+      return `${count} ${sectionId === 'trending' ? 'trending repositories' : 
                      sectionId === 'community' ? 'community favorites' :
                      sectionId === 'newArrivals' ? 'fresh repositories' :
                      sectionId === 'personalized' ? 'personalized recommendations' :
-                     'ideas'} match your filters`;
+                     'repositories'} match your filters`;
     }
     
     switch (sectionId) {
       case 'trending':
-        return `${count} hot ideas gaining momentum`;
+        return `${count} hot repositories gaining momentum`;
       case 'community':
-        return `${count} ideas loved by our community`;
+        return `${count} repositories loved by our community`;
       case 'newArrivals':
         return `${count} recently created repositories`;
       case 'personalized':
-        return `${count} ideas tailored to your interests`;
+        return `${count} repositories tailored to your interests`;
       default:
         return `${count} curated startup opportunities from open source projects`;
     }
@@ -359,7 +355,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                  🔥 Trending Ideas
+                  🔥 Trending Repositories
                   {shouldFilterSection('trending') && hasActiveFilters && (
                     <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
                       Filtered
@@ -367,7 +363,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {trendingLoading ? 'Loading trending ideas...' : getSectionDescription('trending', trendingIdeas.length)}
+                  {trendingLoading ? 'Loading trending repositories...' : getSectionDescription('trending', trendingIdeas.length)}
                 </p>
               </div>
             </div>
@@ -375,7 +371,7 @@ const MainContent: React.FC<MainContentProps> = ({
             {trendingLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                  <div key={i} className="bg-gray-200 rounded-xl h-[380px] animate-pulse"></div>
                 ))}
               </div>
             ) : (
@@ -414,7 +410,7 @@ const MainContent: React.FC<MainContentProps> = ({
             {communityLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                  <div key={i} className="bg-gray-200 rounded-xl h-[380px] animate-pulse"></div>
                 ))}
               </div>
             ) : (
@@ -453,7 +449,7 @@ const MainContent: React.FC<MainContentProps> = ({
             {newLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                  <div key={i} className="bg-gray-200 rounded-xl h-[380px] animate-pulse"></div>
                 ))}
               </div>
             ) : (

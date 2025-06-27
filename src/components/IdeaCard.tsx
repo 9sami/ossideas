@@ -24,10 +24,10 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
   return (
     <div 
       onClick={onClick}
-      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300 cursor-pointer"
+      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300 cursor-pointer h-[380px] flex flex-col"
     >
       {/* Card Header with Gradient Background */}
-      <div className="h-32 bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 relative overflow-hidden">
+      <div className="h-32 bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 relative overflow-hidden flex-shrink-0">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
         
         {/* Badges */}
@@ -71,9 +71,9 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
       </div>
 
       {/* Card Content */}
-      <div className="p-5">
+      <div className="p-5 flex-1 flex flex-col">
         {/* Title and Tagline */}
-        <div className="mb-3">
+        <div className="mb-3 flex-shrink-0">
           <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-orange-600 transition-colors line-clamp-2">
             {idea.title}
           </h3>
@@ -83,7 +83,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
         </div>
 
         {/* OSS Project */}
-        <div className="mb-3">
+        <div className="mb-3 flex-shrink-0">
           <div className="flex items-center text-sm text-gray-500">
             <ExternalLink className="h-3 w-3 mr-1" />
             <span className="truncate">{idea.ossProject}</span>
@@ -91,7 +91,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
         </div>
 
         {/* Categories */}
-        <div className="mb-4">
+        <div className="mb-4 flex-1">
           <div className="flex flex-wrap gap-1">
             {idea.categories.slice(0, 3).map((category, index) => (
               <span
@@ -110,7 +110,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
         </div>
 
         {/* License */}
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-sm flex-shrink-0">
           <span className="text-gray-500">License: {idea.license}</span>
           <div className="flex items-center text-orange-500 group-hover:text-orange-600 transition-colors">
             <span className="text-xs font-medium">View Details</span>
