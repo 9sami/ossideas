@@ -195,7 +195,7 @@ const MainContent: React.FC<MainContentProps> = ({
     };
   }, [loading, hasMore, loadMore]);
 
-  // Helper function to apply filters to mock ideas (for other sections)
+  // Helper function to apply filters to ideas (both mock and repository-based)
   const applyFilters = (ideas: IdeaData[]) => {
     return ideas.filter(idea => {
       // Search query filter
@@ -240,27 +240,34 @@ const MainContent: React.FC<MainContentProps> = ({
     return (filters.appliedSections || []).includes(sectionId);
   };
 
-  // Apply filtering based on section settings for mock data
+  // Apply filtering based on section settings - now using dynamic repository data
   const trendingIdeas = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.isTrending);
+    // Combine mock ideas and repository ideas for trending
+    const allIdeas = [...mockIdeas, ...repositoryIdeas];
+    const baseIdeas = allIdeas.filter(idea => idea.isTrending);
     return shouldFilterSection('trending') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, repositoryIdeas]);
 
   const communityPicks = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.communityPick);
+    // Combine mock ideas and repository ideas for community picks
+    const allIdeas = [...mockIdeas, ...repositoryIdeas];
+    const baseIdeas = allIdeas.filter(idea => idea.communityPick);
     return shouldFilterSection('community') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, repositoryIdeas]);
 
   const newArrivals = useMemo(() => {
-    const baseIdeas = mockIdeas.filter(idea => idea.isNew);
+    // Use ONLY repository ideas for new arrivals to show dynamic data
+    const baseIdeas = repositoryIdeas.filter(idea => idea.isNew);
     return shouldFilterSection('newArrivals') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, repositoryIdeas]);
 
-  // Personalized recommendations (filtered based on settings)
+  // Personalized recommendations (filtered based on settings) - mix of both
   const personalizedIdeas = useMemo(() => {
-    const baseIdeas = mockIdeas.slice(0, 6);
+    // Combine mock ideas and repository ideas for personalized recommendations
+    const allIdeas = [...mockIdeas, ...repositoryIdeas];
+    const baseIdeas = allIdeas.slice(0, 6);
     return shouldFilterSection('personalized') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, repositoryIdeas]);
 
   // Check if any filters are active
   const hasActiveFilters = 
@@ -274,12 +281,12 @@ const MainContent: React.FC<MainContentProps> = ({
     filters.opportunityScore[1] < 100;
 
   // Helper function to get section description
-  const getSectionDescription = (sectionId: string, count: number, baseCount: number) => {
+  const getSectionDescription = (sectionId: string, count: number, baseCount?: number) => {
     const isFiltered = shouldFilterSection(sectionId);
     if (hasActiveFilters && isFiltered) {
       return `${count} ${sectionId === 'trending' ? 'trending ideas' : 
                      sectionId === 'community' ? 'community favorites' :
-                     sectionId === 'newArrivals' ? 'fresh ideas' :
+                     sectionId === 'newArrivals' ? 'fresh repositories' :
                      sectionId === 'personalized' ? 'personalized recommendations' :
                      'ideas'} match your filters`;
     }
@@ -290,7 +297,7 @@ const MainContent: React.FC<MainContentProps> = ({
       case 'community':
         return `${count} ideas loved by our community`;
       case 'newArrivals':
-        return `${count} recently added opportunities`;
+        return `${count} recently created repositories`;
       case 'personalized':
         return `${count} ideas tailored to your interests`;
       default:
@@ -339,7 +346,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('trending', trendingIdeas.length, mockIdeas.filter(i => i.isTrending).length)}
+                  {getSectionDescription('trending', trendingIdeas.length)}
                 </p>
               </div>
             </div>
@@ -369,7 +376,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('community', communityPicks.length, mockIdeas.filter(i => i.communityPick).length)}
+                  {getSectionDescription('community', communityPicks.length)}
                 </p>
               </div>
             </div>
@@ -385,7 +392,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         )}
 
-        {/* New Arrivals */}
+        {/* New Arrivals - Now showing dynamic repository data */}
         {newArrivals.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
@@ -399,7 +406,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length)}
+                  {getSectionDescription('newArrivals', newArrivals.length)}
                 </p>
               </div>
             </div>
@@ -411,6 +418,25 @@ const MainContent: React.FC<MainContentProps> = ({
                   onClick={() => onIdeaSelect(idea)}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Show message if no new repositories found */}
+        {newArrivals.length === 0 && shouldFilterSection('newArrivals') && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                  ✨ New Arrivals
+                </h2>
+                <p className="text-gray-600">
+                  No new repositories found in the last 30 days
+                </p>
+              </div>
+            </div>
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">Check back later for newly created repositories!</p>
             </div>
           </div>
         )}
@@ -429,7 +455,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('personalized', personalizedIdeas.length, 6)}
+                  {getSectionDescription('personalized', personalizedIdeas.length)}
                 </p>
               </div>
             </div>
