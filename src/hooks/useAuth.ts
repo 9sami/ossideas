@@ -651,8 +651,22 @@ export const useAuthLogic = () => {
       }));
       
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('Logout error:', error);
+        setAuthState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: error.message,
+          emailVerificationRequired: false,
+          onboardingRequired: false,
+        }));
+        return;
+      }
+
+      // Successfully logged out - the auth state change listener will handle updating the state
+      console.log('Logout successful');
     } catch (error) {
+      console.error('Logout catch error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       setAuthState(prev => ({ 
         ...prev, 
@@ -661,7 +675,6 @@ export const useAuthLogic = () => {
         emailVerificationRequired: false,
         onboardingRequired: false,
       }));
-      throw new Error(errorMessage);
     }
   };
 
