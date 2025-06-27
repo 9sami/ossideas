@@ -220,3 +220,150 @@ export const useRepositories = () => {
     refetch: () => fetchRepositories(0, true),
   };
 };
+
+// New hook specifically for fetching new repositories
+export const useNewRepositories = () => {
+  const [newRepositories, setNewRepositories] = useState<Repository[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNewRepositories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data, error: fetchError } = await supabase
+        .from('repositories')
+        .select('*')
+        .gte('created_at_github', thirtyDaysAgo.toISOString())
+        .eq('is_archived', false)
+        .order('created_at_github', { ascending: false })
+        .limit(20); // Get up to 20 new repositories
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      setNewRepositories(data || []);
+    } catch (err) {
+      console.error('Error fetching new repositories:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch new repositories');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNewRepositories();
+  }, [fetchNewRepositories]);
+
+  return {
+    newRepositories,
+    loading,
+    error,
+    refetch: fetchNewRepositories,
+  };
+};
+
+// Hook for fetching trending repositories
+export const useTrendingRepositories = () => {
+  const [trendingRepositories, setTrendingRepositories] = useState<Repository[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTrendingRepositories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Calculate date 7 days ago for recent activity
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data, error: fetchError } = await supabase
+        .from('repositories')
+        .select('*')
+        .gte('stargazers_count', 1000)
+        .gte('last_commit_at', sevenDaysAgo.toISOString())
+        .eq('is_archived', false)
+        .order('stargazers_count', { ascending: false })
+        .limit(20); // Get up to 20 trending repositories
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      setTrendingRepositories(data || []);
+    } catch (err) {
+      console.error('Error fetching trending repositories:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch trending repositories');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrendingRepositories();
+  }, [fetchTrendingRepositories]);
+
+  return {
+    trendingRepositories,
+    loading,
+    error,
+    refetch: fetchTrendingRepositories,
+  };
+};
+
+// Hook for fetching community pick repositories
+export const useCommunityPickRepositories = () => {
+  const [communityRepositories, setCommunityRepositories] = useState<Repository[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCommunityRepositories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('repositories')
+        .select('*')
+        .gte('stargazers_count', 500)
+        .eq('is_archived', false)
+        .order('stargazers_count', { ascending: false })
+        .limit(20); // Get up to 20 community pick repositories
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Filter for high engagement ratio (community picks)
+      const communityPicks = (data || []).filter(repo => {
+        const engagementRatio = (repo.forks_count + repo.watchers_count) / Math.max(repo.stargazers_count, 1);
+        return engagementRatio > 0.1;
+      });
+
+      setCommunityRepositories(communityPicks);
+    } catch (err) {
+      console.error('Error fetching community repositories:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch community repositories');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCommunityRepositories();
+  }, [fetchCommunityRepositories]);
+
+  return {
+    communityRepositories,
+    loading,
+    error,
+    refetch: fetchCommunityRepositories,
+  };
+};

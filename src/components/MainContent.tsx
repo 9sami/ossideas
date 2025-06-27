@@ -3,7 +3,13 @@ import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
 import { IdeaData, FilterOptions } from '../types';
 import { mockIdeas } from '../data/mockData';
-import { useRepositories, Repository } from '../hooks/useRepositories';
+import { 
+  useRepositories, 
+  useNewRepositories, 
+  useTrendingRepositories, 
+  useCommunityPickRepositories,
+  Repository 
+} from '../hooks/useRepositories';
 import { Heart, Zap, ExternalLink } from 'lucide-react';
 
 interface MainContentProps {
@@ -33,6 +39,7 @@ const MainContent: React.FC<MainContentProps> = ({
     appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
   });
 
+  // Main repositories hook for discovery section
   const { 
     repositories, 
     loading, 
@@ -42,6 +49,11 @@ const MainContent: React.FC<MainContentProps> = ({
     applyFilters: applyRepoFilters,
     filters: repoFilters 
   } = useRepositories();
+
+  // Specialized hooks for different sections
+  const { newRepositories, loading: newLoading } = useNewRepositories();
+  const { trendingRepositories, loading: trendingLoading } = useTrendingRepositories();
+  const { communityRepositories, loading: communityLoading } = useCommunityPickRepositories();
 
   const observerRef = useRef<IntersectionObserver>();
   const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
@@ -142,10 +154,22 @@ const MainContent: React.FC<MainContentProps> = ({
     };
   }, []);
 
-  // Convert repositories to ideas
+  // Convert repositories to ideas for different sections
   const repositoryIdeas = useMemo(() => {
     return repositories.map(convertRepositoryToIdea);
   }, [repositories, convertRepositoryToIdea]);
+
+  const newRepositoryIdeas = useMemo(() => {
+    return newRepositories.map(convertRepositoryToIdea);
+  }, [newRepositories, convertRepositoryToIdea]);
+
+  const trendingRepositoryIdeas = useMemo(() => {
+    return trendingRepositories.map(convertRepositoryToIdea);
+  }, [trendingRepositories, convertRepositoryToIdea]);
+
+  const communityRepositoryIdeas = useMemo(() => {
+    return communityRepositories.map(convertRepositoryToIdea);
+  }, [communityRepositories, convertRepositoryToIdea]);
 
   // Update repository filters when main filters change
   useEffect(() => {
@@ -240,26 +264,23 @@ const MainContent: React.FC<MainContentProps> = ({
     return (filters.appliedSections || []).includes(sectionId);
   };
 
-  // Apply filtering based on section settings - now using dynamic repository data
+  // Apply filtering based on section settings
   const trendingIdeas = useMemo(() => {
-    // Combine mock ideas and repository ideas for trending
-    const allIdeas = [...mockIdeas, ...repositoryIdeas];
-    const baseIdeas = allIdeas.filter(idea => idea.isTrending);
-    return shouldFilterSection('trending') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters, repositoryIdeas]);
+    // Combine mock ideas and trending repository ideas
+    const allIdeas = [...mockIdeas.filter(idea => idea.isTrending), ...trendingRepositoryIdeas];
+    return shouldFilterSection('trending') ? applyFilters(allIdeas) : allIdeas;
+  }, [searchQuery, filters, trendingRepositoryIdeas]);
 
   const communityPicks = useMemo(() => {
-    // Combine mock ideas and repository ideas for community picks
-    const allIdeas = [...mockIdeas, ...repositoryIdeas];
-    const baseIdeas = allIdeas.filter(idea => idea.communityPick);
-    return shouldFilterSection('community') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters, repositoryIdeas]);
+    // Combine mock ideas and community repository ideas
+    const allIdeas = [...mockIdeas.filter(idea => idea.communityPick), ...communityRepositoryIdeas];
+    return shouldFilterSection('community') ? applyFilters(allIdeas) : allIdeas;
+  }, [searchQuery, filters, communityRepositoryIdeas]);
 
   const newArrivals = useMemo(() => {
-    // Use ONLY repository ideas for new arrivals to show dynamic data
-    const baseIdeas = repositoryIdeas.filter(idea => idea.isNew);
-    return shouldFilterSection('newArrivals') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters, repositoryIdeas]);
+    // Use new repository ideas - these are fetched immediately and sorted by creation date
+    return shouldFilterSection('newArrivals') ? applyFilters(newRepositoryIdeas) : newRepositoryIdeas;
+  }, [searchQuery, filters, newRepositoryIdeas]);
 
   // Personalized recommendations (filtered based on settings) - mix of both
   const personalizedIdeas = useMemo(() => {
@@ -333,7 +354,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
         
         {/* Trending Ideas */}
-        {trendingIdeas.length > 0 && (
+        {(trendingIdeas.length > 0 || trendingLoading) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -346,24 +367,33 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('trending', trendingIdeas.length)}
+                  {trendingLoading ? 'Loading trending ideas...' : getSectionDescription('trending', trendingIdeas.length)}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {trendingIdeas.slice(0, 8).map((idea) => (
-                <IdeaCard
-                  key={idea.id}
-                  idea={idea}
-                  onClick={() => onIdeaSelect(idea)}
-                />
-              ))}
-            </div>
+            
+            {trendingLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {trendingIdeas.slice(0, 8).map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    onClick={() => onIdeaSelect(idea)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Community Picks */}
-        {communityPicks.length > 0 && (
+        {(communityPicks.length > 0 || communityLoading) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -376,24 +406,33 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('community', communityPicks.length)}
+                  {communityLoading ? 'Loading community picks...' : getSectionDescription('community', communityPicks.length)}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {communityPicks.slice(0, 8).map((idea) => (
-                <IdeaCard
-                  key={idea.id}
-                  idea={idea}
-                  onClick={() => onIdeaSelect(idea)}
-                />
-              ))}
-            </div>
+            
+            {communityLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {communityPicks.slice(0, 8).map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    onClick={() => onIdeaSelect(idea)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* New Arrivals - Now showing dynamic repository data */}
-        {newArrivals.length > 0 && (
+        {/* New Arrivals - Now loads immediately with dedicated hook */}
+        {(newArrivals.length > 0 || newLoading) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -406,24 +445,33 @@ const MainContent: React.FC<MainContentProps> = ({
                   )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('newArrivals', newArrivals.length)}
+                  {newLoading ? 'Loading new repositories...' : getSectionDescription('newArrivals', newArrivals.length)}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {newArrivals.slice(0, 8).map((idea) => (
-                <IdeaCard
-                  key={idea.id}
-                  idea={idea}
-                  onClick={() => onIdeaSelect(idea)}
-                />
-              ))}
-            </div>
+            
+            {newLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-gray-200 rounded-xl h-64 animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {newArrivals.slice(0, 8).map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    onClick={() => onIdeaSelect(idea)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Show message if no new repositories found */}
-        {newArrivals.length === 0 && shouldFilterSection('newArrivals') && (
+        {!newLoading && newArrivals.length === 0 && shouldFilterSection('newArrivals') && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
