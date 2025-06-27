@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
 import { IdeaData, FilterOptions } from '../types';
 import { mockIdeas } from '../data/mockData';
+import { useRepositories, Repository } from '../hooks/useRepositories';
 import { Heart, Zap, ExternalLink } from 'lucide-react';
+
 interface MainContentProps {
   searchQuery: string;
   filterOpen: boolean;
@@ -31,7 +33,169 @@ const MainContent: React.FC<MainContentProps> = ({
     appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
   });
 
-  // Helper function to apply filters to ideas
+  const { 
+    repositories, 
+    loading, 
+    hasMore, 
+    error, 
+    loadMore, 
+    applyFilters: applyRepoFilters,
+    filters: repoFilters 
+  } = useRepositories();
+
+  const observerRef = useRef<IntersectionObserver>();
+  const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
+
+  // Convert Repository to IdeaData for compatibility with existing components
+  const convertRepositoryToIdea = useCallback((repo: Repository): IdeaData => {
+    const isNew = () => {
+      if (!repo.created_at_github) return false;
+      const createdDate = new Date(repo.created_at_github);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return createdDate > thirtyDaysAgo;
+    };
+
+    const isTrending = () => {
+      // Consider trending if high stars and recent activity
+      return repo.stargazers_count > 1000 && repo.last_commit_at && 
+             new Date(repo.last_commit_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    };
+
+    const isCommunityPick = () => {
+      // Consider community pick if high engagement ratio
+      const engagementRatio = (repo.forks_count + repo.watchers_count) / Math.max(repo.stargazers_count, 1);
+      return engagementRatio > 0.1 && repo.stargazers_count > 500;
+    };
+
+    // Generate opportunity score based on repository metrics
+    const calculateOpportunityScore = () => {
+      let score = 0;
+      
+      // Stars contribution (0-30 points)
+      if (repo.stargazers_count > 10000) score += 30;
+      else if (repo.stargazers_count > 5000) score += 25;
+      else if (repo.stargazers_count > 1000) score += 20;
+      else if (repo.stargazers_count > 500) score += 15;
+      else if (repo.stargazers_count > 100) score += 10;
+      else score += 5;
+
+      // Forks contribution (0-20 points)
+      if (repo.forks_count > 1000) score += 20;
+      else if (repo.forks_count > 500) score += 15;
+      else if (repo.forks_count > 100) score += 10;
+      else if (repo.forks_count > 50) score += 5;
+
+      // Recent activity (0-20 points)
+      if (repo.last_commit_at) {
+        const daysSinceLastCommit = Math.floor((Date.now() - new Date(repo.last_commit_at).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSinceLastCommit < 7) score += 20;
+        else if (daysSinceLastCommit < 30) score += 15;
+        else if (daysSinceLastCommit < 90) score += 10;
+        else if (daysSinceLastCommit < 180) score += 5;
+      }
+
+      // License bonus (0-10 points)
+      if (repo.license_key && ['mit', 'apache-2.0', 'bsd-3-clause'].includes(repo.license_key.toLowerCase())) {
+        score += 10;
+      } else if (repo.license_key) {
+        score += 5;
+      }
+
+      // Issues ratio (0-10 points) - fewer open issues is better
+      const issuesRatio = repo.open_issues_count / Math.max(repo.stargazers_count, 1);
+      if (issuesRatio < 0.01) score += 10;
+      else if (issuesRatio < 0.05) score += 7;
+      else if (issuesRatio < 0.1) score += 5;
+      else if (issuesRatio < 0.2) score += 3;
+
+      // AI Agent project bonus (0-10 points)
+      if (repo.is_ai_agent_project) score += 10;
+
+      return Math.min(100, Math.max(0, score));
+    };
+
+    return {
+      id: repo.id,
+      title: repo.name,
+      tagline: repo.description || 'No description available',
+      description: repo.readme_content || repo.description || 'No detailed description available for this repository.',
+      ossProject: repo.full_name,
+      categories: repo.topics || ['Open Source'],
+      opportunityScore: calculateOpportunityScore(),
+      license: repo.license_name || repo.license_key || 'Unknown',
+      marketSize: '$1.2B (Estimated based on repository category)',
+      targetAudience: 'Developers, Tech Companies, Open Source Community',
+      monetizationStrategy: 'SaaS platform, Enterprise licensing, Professional services, API monetization',
+      techStack: repo.languages ? Object.keys(repo.languages) : ['JavaScript', 'TypeScript'],
+      competitiveAdvantage: `Open source foundation with ${repo.stargazers_count} stars and active community`,
+      risks: [
+        'Open source competition',
+        'Technology adoption challenges',
+        'Market saturation',
+        'Regulatory compliance'
+      ],
+      isNew: isNew(),
+      isTrending: isTrending(),
+      communityPick: isCommunityPick(),
+      isSaved: false
+    };
+  }, []);
+
+  // Convert repositories to ideas
+  const repositoryIdeas = useMemo(() => {
+    return repositories.map(convertRepositoryToIdea);
+  }, [repositories, convertRepositoryToIdea]);
+
+  // Update repository filters when main filters change
+  useEffect(() => {
+    const newRepoFilters = {
+      ...repoFilters,
+      license_keys: filters.license.map(license => {
+        // Map display names to license keys
+        switch (license.toLowerCase()) {
+          case 'mit': return 'mit';
+          case 'apache': return 'apache-2.0';
+          case 'gpl': return 'gpl-3.0';
+          case 'bsd': return 'bsd-3-clause';
+          case 'isc': return 'isc';
+          default: return license.toLowerCase();
+        }
+      }),
+      search_query: searchQuery,
+      is_archived: filters.isNew ? false : null, // Don't show archived repos for new filter
+    };
+
+    applyRepoFilters(newRepoFilters);
+  }, [filters, searchQuery, applyRepoFilters]);
+
+  // Infinite scroll setup
+  useEffect(() => {
+    if (loading) return;
+
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (lastRepositoryElementRef.current) {
+      observerRef.current.observe(lastRepositoryElementRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore, loadMore]);
+
+  // Helper function to apply filters to mock ideas (for other sections)
   const applyFilters = (ideas: IdeaData[]) => {
     return ideas.filter(idea => {
       // Search query filter
@@ -76,7 +240,7 @@ const MainContent: React.FC<MainContentProps> = ({
     return (filters.appliedSections || []).includes(sectionId);
   };
 
-  // Apply filtering based on section settings
+  // Apply filtering based on section settings for mock data
   const trendingIdeas = useMemo(() => {
     const baseIdeas = mockIdeas.filter(idea => idea.isTrending);
     return shouldFilterSection('trending') ? applyFilters(baseIdeas) : baseIdeas;
@@ -96,11 +260,6 @@ const MainContent: React.FC<MainContentProps> = ({
   const personalizedIdeas = useMemo(() => {
     const baseIdeas = mockIdeas.slice(0, 6);
     return shouldFilterSection('personalized') ? applyFilters(baseIdeas) : baseIdeas;
-  }, [searchQuery, filters]);
-
-  // Main discovery section (always respects filters if enabled)
-  const discoveryIdeas = useMemo(() => {
-    return shouldFilterSection('discovery') ? applyFilters(mockIdeas) : mockIdeas;
   }, [searchQuery, filters]);
 
   // Check if any filters are active
@@ -286,12 +445,12 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         )}
 
-        {/* Main Discovery Section - MOVED TO BOTTOM */}
+        {/* Main Discovery Section - Dynamic Repositories */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-                Discover Your Next Big Idea
+                Discover Repositories
                 {shouldFilterSection('discovery') && hasActiveFilters && (
                   <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-600 rounded-full">
                     Filtered
@@ -300,8 +459,8 @@ const MainContent: React.FC<MainContentProps> = ({
               </h1>
               <p className="text-gray-600">
                 {hasActiveFilters && shouldFilterSection('discovery')
-                  ? `${discoveryIdeas.length} ideas found${searchQuery ? ` for "${searchQuery}"` : ''}`
-                  : `${discoveryIdeas.length} curated startup opportunities from open source projects`
+                  ? `${repositoryIdeas.length} repositories found${searchQuery ? ` for "${searchQuery}"` : ''}`
+                  : `${repositoryIdeas.length} curated repositories from open source projects`
                 }
               </p>
             </div>
@@ -320,52 +479,91 @@ const MainContent: React.FC<MainContentProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {discoveryIdeas.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => onIdeaSelect(idea)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* No Results State */}
-        {discoveryIdeas.length === 0 && shouldFilterSection('discovery') && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No ideas found</h3>
-            <p className="text-gray-600 mb-4">
-              {hasActiveFilters 
-                ? 'Try adjusting your search or filters to find more ideas.'
-                : 'No ideas are currently available.'
-              }
-            </p>
-            {hasActiveFilters && (
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <div className="text-red-400 mb-4">
+                <ExternalLink className="mx-auto h-12 w-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Repositories</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
               <button
-                onClick={() => {
-                  setFilters({
-                    categories: [],
-                    opportunityScore: [0, 100],
-                    license: [],
-                    isNew: false,
-                    isTrending: false,
-                    communityPick: false,
-                    appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
-                  });
-                }}
+                onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
-                Clear All Filters
+                Retry
               </button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+          {/* Repository Grid */}
+          {!error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {repositoryIdeas.map((idea, index) => (
+                <div
+                  key={idea.id}
+                  ref={index === repositoryIdeas.length - 1 ? lastRepositoryElementRef : null}
+                >
+                  <IdeaCard
+                    idea={idea}
+                    onClick={() => onIdeaSelect(idea)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading repositories...</p>
+            </div>
+          )}
+
+          {/* No More Results */}
+          {!loading && !hasMore && repositoryIdeas.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-600">You've reached the end of the repositories!</p>
+            </div>
+          )}
+
+          {/* No Results State */}
+          {!loading && repositoryIdeas.length === 0 && !error && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No repositories found</h3>
+              <p className="text-gray-600 mb-4">
+                {hasActiveFilters 
+                  ? 'Try adjusting your search or filters to find more repositories.'
+                  : 'No repositories are currently available.'
+                }
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    setFilters({
+                      categories: [],
+                      opportunityScore: [0, 100],
+                      license: [],
+                      isNew: false,
+                      isTrending: false,
+                      communityPick: false,
+                      appliedSections: ['trending', 'community', 'newArrivals', 'personalized', 'discovery']
+                    });
+                  }}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

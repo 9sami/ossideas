@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { X, Sliders, Check } from 'lucide-react';
 import { FilterOptions } from '../types';
@@ -13,7 +12,8 @@ interface FilterPanelProps {
 const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOpen, onClose }) => {
   const categories = [
     'AI/ML', 'DevTools', 'SaaS', 'E-commerce', 'Data Analytics', 
-    'Security', 'Mobile', 'Web Dev', 'IoT', 'Blockchain'
+    'Security', 'Mobile', 'Web Dev', 'IoT', 'Blockchain', 'Database',
+    'Frontend', 'Backend', 'Machine Learning', 'Cloud', 'API'
   ];
 
   const licenses = ['MIT', 'Apache', 'GPL', 'BSD', 'ISC', 'Other'];
@@ -23,7 +23,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
     { id: 'community', label: 'Community Picks', icon: '👥' },
     { id: 'newArrivals', label: 'New Arrivals', icon: '✨' },
     { id: 'personalized', label: 'Personalized', icon: '🎯' },
-    { id: 'discovery', label: 'Main Discovery', icon: '🔍' }
+    { id: 'discovery', label: 'Repository Discovery', icon: '🔍' }
   ];
 
   const handleCategoryToggle = (category: string) => {
@@ -149,7 +149,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, isOp
               <div className="border border-orange-200 pb-8 rounded-xl p-4 bg-white">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">📂</span>
-                  Categories
+                  Categories & Topics
                 </h4>
                 <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto custom-scrollbar">
                   {categories.map((category) => (
