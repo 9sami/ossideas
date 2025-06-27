@@ -147,11 +147,6 @@ const MainContent: React.FC<MainContentProps> = ({
     return repositories.map(convertRepositoryToIdea);
   }, [repositories, convertRepositoryToIdea]);
 
-  // Get new repositories for the New Arrivals section
-  const newRepositoryIdeas = useMemo(() => {
-    return repositoryIdeas.filter(idea => idea.isNew);
-  }, [repositoryIdeas]);
-
   // Update repository filters when main filters change
   useEffect(() => {
     const newRepoFilters = {
@@ -256,27 +251,10 @@ const MainContent: React.FC<MainContentProps> = ({
     return shouldFilterSection('community') ? applyFilters(baseIdeas) : baseIdeas;
   }, [searchQuery, filters]);
 
-  // Combine mock new arrivals with new repository ideas
   const newArrivals = useMemo(() => {
-    const mockNewIdeas = mockIdeas.filter(idea => idea.isNew);
-    const baseIdeas = shouldFilterSection('newArrivals') ? applyFilters(mockNewIdeas) : mockNewIdeas;
-    
-    // Add new repository ideas to the new arrivals section
-    const filteredNewRepos = shouldFilterSection('newArrivals') ? applyFilters(newRepositoryIdeas) : newRepositoryIdeas;
-    
-    // Combine and sort by creation date (newest first)
-    const combinedNewArrivals = [...baseIdeas, ...filteredNewRepos];
-    
-    // Sort by a combination of factors to show the most interesting new items first
-    return combinedNewArrivals.sort((a, b) => {
-      // Prioritize higher opportunity scores
-      if (b.opportunityScore !== a.opportunityScore) {
-        return b.opportunityScore - a.opportunityScore;
-      }
-      // Then by title alphabetically as a tiebreaker
-      return a.title.localeCompare(b.title);
-    });
-  }, [searchQuery, filters, newRepositoryIdeas]);
+    const baseIdeas = mockIdeas.filter(idea => idea.isNew);
+    return shouldFilterSection('newArrivals') ? applyFilters(baseIdeas) : baseIdeas;
+  }, [searchQuery, filters]);
 
   // Personalized recommendations (filtered based on settings)
   const personalizedIdeas = useMemo(() => {
@@ -301,7 +279,7 @@ const MainContent: React.FC<MainContentProps> = ({
     if (hasActiveFilters && isFiltered) {
       return `${count} ${sectionId === 'trending' ? 'trending ideas' : 
                      sectionId === 'community' ? 'community favorites' :
-                     sectionId === 'newArrivals' ? 'fresh ideas and repositories' :
+                     sectionId === 'newArrivals' ? 'fresh ideas' :
                      sectionId === 'personalized' ? 'personalized recommendations' :
                      'ideas'} match your filters`;
     }
@@ -312,7 +290,7 @@ const MainContent: React.FC<MainContentProps> = ({
       case 'community':
         return `${count} ideas loved by our community`;
       case 'newArrivals':
-        return `${count} recently added ideas and repositories`;
+        return `${count} recently added opportunities`;
       case 'personalized':
         return `${count} ideas tailored to your interests`;
       default:
@@ -407,7 +385,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         )}
 
-        {/* New Arrivals - Now includes both mock ideas and new repositories */}
+        {/* New Arrivals */}
         {newArrivals.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
@@ -419,19 +397,14 @@ const MainContent: React.FC<MainContentProps> = ({
                       Filtered
                     </span>
                   )}
-                  {newRepositoryIdeas.length > 0 && (
-                    <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded-full">
-                      {newRepositoryIdeas.length} New Repos
-                    </span>
-                  )}
                 </h2>
                 <p className="text-gray-600">
-                  {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length + newRepositoryIdeas.length)}
+                  {getSectionDescription('newArrivals', newArrivals.length, mockIdeas.filter(i => i.isNew).length)}
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {newArrivals.slice(0, 12).map((idea) => (
+              {newArrivals.slice(0, 8).map((idea) => (
                 <IdeaCard
                   key={idea.id}
                   idea={idea}
@@ -439,13 +412,6 @@ const MainContent: React.FC<MainContentProps> = ({
                 />
               ))}
             </div>
-            {newArrivals.length > 12 && (
-              <div className="text-center mt-6">
-                <p className="text-sm text-gray-500">
-                  Showing 12 of {newArrivals.length} new arrivals
-                </p>
-              </div>
-            )}
           </div>
         )}
 
