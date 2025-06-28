@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
@@ -15,16 +21,11 @@ import { Zap } from 'lucide-react';
 import FullScreenLoader from './FullScreenLoader';
 
 interface MainContentProps {
-  searchQuery: string;
   filterOpen: boolean;
-  onIdeaSelect: (idea: IdeaData) => void;
-  isLoggedIn: boolean;
-  onRegisterClick: () => void;
   onFilterToggle: () => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
-  searchQuery,
   filterOpen,
   onFilterToggle,
 }) => {
@@ -59,6 +60,29 @@ const MainContent: React.FC<MainContentProps> = ({
 
   const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
 
+  // Check if initial data is loading (show full screen loader)
+  const isInitialLoading = useMemo(() => {
+    const hasAnyData =
+      repositories.length > 0 ||
+      newRepositories.length > 0 ||
+      trendingRepositories.length > 0 ||
+      communityRepositories.length > 0;
+
+    const isAnyLoading =
+      loading || newLoading || trendingLoading || communityLoading;
+
+    return isAnyLoading && !hasAnyData;
+  }, [
+    repositories.length,
+    newRepositories.length,
+    trendingRepositories.length,
+    communityRepositories.length,
+    loading,
+    newLoading,
+    trendingLoading,
+    communityLoading,
+  ]);
+
   // Infinite scroll observer
   useEffect(() => {
     if (loading) return;
@@ -69,7 +93,7 @@ const MainContent: React.FC<MainContentProps> = ({
           loadMore();
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     if (lastRepositoryElementRef.current) {
@@ -207,10 +231,11 @@ const MainContent: React.FC<MainContentProps> = ({
     [],
   );
 
-  // Helper function to check if a section should be filtered
-  const shouldFilterSection = (sectionId: string) => {
-    return (filters.appliedSections || []).includes(sectionId);
-  };
+  // Convert specialized repositories to ideas
+  const newArrivals = useMemo(
+    () => newRepositories.map(convertRepositoryToIdea),
+    [newRepositories, convertRepositoryToIdea],
+  );
 
   // Apply filtering based on section settings - ALL FROM REPOSITORIES ONLY
   const trendingIdeas = useMemo(() => {
@@ -260,16 +285,10 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   };
 
-  // Check if any filters are active
-  const hasActiveFilters =
-    searchQuery ||
-    filters.categories.length > 0 ||
-    filters.license.length > 0 ||
-    filters.isNew ||
-    filters.isTrending ||
-    filters.communityPick ||
-    filters.opportunityScore[0] > 0 ||
-    filters.opportunityScore[1] < 100;
+  // Show full screen loader during initial load
+  if (isInitialLoading) {
+    return <FullScreenLoader message="Loading amazing ideas for you..." />;
+  }
 
   // Helper function to get section description with static counts
   const getSectionDescription = (
@@ -285,9 +304,9 @@ const MainContent: React.FC<MainContentProps> = ({
     // Descriptive counts for sections
     switch (sectionId) {
       case 'trending':
-        return `${currentCount} hot repositories gaining momentum this week`;
+        return `${currentCount} trending repositories with high engagement`;
       case 'community':
-        return `${currentCount} repositories with high community engagement`;
+        return `${currentCount} community favorites with strong adoption`;
       case 'newArrivals':
         return `${currentCount} repositories created in the last 30 days`;
       case 'discovery':
@@ -317,15 +336,16 @@ const MainContent: React.FC<MainContentProps> = ({
             href="https://bolt.new"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
+            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg">
             <div className="flex items-center space-x-1 px-5">
               <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
-              <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
+              <span className="text-sm font-bold tracking-wide">
+                BUILT WITH BOLT
+              </span>
             </div>
           </a>
         </div>
-        
+
         {/* Submit Repository Section - Only show if user has no submissions */}
         {submissions.length === 0 && (
           <section className="mb-12">

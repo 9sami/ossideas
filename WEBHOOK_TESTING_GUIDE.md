@@ -244,3 +244,174 @@ Look for these log patterns:
 ---
 
 **Need Help?** Check the function logs first, then refer to the troubleshooting section above.
+
+# Stripe Webhook Testing Guide
+
+## Overview
+
+This guide helps you test and debug the Stripe webhook, especially for yearly subscription issues.
+
+## Enhanced Logging
+
+The webhook now includes comprehensive logging to help debug issues:
+
+### Event Processing Logs
+
+- Event type and ID
+- Event data structure
+- Processing status for each event type
+
+### Subscription Sync Logs
+
+- Subscription status and customer information
+- Price details including metadata and recurring settings
+- Plan detection logic (Basic/Pro, monthly/yearly)
+- Database operation results
+
+### Error Handling
+
+- Detailed error messages with codes and hints
+- Failed operation data for debugging
+- Customer lookup results
+
+## Testing Steps
+
+### 1. Check Webhook Endpoint
+
+Verify your webhook endpoint is correctly configured in Stripe Dashboard:
+
+- Go to Stripe Dashboard > Developers > Webhooks
+- Ensure the endpoint points to: `https://your-project.supabase.co/functions/v1/stripe-webhook`
+- Verify the webhook secret is set in your environment variables
+
+### 2. Monitor Webhook Logs
+
+Check the Supabase Edge Functions logs:
+
+```bash
+supabase functions logs stripe-webhook --follow
+```
+
+### 3. Test Yearly Subscription Flow
+
+1. Create a yearly subscription through your checkout
+2. Monitor the logs for these events:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `invoice.payment_succeeded`
+
+### 4. Expected Log Output for Yearly Subscription
+
+```
+Processing event: checkout.session.completed - evt_xxx
+Processing checkout.session.completed event
+Processing checkout session completed: cs_xxx
+Session details: { mode: 'subscription', subscription: 'sub_xxx', customer: 'cus_xxx', payment_status: 'paid' }
+Processing subscription checkout session: cs_xxx
+Syncing subscription sub_xxx to database (context: checkout_completed)
+Subscription status: active
+Subscription customer: cus_xxx
+Subscription items count: 1
+Found customer data for user: xxx-xxx-xxx
+Processing subscription with price: price_xxx, amount: 24000
+Price object: { id: 'price_xxx', unit_amount: 24000, currency: 'usd', recurring: { interval: 'year' }, metadata: {} }
+Detected yearly subscription with plan: Pro
+Determined plan: Pro, interval: year
+Price metadata: {}
+Price recurring: { interval: 'year' }
+Creating new subscription: sub_xxx
+Successfully created new subscription: sub_xxx for user: xxx-xxx-xxx
+```
+
+### 5. Common Issues and Solutions
+
+#### Issue: "No such customer" error
+
+**Solution**: The checkout function now handles this by creating a new customer if the existing one is invalid.
+
+#### Issue: Webhook not receiving events
+
+**Solutions**:
+
+- Check webhook endpoint URL is correct
+- Verify webhook secret is set correctly
+- Check Stripe Dashboard for webhook delivery failures
+- Ensure the webhook is enabled for the required events
+
+#### Issue: Database sync failures
+
+**Solutions**:
+
+- Check database schema matches the expected structure
+- Verify RLS policies allow service role access
+- Check for constraint violations in the logs
+
+#### Issue: Yearly subscription not detected
+
+**Solutions**:
+
+- Check price metadata in Stripe Dashboard
+- Verify the price has `recurring.interval` set to "year"
+- Check the plan detection logic in the logs
+
+### 6. Manual Testing with Stripe CLI
+
+Install Stripe CLI and test locally:
+
+```bash
+# Install Stripe CLI
+brew install stripe/stripe-cli/stripe
+
+# Login to your Stripe account
+stripe login
+
+# Forward webhooks to your local endpoint
+stripe listen --forward-to localhost:54321/functions/v1/stripe-webhook
+
+# In another terminal, trigger test events
+stripe trigger checkout.session.completed
+stripe trigger customer.subscription.created
+stripe trigger invoice.payment_succeeded
+```
+
+### 7. Database Verification
+
+Check if the subscription was created in your database:
+
+```sql
+-- Check subscriptions table
+SELECT * FROM subscriptions WHERE stripe_subscription_id = 'sub_xxx';
+
+-- Check user subscriptions view
+SELECT * FROM user_subscriptions WHERE user_id = 'xxx-xxx-xxx';
+```
+
+### 8. Environment Variables
+
+Ensure these are set in your Supabase project:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+## Troubleshooting Checklist
+
+- [ ] Webhook endpoint is accessible
+- [ ] Webhook secret is correct
+- [ ] Required events are enabled in Stripe Dashboard
+- [ ] Database schema is up to date
+- [ ] RLS policies allow service role access
+- [ ] Environment variables are set correctly
+- [ ] No webhook delivery failures in Stripe Dashboard
+- [ ] Logs show successful event processing
+- [ ] Database contains the expected subscription record
+
+## Support
+
+If you're still experiencing issues:
+
+1. Check the enhanced logs for specific error messages
+2. Verify the webhook is receiving events in Stripe Dashboard
+3. Test with Stripe CLI to isolate the issue
+4. Check database constraints and RLS policies

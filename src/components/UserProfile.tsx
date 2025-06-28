@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
-import { Heart, User, Settings, TrendingUp, Plus } from 'lucide-react';
-import IdeaCard from './IdeaCard';
+import React, { useState, useMemo } from 'react';
+import {
+  Heart,
+  User,
+  Settings,
+  TrendingUp,
+  Plus,
+  ExternalLink,
+  Star,
+  Calendar,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { IdeaData } from '../types';
 import { User as UserType } from '../types/auth';
-import { mockIdeas } from '../data/mockData';
 import FullScreenLoader from './FullScreenLoader';
+import { useSavedIdeas } from '../hooks/useSavedIdeas';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfileProps {
   onIdeaSelect: (idea: IdeaData) => void;
@@ -14,7 +26,6 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
-  onIdeaSelect,
   isLoggedIn,
   onLoginClick,
   user,
@@ -23,12 +34,52 @@ const UserProfile: React.FC<UserProfileProps> = ({
     'saved' | 'preferences' | 'activity'
   >('saved');
   const [loading] = useState(false);
-  const [savedIdeas] = useState(mockIdeas.slice(0, 4));
+  const navigate = useNavigate();
+  const { savedIdeas: realSavedIdeas, loading: savedIdeasLoading } =
+    useSavedIdeas();
+
+  // Search and pagination state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const userCategories = ['AI/ML', 'DevTools', 'SaaS', 'Data Analytics'];
 
+  // Filter ideas based on search query
+  const filteredIdeas = useMemo(() => {
+    if (!searchQuery.trim()) return realSavedIdeas;
+
+    const query = searchQuery.toLowerCase();
+    return realSavedIdeas.filter(
+      (idea) =>
+        idea.title.toLowerCase().includes(query) ||
+        idea.tagline.toLowerCase().includes(query) ||
+        idea.description.toLowerCase().includes(query) ||
+        idea.ossProject.toLowerCase().includes(query) ||
+        idea.categories.some((category) =>
+          category.toLowerCase().includes(query),
+        ),
+    );
+  }, [realSavedIdeas, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredIdeas.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentIdeas = filteredIdeas.slice(startIndex, endIndex);
+
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const stats = [
-    { label: 'Saved Ideas', value: '12', icon: Heart, color: 'text-red-500' },
+    {
+      label: 'Saved Ideas',
+      value: realSavedIdeas.length.toString(),
+      icon: Heart,
+      color: 'text-red-500',
+    },
     {
       label: 'Categories',
       value: '4',
@@ -37,6 +88,32 @@ const UserProfile: React.FC<UserProfileProps> = ({
     },
     { label: 'Submissions', value: '3', icon: Plus, color: 'text-green-500' },
   ];
+
+  const handleIdeaClick = (idea: IdeaData) => {
+    navigate(`/ideas/${idea.id}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'text-green-600 bg-green-100';
+    if (score >= 6) return 'text-yellow-600 bg-yellow-100';
+    return 'text-red-600 bg-red-100';
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
   if (loading) {
     return <FullScreenLoader message="Loading profile..." />;
@@ -102,6 +179,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   const Icon = stat.icon;
                   return (
                     <div key={stat.label} className="text-center">
+                      <Icon className={`h-6 w-6 mx-auto mb-2 ${stat.color}`} />
                       <div className={`text-2xl font-bold ${stat.color}`}>
                         {stat.value}
                       </div>
@@ -160,19 +238,210 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     Your Saved Ideas
                   </h2>
                   <span className="text-sm text-gray-600">
-                    {savedIdeas.length} ideas saved
+                    {realSavedIdeas.length} ideas saved
                   </span>
                 </div>
 
-                {savedIdeas.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedIdeas.map((idea) => (
-                      <IdeaCard
-                        key={idea.id}
-                        idea={idea}
-                        onClick={() => onIdeaSelect(idea)}
-                      />
-                    ))}
+                {savedIdeasLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    <span className="ml-3 text-gray-600">
+                      Loading saved ideas...
+                    </span>
+                  </div>
+                ) : realSavedIdeas.length > 0 ? (
+                  <div>
+                    {/* Search Bar */}
+                    <div className="mb-6">
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search saved ideas by title, description, repository, or categories..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={clearSearch}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                            <span className="text-lg">×</span>
+                          </button>
+                        )}
+                      </div>
+                      {searchQuery && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          Found {filteredIdeas.length} of{' '}
+                          {realSavedIdeas.length} ideas
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Idea
+                            </th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Categories
+                            </th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Score
+                            </th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Repository
+                            </th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Saved
+                            </th>
+                            <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentIdeas.map((idea) => (
+                            <tr
+                              key={idea.id}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => handleIdeaClick(idea)}>
+                              <td className="py-4 px-4">
+                                <div>
+                                  <h3 className="font-medium text-gray-900 hover:text-orange-600 transition-colors">
+                                    {idea.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                    {idea.tagline}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {idea.categories
+                                    .slice(0, 2)
+                                    .map((category) => (
+                                      <span
+                                        key={category}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {category}
+                                      </span>
+                                    ))}
+                                  {idea.categories.length > 2 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                      +{idea.categories.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getScoreColor(
+                                    idea.opportunityScore,
+                                  )}`}>
+                                  <Star className="h-3 w-3 mr-1" />
+                                  {idea.opportunityScore}/10
+                                </span>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="text-sm text-gray-600">
+                                  {idea.ossProject}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  {formatDate(new Date().toISOString())}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleIdeaClick(idea);
+                                  }}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                          Showing {startIndex + 1} to{' '}
+                          {Math.min(endIndex, filteredIdeas.length)} of{' '}
+                          {filteredIdeas.length} results
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </button>
+
+                          <div className="flex items-center space-x-1">
+                            {Array.from(
+                              { length: totalPages },
+                              (_, i) => i + 1,
+                            ).map((page) => {
+                              // Show first page, last page, current page, and pages around current
+                              const shouldShow =
+                                page === 1 ||
+                                page === totalPages ||
+                                Math.abs(page - currentPage) <= 1;
+
+                              if (!shouldShow) {
+                                if (page === 2 || page === totalPages - 1) {
+                                  return (
+                                    <span
+                                      key={page}
+                                      className="px-2 text-gray-500">
+                                      ...
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              }
+
+                              return (
+                                <button
+                                  key={page}
+                                  onClick={() => handlePageChange(page)}
+                                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                                    currentPage === page
+                                      ? 'bg-orange-500 text-white'
+                                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                  }`}>
+                                  {page}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -180,9 +449,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No saved ideas yet
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 mb-6">
                       Start exploring and save ideas that interest you!
                     </p>
+                    <button
+                      onClick={() => navigate('/')}
+                      className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                      Explore Ideas
+                    </button>
                   </div>
                 )}
               </div>
