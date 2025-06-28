@@ -7,6 +7,10 @@ import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
 import RepositoryDetail from './components/RepositoryDetail';
 import UserProfile from './components/UserProfile';
+import SavedIdeas from './components/SavedIdeas';
+import MySubmissions from './components/MySubmissions';
+import Settings from './components/Settings';
+import HelpSupport from './components/HelpSupport';
 import PricingPage from './components/PricingPage';
 import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
@@ -71,13 +75,10 @@ const AppContent: React.FC = () => {
         onSearchChange={setSearchQuery}
         filterOpen={filterOpen}
         onFilterToggle={handleFilterToggle}
-        onProfileClick={() => {}}
-        onLogoClick={() => {}}
         isLoggedIn={isLoggedIn}
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
-        currentView="home"
       />
 
       <div className="flex">
@@ -85,9 +86,6 @@ const AppContent: React.FC = () => {
           isOpen={sidebarOpen}
           onToggle={handleSidebarToggle}
           onClose={handleCloseSidebar}
-          currentView="home"
-          onNavigate={() => {}}
-          onHomeClick={() => {}}
         />
 
         {/* Main content with constant left margin for closed sidebar width */}
@@ -119,7 +117,42 @@ const AppContent: React.FC = () => {
                 />
               }
             />
+            <Route path="/saved-ideas" element={<SavedIdeas />} />
+            <Route path="/submissions" element={<MySubmissions />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route
+              path="/categories"
+              element={
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Categories</h1>
+                  <p className="text-gray-600">
+                    Categories page coming soon...
+                  </p>
+                </div>
+              }
+            />
+            <Route
+              path="/community"
+              element={
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Community</h1>
+                  <p className="text-gray-600">Community page coming soon...</p>
+                </div>
+              }
+            />
+            <Route
+              path="/submit"
+              element={
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Submit Idea</h1>
+                  <p className="text-gray-600">
+                    Submit idea page coming soon...
+                  </p>
+                </div>
+              }
+            />
           </Routes>
         </main>
       </div>
