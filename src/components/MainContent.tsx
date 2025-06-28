@@ -30,6 +30,7 @@ const MainContent: React.FC<MainContentProps> = ({
   onFilterToggle,
 }) => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
     categories: [],
     opportunityScore: [0, 100],
@@ -37,19 +38,13 @@ const MainContent: React.FC<MainContentProps> = ({
     isNew: false,
     isTrending: false,
     communityPick: false,
-    appliedSections: [
-      'trending',
-      'community',
-      'newArrivals',
-      'personalized',
-      'discovery',
-    ],
+    appliedSections: ['trending', 'community', 'newArrivals', 'discovery'],
   });
 
   // Main repositories hook for discovery section
   const { repositories, loading, hasMore, error, loadMore } = useRepositories();
 
-  // Specialized hooks for different sections
+  // Specialized hooks for different sections - ALL FROM REPOSITORIES
   const { newRepositories, loading: newLoading } = useNewRepositories();
   const { trendingRepositories, loading: trendingLoading } =
     useTrendingRepositories();
@@ -60,6 +55,28 @@ const MainContent: React.FC<MainContentProps> = ({
   const { submissions } = useSubmissions();
 
   const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
+
+  // Check if filters are active
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchQuery.trim() !== '' ||
+      filters.categories.length > 0 ||
+      filters.license.length > 0 ||
+      filters.opportunityScore[0] > 0 ||
+      filters.opportunityScore[1] < 100 ||
+      filters.isNew ||
+      filters.isTrending ||
+      filters.communityPick
+    );
+  }, [searchQuery, filters]);
+
+  // Helper function to check if a section should be filtered
+  const shouldFilterSection = useCallback(
+    (sectionId: string) => {
+      return hasActiveFilters && filters.appliedSections.includes(sectionId);
+    },
+    [hasActiveFilters, filters.appliedSections],
+  );
 
   // Check if initial data is loading (show full screen loader)
   const isInitialLoading = useMemo(() => {
@@ -108,7 +125,84 @@ const MainContent: React.FC<MainContentProps> = ({
     };
   }, [loading, hasMore, loadMore]);
 
-  // Convert repositories to idea format for display
+  // Apply search and filters to repositories
+  const applyFilters = useCallback(
+    (items: Repository[]) => {
+      let filtered = items;
+
+      // Apply search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (repo) =>
+            repo.full_name.toLowerCase().includes(query) ||
+            (repo.description &&
+              repo.description.toLowerCase().includes(query)),
+        );
+      }
+
+      // Apply category filters
+      if (filters.categories.length > 0) {
+        filtered = filtered.filter((repo) =>
+          repo.topics?.some((topic) => filters.categories.includes(topic)),
+        );
+      }
+
+      // Apply license filters
+      if (filters.license.length > 0) {
+        filtered = filtered.filter(
+          (repo) =>
+            repo.license_name && filters.license.includes(repo.license_name),
+        );
+      }
+
+      // Apply opportunity score filters (using stargazers as proxy)
+      const [minScore, maxScore] = filters.opportunityScore;
+      if (minScore > 0 || maxScore < 100) {
+        filtered = filtered.filter((repo) => {
+          const score = Math.min((repo.stargazers_count / 1000) * 100, 100);
+          return score >= minScore && score <= maxScore;
+        });
+      }
+
+      // Apply boolean filters
+      if (filters.isNew) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filtered = filtered.filter(
+          (repo) =>
+            repo.created_at_github &&
+            new Date(repo.created_at_github) > thirtyDaysAgo,
+        );
+      }
+
+      if (filters.isTrending) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filtered = filtered.filter(
+          (repo) =>
+            repo.last_commit_at &&
+            new Date(repo.last_commit_at) > sevenDaysAgo &&
+            repo.stargazers_count > 1000,
+        );
+      }
+
+      if (filters.communityPick) {
+        filtered = filtered.filter(
+          (repo) =>
+            repo.stargazers_count > 500 &&
+            (repo.forks_count + repo.watchers_count) /
+              Math.max(repo.stargazers_count, 1) >
+              0.1,
+        );
+      }
+
+      return filtered;
+    },
+    [searchQuery, filters],
+  );
+
+  // Convert repositories to idea format for display - ONLY REPOSITORIES
   const convertRepositoryToIdea = useCallback(
     (repo: Repository): IdeaData => ({
       id: repo.id,
@@ -150,29 +244,86 @@ const MainContent: React.FC<MainContentProps> = ({
             Math.max(repo.stargazers_count, 1) >
             0.1,
       ),
-      isFromDatabase: false,
+      isFromDatabase: false, // These are repository-based ideas, not from ideas table
     }),
     [],
   );
 
-  // Convert specialized repositories to ideas
-  const newArrivals = useMemo(
-    () => newRepositories.map(convertRepositoryToIdea),
-    [newRepositories, convertRepositoryToIdea],
-  );
+  // Apply filtering based on section settings - ALL FROM REPOSITORIES ONLY
+  const trendingIdeas = useMemo(() => {
+    const filteredRepos = shouldFilterSection('trending')
+      ? applyFilters(trendingRepositories)
+      : trendingRepositories;
+    return filteredRepos.map(convertRepositoryToIdea);
+  }, [
+    searchQuery,
+    filters,
+    trendingRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
-  const trendingIdeas = useMemo(
-    () => trendingRepositories.map(convertRepositoryToIdea),
-    [trendingRepositories, convertRepositoryToIdea],
-  );
+  const communityPicks = useMemo(() => {
+    const filteredRepos = shouldFilterSection('community')
+      ? applyFilters(communityRepositories)
+      : communityRepositories;
+    return filteredRepos.map(convertRepositoryToIdea);
+  }, [
+    searchQuery,
+    filters,
+    communityRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
-  const communityPicks = useMemo(
-    () => communityRepositories.map(convertRepositoryToIdea),
-    [communityRepositories, convertRepositoryToIdea],
-  );
+  const newArrivals = useMemo(() => {
+    const filteredRepos = shouldFilterSection('newArrivals')
+      ? applyFilters(newRepositories)
+      : newRepositories;
+    return filteredRepos.map(convertRepositoryToIdea);
+  }, [
+    searchQuery,
+    filters,
+    newRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
+  // Discovery section - also from repositories only
+  const discoveryIdeas = useMemo(() => {
+    const filteredRepos = shouldFilterSection('discovery')
+      ? applyFilters(repositories)
+      : repositories;
+    return filteredRepos.map(convertRepositoryToIdea);
+  }, [
+    searchQuery,
+    filters,
+    repositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
+
+  // Handle idea selection - navigate to repository detail page since all are repository-based
   const handleIdeaSelect = (idea: IdeaData) => {
-    navigate(`/ideas/${idea.id}`);
+    // Since all ideas are now repository-based, find the repository ID
+    const repo =
+      repositories.find((r) => r.full_name === idea.ossProject) ||
+      trendingRepositories.find((r) => r.full_name === idea.ossProject) ||
+      communityRepositories.find((r) => r.full_name === idea.ossProject) ||
+      newRepositories.find((r) => r.full_name === idea.ossProject);
+
+    if (repo) {
+      // Navigate to repository detail page
+      navigate(`/repositories/${repo.id}`);
+    } else {
+      // Fallback - shouldn't happen since all ideas are repository-based
+      console.warn('Repository not found for idea:', idea.ossProject);
+      navigate(`/ideas/${idea.id}`);
+    }
   };
 
   // Show full screen loader during initial load
@@ -182,15 +333,24 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // Helper function to get section description with static counts
   const getSectionDescription = (sectionId: string, currentCount: number) => {
+    const isFiltered = shouldFilterSection(sectionId);
+
+    if (hasActiveFilters && isFiltered) {
+      return `${currentCount} ${
+        currentCount === 1 ? 'result' : 'results'
+      } match your filters`;
+    }
+
+    // Descriptive counts for sections
     switch (sectionId) {
       case 'trending':
         return `${currentCount} trending repositories with high engagement`;
       case 'community':
         return `${currentCount} community favorites with strong adoption`;
       case 'newArrivals':
-        return `${currentCount} recently added repositories`;
+        return `${currentCount} repositories created in the last 30 days`;
       case 'discovery':
-        return `${currentCount} repositories to explore`;
+        return `Curated startup opportunities from open source projects`;
       default:
         return `${currentCount} ${currentCount === 1 ? 'item' : 'items'}`;
     }
@@ -272,7 +432,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </section>
         )}
 
-        {/* Trending Ideas Section */}
+        {/* Trending Ideas Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -299,7 +459,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* Community Picks Section */}
+        {/* Community Picks Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -326,7 +486,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* New Arrivals Section */}
+        {/* New Arrivals Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -353,7 +513,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* Discovery Section with Infinite Scroll */}
+        {/* Discovery Section with Infinite Scroll - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -361,7 +521,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 🔍 Discover Repositories
               </h2>
               <p className="text-gray-600">
-                {getSectionDescription('discovery', repositories.length)}
+                {getSectionDescription('discovery', discoveryIdeas.length)}
               </p>
             </div>
             {loading && repositories.length === 0 && (
@@ -370,11 +530,10 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {repositories.map((repo, index) => {
-              const idea = convertRepositoryToIdea(repo);
+            {discoveryIdeas.map((idea, index) => {
               if (repositories.length === index + 1) {
                 return (
-                  <div key={repo.id} ref={lastRepositoryElementRef}>
+                  <div key={idea.id} ref={lastRepositoryElementRef}>
                     <IdeaCard
                       idea={idea}
                       onClick={() => handleIdeaSelect(idea)}
@@ -384,7 +543,7 @@ const MainContent: React.FC<MainContentProps> = ({
               } else {
                 return (
                   <IdeaCard
-                    key={repo.id}
+                    key={idea.id}
                     idea={idea}
                     onClick={() => handleIdeaSelect(idea)}
                   />
