@@ -11,6 +11,7 @@ import {
   Repository,
 } from '../hooks/useRepositories';
 import { useIdeas, convertIdeaToIdeaData } from '../hooks/useIdeas';
+import { useSubmissions } from '../hooks/useSubmissions';
 import { Brain } from 'lucide-react';
 import FullScreenLoader from './FullScreenLoader';
 
@@ -62,6 +63,9 @@ const MainContent: React.FC<MainContentProps> = ({
     hasMore: ideasHasMore,
     loadMore: loadMoreIdeas,
   } = useIdeas();
+
+  // Submissions hook to check if user has submitted repositories
+  const { submissions } = useSubmissions();
 
   const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
 
@@ -288,49 +292,51 @@ const MainContent: React.FC<MainContentProps> = ({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Submit Repository Section */}
-        <section className="mb-12">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-8 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold mb-2">
-                  🚀 Submit Your Repository
-                </h2>
-                <p className="text-orange-100 mb-4 max-w-2xl">
-                  Have an open-source project? Submit it and we'll generate
-                  business ideas and monetization strategies for you.
-                </p>
-                <button
-                  onClick={() => navigate('/submit')}
-                  className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition-colors font-medium">
-                  <span>Submit Repository</span>
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="hidden lg:block">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
-                  <svg
-                    className="h-12 w-12 text-white/80"
-                    fill="currentColor"
-                    viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
+        {/* Submit Repository Section - Only show if user has no submissions */}
+        {submissions.length === 0 && (
+          <section className="mb-12">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-8 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2">
+                    🚀 Submit Your Repository
+                  </h2>
+                  <p className="text-orange-100 mb-4 max-w-2xl">
+                    Have an open-source project? Submit it and we'll generate
+                    business ideas and monetization strategies for you.
+                  </p>
+                  <button
+                    onClick={() => navigate('/submit')}
+                    className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition-colors font-medium">
+                    <span>Submit Repository</span>
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div className="hidden lg:block">
+                  <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
+                    <svg
+                      className="h-12 w-12 text-white/80"
+                      fill="currentColor"
+                      viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Trending Ideas Section */}
         <section className="mb-12">
