@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -76,24 +77,64 @@ const RepositoryDetail: React.FC = () => {
     });
   };
 
+  // Calculate language percentages correctly
+  const calculateLanguagePercentages = (languages: Record<string, any>) => {
+    const total = Object.values(languages).reduce((sum: number, value: any) => sum + Number(value), 0);
+    const percentages: Record<string, number> = {};
+    
+    Object.entries(languages).forEach(([language, value]) => {
+      percentages[language] = total > 0 ? (Number(value) / total) * 100 : 0;
+    });
+    
+    return Object.entries(percentages)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8); // Show top 8 languages
+  };
+
+  const getLanguageColor = (language: string) => {
+    const colors: Record<string, string> = {
+      'JavaScript': 'bg-yellow-400',
+      'TypeScript': 'bg-blue-500',
+      'Python': 'bg-green-500',
+      'Java': 'bg-red-500',
+      'C++': 'bg-purple-500',
+      'C#': 'bg-indigo-500',
+      'PHP': 'bg-purple-600',
+      'Ruby': 'bg-red-600',
+      'Go': 'bg-cyan-500',
+      'Rust': 'bg-orange-600',
+      'Swift': 'bg-orange-500',
+      'Kotlin': 'bg-purple-700',
+      'Vue': 'bg-green-400',
+      'React': 'bg-blue-400',
+      'HTML': 'bg-orange-400',
+      'CSS': 'bg-blue-600',
+      'SCSS': 'bg-pink-500',
+      'Shell': 'bg-gray-700',
+      'Handlebars': 'bg-amber-600',
+      'Dockerfile': 'bg-blue-700',
+    };
+    return colors[language] || 'bg-gray-400';
+  };
+
   if (loading) {
     return <FullScreenLoader message="Loading..." />;
   }
 
   if (error || !repository) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Repository Not Found
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-6 leading-relaxed">
             {error || 'The repository you are looking for does not exist.'}
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
             Back to Home
           </button>
         </div>
@@ -101,31 +142,35 @@ const RepositoryDetail: React.FC = () => {
     );
   }
 
+  const languagePercentages = repository.languages 
+    ? calculateLanguagePercentages(repository.languages)
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-16 z-30">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-orange-500 transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Home</span>
+              className="flex items-center space-x-2 text-gray-600 hover:text-orange-500 transition-colors group">
+              <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Back to Home</span>
             </button>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={handleSaveClick}
                 disabled={isSaving}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
                   isSaving
                     ? 'bg-orange-500 text-white opacity-50 cursor-not-allowed'
                     : isSaved
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-orange-500 text-white shadow-lg hover:shadow-xl hover:bg-orange-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}>
-                <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''} transition-all`} />
                 <span>
                   {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
                 </span>
@@ -133,18 +178,19 @@ const RepositoryDetail: React.FC = () => {
 
               <button
                 onClick={handleShareClick}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 hover:shadow-md transition-all duration-200 font-medium">
                 <Share2 className="h-4 w-4" />
-                <span>Share</span>
+                <span className="hidden sm:inline">Share</span>
               </button>
 
               <a
                 href={repository.html_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 hover:shadow-lg transition-all duration-200 font-medium">
                 <Github className="h-4 w-4" />
-                <span>View on GitHub</span>
+                <span className="hidden sm:inline">View on GitHub</span>
+                <span className="sm:hidden">GitHub</span>
               </a>
             </div>
           </div>
@@ -152,56 +198,64 @@ const RepositoryDetail: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <div className="bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 py-8 sm:py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 lg:mb-12">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4 break-words">
               {repository.full_name}
             </h1>
-            <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed px-4">
               {repository.description || 'No description available'}
             </p>
 
             {/* Repository Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-center mb-2">
-                  <Star className="h-6 w-6 text-yellow-500" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-5xl mx-auto">
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Star className="h-6 w-6 text-yellow-600" />
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
                   {formatNumber(repository.stargazers_count)}
                 </div>
-                <div className="text-sm text-gray-600">Stars</div>
+                <div className="text-sm text-gray-600 font-medium">Stars</div>
               </div>
 
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-center mb-2">
-                  <GitFork className="h-6 w-6 text-blue-500" />
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GitFork className="h-6 w-6 text-blue-600" />
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
                   {formatNumber(repository.forks_count)}
                 </div>
-                <div className="text-sm text-gray-600">Forks</div>
+                <div className="text-sm text-gray-600 font-medium">Forks</div>
               </div>
 
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-center mb-2">
-                  <Eye className="h-6 w-6 text-green-500" />
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Eye className="h-6 w-6 text-green-600" />
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
                   {formatNumber(repository.watchers_count)}
                 </div>
-                <div className="text-sm text-gray-600">Watchers</div>
+                <div className="text-sm text-gray-600 font-medium">Watchers</div>
               </div>
 
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-center mb-2">
-                  <AlertTriangle className="h-6 w-6 text-red-500" />
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
                   {formatNumber(repository.open_issues_count)}
                 </div>
-                <div className="text-sm text-gray-600">Issues</div>
+                <div className="text-sm text-gray-600 font-medium">Issues</div>
               </div>
             </div>
           </div>
@@ -209,22 +263,23 @@ const RepositoryDetail: React.FC = () => {
       </div>
 
       {/* Repository Details */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {/* Topics */}
             {repository.topics && repository.topics.length > 0 && (
-              <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                  <div className="w-1 h-6 bg-orange-500 rounded-full mr-3"></div>
                   Topics
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {repository.topics.map((topic, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
-                      {topic}
+                      className="px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 rounded-full text-sm font-medium border border-orange-200 hover:from-orange-200 hover:to-orange-100 transition-colors cursor-default">
+                      #{topic}
                     </span>
                   ))}
                 </div>
@@ -232,38 +287,47 @@ const RepositoryDetail: React.FC = () => {
             )}
 
             {/* Languages */}
-            {repository.languages &&
-              Object.keys(repository.languages).length > 0 && (
-                <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Languages
-                  </h3>
-                  <div className="space-y-2">
-                    {Object.entries(repository.languages).map(
-                      ([language, percentage]) => (
-                        <div
-                          key={language}
-                          className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">
-                            {language}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {String(percentage)}%
-                          </span>
+            {languagePercentages.length > 0 && (
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <div className="w-1 h-6 bg-orange-500 rounded-full mr-3"></div>
+                  Languages
+                </h3>
+                <div className="space-y-4">
+                  {languagePercentages.map(([language, percentage]) => (
+                    <div key={language} className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${getLanguageColor(language)}`}></div>
+                          <span className="font-medium text-gray-800">{language}</span>
                         </div>
-                      ),
-                    )}
-                  </div>
+                        <span className="text-sm font-semibold text-gray-600">
+                          {percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full ${getLanguageColor(language)} transition-all duration-500 group-hover:opacity-80`}
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Related Ideas */}
             {repositoryIdeas.length > 0 && (
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Business Ideas from this Repository ({repositoryIdeas.length})
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <div className="w-1 h-6 bg-orange-500 rounded-full mr-3"></div>
+                  Business Ideas from this Repository 
+                  <span className="ml-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                    {repositoryIdeas.length}
+                  </span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {repositoryIdeas.slice(0, 4).map((idea) => (
                     <IdeaCard
                       key={idea.id}
@@ -273,9 +337,9 @@ const RepositoryDetail: React.FC = () => {
                   ))}
                 </div>
                 {repositoryIdeas.length > 4 && (
-                  <div className="text-center mt-4">
-                    <button className="text-orange-500 hover:text-orange-600 font-medium">
-                      View all {repositoryIdeas.length} ideas
+                  <div className="text-center mt-6">
+                    <button className="px-6 py-3 text-orange-600 hover:text-orange-700 font-semibold hover:bg-orange-50 rounded-lg transition-colors">
+                      View all {repositoryIdeas.length} ideas →
                     </button>
                   </div>
                 )}
@@ -286,57 +350,81 @@ const RepositoryDetail: React.FC = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Repository Info */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <div className="w-1 h-5 bg-orange-500 rounded-full mr-3"></div>
                 Repository Info
               </h3>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    Created: {formatDate(repository.created_at_github)}
-                  </span>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Created</div>
+                    <div className="text-sm text-gray-600">
+                      {formatDate(repository.created_at_github)}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    Updated: {formatDate(repository.last_commit_at)}
-                  </span>
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-green-50 rounded-lg">
+                    <Calendar className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Last Updated</div>
+                    <div className="text-sm text-gray-600">
+                      {formatDate(repository.last_commit_at)}
+                    </div>
+                  </div>
                 </div>
                 {repository.license_name && (
-                  <div className="flex items-center text-sm">
-                    <Code className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-gray-600">
-                      License: {repository.license_name}
-                    </span>
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 bg-purple-50 rounded-lg">
+                      <Code className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">License</div>
+                      <div className="text-sm text-gray-600">{repository.license_name}</div>
+                    </div>
                   </div>
                 )}
                 {repository.is_archived && (
-                  <div className="flex items-center text-sm">
-                    <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
-                    <span className="text-red-600">Archived</span>
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 bg-red-50 rounded-lg">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-red-900">Status</div>
+                      <div className="text-sm text-red-600">Archived</div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <div className="w-1 h-5 bg-orange-500 rounded-full mr-3"></div>
                 Quick Stats
               </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Data Quality Score</span>
-                  <span className="font-medium">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Data Quality Score</span>
+                  <span className="font-bold text-gray-900">
                     {repository.data_quality_score
                       ? `${repository.data_quality_score}/100`
                       : 'N/A'}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">AI Agent Project</span>
-                  <span className="font-medium">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">AI Agent Project</span>
+                  <span className={`font-bold px-2 py-1 rounded text-xs ${
+                    repository.is_ai_agent_project 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
                     {repository.is_ai_agent_project ? 'Yes' : 'No'}
                   </span>
                 </div>
