@@ -21,6 +21,7 @@ import {
 import { useIdeaById } from '../hooks/useIdeaById';
 import { useSavedIdeas } from '../hooks/useSavedIdeas';
 import FullScreenLoader from './FullScreenLoader';
+import ShareModal from './ShareModal';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ const IdeaDetail: React.FC = () => {
   const { idea, loading, error } = useIdeaById(id);
   const { isIdeaSaved, toggleSaveIdea } = useSavedIdeas();
   const [isSaving, setIsSaving] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const isSaved = id ? isIdeaSaved(id) : false;
 
@@ -42,6 +44,10 @@ const IdeaDetail: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleShareClick = () => {
+    setIsShareModalOpen(true);
   };
 
   const getScoreColor = (score: number) => {
@@ -180,7 +186,9 @@ const IdeaDetail: React.FC = () => {
                 </span>
               </button>
 
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+              <button
+                onClick={handleShareClick}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                 <Share2 className="h-4 w-4" />
                 <span>Share</span>
               </button>
@@ -335,6 +343,14 @@ const IdeaDetail: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        url={window.location.href}
+        title={idea?.title}
+      />
     </div>
   );
 };
