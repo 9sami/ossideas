@@ -529,6 +529,36 @@ async function syncSubscriptionToDatabase(
       }
     }
 
+    // Helper function to safely convert timestamps
+    const convertTimestamp = (
+      timestamp: number | undefined | null,
+      fieldName: string,
+    ): string | null => {
+      if (!timestamp) {
+        console.log(`${fieldName} is null/undefined, using current time`);
+        return new Date().toISOString();
+      }
+
+      try {
+        const date = new Date(timestamp * 1000);
+        if (isNaN(date.getTime())) {
+          console.log(
+            `${fieldName} timestamp ${timestamp} is invalid, using current time`,
+          );
+          return new Date().toISOString();
+        }
+        return date.toISOString();
+      } catch (error) {
+        console.error(
+          `Error converting ${fieldName}:`,
+          error,
+          'Value:',
+          timestamp,
+        );
+        return new Date().toISOString();
+      }
+    };
+
     // Prepare subscription data
     const subscriptionData = {
       user_id: customerData.user_id,
@@ -538,37 +568,15 @@ async function syncSubscriptionToDatabase(
       plan_name: planName,
       plan_interval: planInterval,
       status: subscription.status,
-      current_period_start: (() => {
-        try {
-          return subscription.current_period_start
-            ? new Date(subscription.current_period_start * 1000).toISOString()
-            : null;
-        } catch (error) {
-          console.error(
-            'Error converting current_period_start:',
-            error,
-            'Value:',
-            subscription.current_period_start,
-          );
-          return null;
-        }
-      })(),
-      current_period_end: (() => {
-        try {
-          return subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null;
-        } catch (error) {
-          console.error(
-            'Error converting current_period_end:',
-            error,
-            'Value:',
-            subscription.current_period_end,
-          );
-          return null;
-        }
-      })(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
+      current_period_start: convertTimestamp(
+        subscription.current_period_start,
+        'current_period_start',
+      ),
+      current_period_end: convertTimestamp(
+        subscription.current_period_end,
+        'current_period_end',
+      ),
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
       payment_method_brand: paymentMethodBrand,
       payment_method_last4: paymentMethodLast4,
       amount_cents: price.unit_amount || 0,
@@ -580,8 +588,11 @@ async function syncSubscriptionToDatabase(
       subscription_id: subscriptionData.stripe_subscription_id,
       price_id: subscriptionData.stripe_price_id,
       plan_name: subscriptionData.plan_name,
+      plan_interval: subscriptionData.plan_interval,
       status: subscriptionData.status,
       amount_cents: subscriptionData.amount_cents,
+      current_period_start: subscriptionData.current_period_start,
+      current_period_end: subscriptionData.current_period_end,
     });
 
     // Check if this subscription already exists in our database
@@ -682,8 +693,25 @@ async function syncSubscriptionToDatabase(
         });
         console.error(
           'Subscription data that failed to insert:',
-          subscriptionData,
+          JSON.stringify(subscriptionData, null, 2),
         );
+
+        // Try to get more details about the database schema
+        try {
+          const { error: tableError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .limit(0);
+
+          if (tableError) {
+            console.error('Error checking table schema:', tableError);
+          } else {
+            console.log('Table schema check passed');
+          }
+        } catch (schemaError) {
+          console.error('Error checking schema:', schemaError);
+        }
+
         throw new Error(
           `Failed to insert subscription: ${insertError.message}`,
         );
@@ -691,6 +719,10 @@ async function syncSubscriptionToDatabase(
 
       console.log(
         `Successfully created new subscription: ${subscription.id} for user: ${customerData.user_id}`,
+      );
+      console.log(
+        'Inserted subscription data:',
+        JSON.stringify(subscriptionData, null, 2),
       );
     }
   } catch (error) {

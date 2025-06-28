@@ -60,7 +60,7 @@ export const stripeProducts: StripeProduct[] = [
     name: 'Basic',
     description: 'Perfect for individual entrepreneurs and small projects',
     mode: 'subscription',
-    price: 80 * 100, // $10.00 in cents
+    price: 8000, // $80.00 in cents (20% discount from $10/month)
     currency: 'usd',
     interval: 'year',
     features: [
@@ -78,7 +78,7 @@ export const stripeProducts: StripeProduct[] = [
     name: 'Pro',
     description: 'Ideal for serious entrepreneurs and growing teams',
     mode: 'subscription',
-    price: 192 * 100, // $20.00 in cents
+    price: 19200, // $192.00 in cents (20% discount from $20/month)
     currency: 'usd',
     interval: 'year',
     popular: true,
