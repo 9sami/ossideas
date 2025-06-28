@@ -15,8 +15,8 @@ export interface StripeProduct {
 // Updated with your actual Stripe product details
 export const stripeProducts: StripeProduct[] = [
   {
-    id: 'basic-monthly',
-    priceId: 'price_1RetLjLSoWUjpqIF9wkLYgbF',
+    id: 'basic-monthly1',
+    priceId: 'price_1RevA5LSoWUjpqIFJWmynYj1',
     name: 'Basic',
     description: 'Perfect for individual entrepreneurs and small projects',
     mode: 'subscription',
@@ -41,6 +41,46 @@ export const stripeProducts: StripeProduct[] = [
     price: 2000, // $20.00 in cents
     currency: 'usd',
     interval: 'month',
+    popular: true,
+    features: [
+      'Access to 500+ premium startup ideas',
+      'Advanced filtering and AI-powered search',
+      'Unlimited saved ideas',
+      'Priority email & chat support',
+      'Weekly trending reports',
+      'Detailed market analysis',
+      'Export to Notion, PDF, and more',
+      'Community access and networking',
+      'Early access to new features',
+    ],
+  },
+  {
+    id: 'basic-yearly',
+    priceId: 'price_1RetMWLSoWUjpqIFAcr0HrY3',
+    name: 'Basic',
+    description: 'Perfect for individual entrepreneurs and small projects',
+    mode: 'subscription',
+    price: 80 * 100, // $10.00 in cents
+    currency: 'usd',
+    interval: 'year',
+    features: [
+      'Access to 100+ curated startup ideas',
+      'Basic filtering and search',
+      'Save up to 10 ideas',
+      'Email support',
+      'Monthly idea updates',
+      'Basic market insights',
+    ],
+  },
+  {
+    id: 'pro-yearly',
+    priceId: 'price_1RetSPLSoWUjpqIFsmW1MFti',
+    name: 'Pro',
+    description: 'Ideal for serious entrepreneurs and growing teams',
+    mode: 'subscription',
+    price: 192 * 100, // $20.00 in cents
+    currency: 'usd',
+    interval: 'year',
     popular: true,
     features: [
       'Access to 500+ premium startup ideas',
