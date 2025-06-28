@@ -9,6 +9,7 @@ import {
   Edit,
   Trash2,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubmissions } from '../hooks/useSubmissions';
@@ -17,7 +18,17 @@ import FullScreenLoader from './FullScreenLoader';
 const MySubmissions: React.FC = () => {
   const navigate = useNavigate();
   const { authState } = useAuth();
-  const { submissions, loading, error, deleteSubmission } = useSubmissions();
+  const {
+    submissions,
+    loading,
+    error,
+    deleteSubmission,
+    currentPage,
+    totalCount,
+    hasMore,
+    itemsPerPage,
+    loadMore,
+  } = useSubmissions();
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   const handleEdit = (id: string) => {
@@ -84,6 +95,12 @@ const MySubmissions: React.FC = () => {
     }
   };
 
+  const getPaginationInfo = () => {
+    const startItem = currentPage * itemsPerPage + 1;
+    const endItem = Math.min((currentPage + 1) * itemsPerPage, totalCount);
+    return { startItem, endItem };
+  };
+
   if (!authState.user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -107,7 +124,7 @@ const MySubmissions: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (loading && submissions.length === 0) {
     return <FullScreenLoader message="Loading submissions..." />;
   }
 
@@ -132,6 +149,8 @@ const MySubmissions: React.FC = () => {
     );
   }
 
+  const { startItem, endItem } = getPaginationInfo();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -150,6 +169,11 @@ const MySubmissions: React.FC = () => {
               <p className="text-gray-600">
                 Track your submitted repositories and their processing status
               </p>
+              {totalCount > 0 && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Showing {startItem}-{endItem} of {totalCount} submissions
+                </p>
+              )}
             </div>
             <button
               onClick={() => navigate('/submit')}
@@ -178,108 +202,150 @@ const MySubmissions: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Repository
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Submitted
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Notes
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {submissions.map((submission) => (
-                    <tr key={submission.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8">
-                            <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                              <ExternalLink className="h-4 w-4 text-gray-500" />
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {extractRepoName(submission.github_url)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              <a
-                                href={submission.github_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-orange-600 transition-colors">
-                                View on GitHub
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getStatusIcon(submission.status)}
-                          <span
-                            className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                              submission.status,
-                            )}`}>
-                            {submission.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(submission.submitted_at)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="max-w-xs">
-                          {submission.notes ? (
-                            <span
-                              className="truncate block"
-                              title={submission.notes}>
-                              {submission.notes.length > 12
-                                ? `${submission.notes.substring(0, 12)}...`
-                                : submission.notes}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">No notes</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => handleEdit(submission.id)}
-                            className="text-orange-600 hover:text-orange-900 transition-colors">
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(submission.id)}
-                            disabled={deletingId === submission.id}
-                            className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                            {deletingId === submission.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
+          <>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Repository
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Submitted
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Notes
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {submissions.map((submission) => (
+                      <tr key={submission.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8">
+                              <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                <ExternalLink className="h-4 w-4 text-gray-500" />
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {extractRepoName(submission.github_url)}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                <a
+                                  href={submission.github_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-orange-600 transition-colors">
+                                  View on GitHub
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {getStatusIcon(submission.status)}
+                            <span
+                              className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                                submission.status,
+                              )}`}>
+                              {submission.status}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(submission.submitted_at)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="max-w-xs">
+                            {submission.notes ? (
+                              <span
+                                className="truncate block"
+                                title={submission.notes}>
+                                {submission.notes.length > 12
+                                  ? `${submission.notes.substring(0, 12)}...`
+                                  : submission.notes}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">No notes</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleEdit(submission.id)}
+                              className="text-orange-600 hover:text-orange-900 transition-colors">
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(submission.id)}
+                              disabled={deletingId === submission.id}
+                              className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                              {deletingId === submission.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Pagination */}
+            {hasMore && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="flex items-center space-x-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Load More</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Pagination Info */}
+            {totalCount > itemsPerPage && (
+              <div className="mt-4 text-center text-sm text-gray-500">
+                Showing {startItem}-{endItem} of {totalCount} submissions
+                {hasMore && (
+                  <span className="ml-2">
+                    •{' '}
+                    <button
+                      onClick={loadMore}
+                      disabled={loading}
+                      className="text-orange-600 hover:text-orange-700 disabled:opacity-50">
+                      Load more
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
