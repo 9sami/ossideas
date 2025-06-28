@@ -5,23 +5,29 @@ import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
+import RepositoryDetail from './components/RepositoryDetail';
 import UserProfile from './components/UserProfile';
+import SavedIdeas from './components/SavedIdeas';
+import MySubmissions from './components/MySubmissions';
+import EditSubmissionForm from './components/EditSubmissionForm';
+import Settings from './components/Settings';
+import HelpSupport from './components/HelpSupport';
 import PricingPage from './components/PricingPage';
 import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
+import SubmitRepositoryForm from './components/SubmitRepositoryForm';
 import { useAuth } from './hooks/useAuth';
-import { IdeaData } from './types';
 
 const AppContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'detail' | 'profile' | 'pricing'>('home');
-  const [selectedIdea, setSelectedIdea] = useState<IdeaData | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'onboarding'>('login');
+  const [authModalMode, setAuthModalMode] = useState<
+    'login' | 'register' | 'onboarding'
+  >('login');
 
   const { authState, logout } = useAuth();
   const isLoggedIn = !!authState.user;
@@ -33,75 +39,6 @@ const AppContent: React.FC = () => {
       setAuthModalOpen(true);
     }
   }, [authState.onboardingRequired, authState.loading, isLoggedIn]);
-
-  // Scroll to top whenever the view changes - MOVED BEFORE CONDITIONAL RETURN
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentView, selectedIdea]);
-
-  // Show loading spinner while auth state is initializing
-  if (authState.loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleIdeaSelect = (idea: IdeaData) => {
-    setSelectedIdea(idea);
-    setCurrentView('detail');
-  };
-
-  const handleBackToHome = () => {
-    setCurrentView('home');
-    setSelectedIdea(null);
-  };
-
-  const handleProfileView = () => {
-    setCurrentView('profile');
-  };
-
-  const handlePricingView = () => {
-    setCurrentView('pricing');
-  };
-
-  const handleLoginClick = () => {
-    setAuthModalMode('login');
-    setAuthModalOpen(true);
-  };
-
-  const handleRegisterClick = () => {
-    setAuthModalMode('register');
-    setAuthModalOpen(true);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handleAuthModalClose = () => {
-    // Allow closing the modal unless onboarding is required
-    if (!authState.onboardingRequired || authModalMode !== 'onboarding') {
-      setAuthModalOpen(false);
-    }
-  };
-
-  const handleNavigate = (view: 'home' | 'detail' | 'profile' | 'pricing') => {
-    setCurrentView(view);
-    if (view === 'home') {
-      setSelectedIdea(null);
-    }
-    // Close sidebar when navigating
-    setSidebarOpen(false);
-  };
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
@@ -115,70 +52,108 @@ const AppContent: React.FC = () => {
     setFilterOpen(!filterOpen);
   };
 
+  const handleLoginClick = () => {
+    setAuthModalMode('login');
+    setAuthModalOpen(true);
+  };
+
+  const handleRegisterClick = () => {
+    setAuthModalMode('register');
+    setAuthModalOpen(true);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleCloseAuthModal = () => {
+    setAuthModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
+      <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         filterOpen={filterOpen}
         onFilterToggle={handleFilterToggle}
-        onProfileClick={handleProfileView}
-        onLogoClick={handleBackToHome}
         isLoggedIn={isLoggedIn}
         onLoginClick={handleLoginClick}
         onLogoutClick={handleLogout}
         user={authState.user}
-        currentView={currentView} // Pass currentView to Header
       />
-      
+
       <div className="flex">
-        <Sidebar 
+        <Sidebar
           isOpen={sidebarOpen}
           onToggle={handleSidebarToggle}
           onClose={handleCloseSidebar}
-          currentView={currentView}
-          onNavigate={handleNavigate}
-          onHomeClick={handleBackToHome}
         />
-        
+
         {/* Main content with constant left margin for closed sidebar width */}
         <main className="flex-1 ml-16">
-          {currentView === 'home' && (
-            <MainContent 
-              searchQuery={searchQuery}
-              filterOpen={filterOpen}
-              onIdeaSelect={handleIdeaSelect}
-              isLoggedIn={isLoggedIn}
-              onRegisterClick={handleRegisterClick}
-              onFilterToggle={handleFilterToggle}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <MainContent
+                  searchQuery={searchQuery}
+                  filterOpen={filterOpen}
+                  onIdeaSelect={() => {}}
+                  isLoggedIn={isLoggedIn}
+                  onRegisterClick={handleRegisterClick}
+                  onFilterToggle={handleFilterToggle}
+                />
+              }
             />
-          )}
-          
-          {currentView === 'detail' && selectedIdea && (
-            <IdeaDetail 
-              idea={selectedIdea}
-              onBack={handleBackToHome}
+            <Route path="/ideas/:id" element={<IdeaDetail />} />
+            <Route path="/repositories/:id" element={<RepositoryDetail />} />
+            <Route
+              path="/profile"
+              element={
+                <UserProfile
+                  onIdeaSelect={() => {}}
+                  isLoggedIn={isLoggedIn}
+                  onLoginClick={handleLoginClick}
+                  user={authState.user}
+                />
+              }
             />
-          )}
-          
-          {currentView === 'profile' && (
-            <UserProfile 
-              onIdeaSelect={handleIdeaSelect}
-              isLoggedIn={isLoggedIn}
-              onLoginClick={handleLoginClick}
-              user={authState.user}
+            <Route path="/saved-ideas" element={<SavedIdeas />} />
+            <Route path="/submissions" element={<MySubmissions />} />
+            <Route path="/submissions/:id" element={<EditSubmissionForm />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help-support" element={<HelpSupport />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route
+              path="/categories"
+              element={
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Categories</h1>
+                  <p className="text-gray-600">
+                    Categories page coming soon...
+                  </p>
+                </div>
+              }
             />
-          )}
-
-          {currentView === 'pricing' && (
-            <PricingPage />
-          )}
+            <Route
+              path="/community"
+              element={
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Community</h1>
+                  <p className="text-gray-600">Community page coming soon...</p>
+                </div>
+              }
+            />
+            <Route path="/submit" element={<SubmitRepositoryForm />} />
+          </Routes>
         </main>
       </div>
 
+      {/* Auth Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={handleAuthModalClose}
+        onClose={handleCloseAuthModal}
         initialMode={authModalMode}
       />
     </div>

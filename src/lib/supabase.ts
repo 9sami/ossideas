@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Validate URL format
 try {
   new URL(supabaseUrl);
-} catch (error) {
+} catch {
   throw new Error(`Invalid Supabase URL format: ${supabaseUrl}`);
 }
 
@@ -19,11 +19,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     storageKey: 'auth-store',
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
   },
   global: {
     headers: {
-      'apikey': supabaseAnonKey,
+      apikey: supabaseAnonKey,
     },
   },
   db: {
@@ -39,7 +39,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Test connection function
 export const testSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
+    const { error } = await supabase.from('profiles').select('count').limit(1);
     if (error) {
       console.error('Supabase connection test failed:', error);
       return false;

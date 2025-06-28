@@ -1,20 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, User, Menu, LogIn, LogOut, Crown } from 'lucide-react';
+import { Search, Filter, User, LogIn, Crown } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User as UserType } from '../types/auth';
 import { supabase } from '../lib/supabase';
+
+interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_name: string;
+  status: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   filterOpen: boolean;
   onFilterToggle: () => void;
-  onProfileClick: () => void;
-  onLogoClick: () => void;
   isLoggedIn: boolean;
   onLoginClick: () => void;
   onLogoutClick: () => void;
   user: UserType | null;
-  currentView?: string; // Add currentView prop to know which page we're on
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -22,16 +29,16 @@ const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   filterOpen,
   onFilterToggle,
-  onProfileClick,
-  onLogoClick,
   isLoggedIn,
   onLoginClick,
   onLogoutClick,
   user,
-  currentView = 'home' // Default to home if not provided
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [userSubscription, setUserSubscription] =
+    useState<UserSubscription | null>(null);
 
   const fetchUserSubscription = useCallback(async () => {
     if (!user) {
@@ -85,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({
           console.log('Header: Subscription changed:', payload);
           // Refresh subscription data when changes occur
           fetchUserSubscription();
-        }
+        },
       )
       .subscribe();
 
@@ -96,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({
 
   const getSubscriptionStatus = () => {
     if (!userSubscription) return null;
-    
+
     const status = userSubscription.status;
     if (status === 'active' || status === 'trialing') {
       return userSubscription.plan_name;
@@ -105,7 +112,32 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   // Determine if we should show search and filter (only on home page)
-  const showSearchAndFilter = currentView === 'home';
+  const showSearchAndFilter = location.pathname === '/';
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    setProfileDropdownOpen(false);
+  };
+
+  const handleSavedIdeasClick = () => {
+    navigate('/saved-ideas');
+    setProfileDropdownOpen(false);
+  };
+
+  const handleSubmissionsClick = () => {
+    navigate('/submissions');
+    setProfileDropdownOpen(false);
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+    setProfileDropdownOpen(false);
+  };
+
+  const handleHelpSupportClick = () => {
+    navigate('/help-support');
+    setProfileDropdownOpen(false);
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
@@ -114,9 +146,8 @@ const Header: React.FC<HeaderProps> = ({
           {/* Logo */}
           <div className="ml-2 flex items-center">
             <button
-              onClick={onLogoClick}
-              className="flex items-center space-x-2 text-2xl font-bold text-gray-900 hover:text-orange-500 transition-colors"
-            >
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 text-2xl font-bold text-gray-900 hover:text-orange-500 transition-colors">
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">OS</span>
               </div>
@@ -149,11 +180,10 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onFilterToggle}
                 className={`p-2 rounded-lg transition-colors ${
-                  filterOpen 
-                    ? 'bg-orange-500 text-white' 
+                  filterOpen
+                    ? 'bg-orange-500 text-white'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-orange-500'
-                }`}
-              >
+                }`}>
                 <Filter className="h-5 w-5" />
               </button>
             )}
@@ -163,94 +193,70 @@ const Header: React.FC<HeaderProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors"
-                >
+                  className="flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-500 transition-colors">
                   {user.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
                       alt={user.fullName || user.email}
-                      className="h-6 w-6 rounded-full"
+                      className="w-8 h-8 rounded-full"
                     />
                   ) : (
-                    <User className="h-5 w-5" />
+                    <User className="h-8 w-8 text-gray-400" />
                   )}
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-medium">
-                      {user.fullName || user.email.split('@')[0]}
-                    </div>
-                    {getSubscriptionStatus() && (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <Crown className="h-3 w-3 mr-1" />
-                        {getSubscriptionStatus()}
-                      </div>
-                    )}
-                  </div>
+                  <span className="hidden sm:block text-sm font-medium">
+                    {user.fullName || user.email}
+                  </span>
+                  {getSubscriptionStatus() && (
+                    <Crown className="h-4 w-4 text-orange-500" />
+                  )}
                 </button>
-                
+
+                {/* Profile Dropdown */}
                 {profileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.fullName || 'User'}
-                      </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                      {getSubscriptionStatus() && (
-                        <div className="flex items-center text-xs text-orange-600 mt-1">
-                          <Crown className="h-3 w-3 mr-1" />
-                          {getSubscriptionStatus()} Plan
-                        </div>
-                      )}
-                    </div>
                     <button
-                      onClick={() => {
-                        onProfileClick();
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      My Profile
+                      onClick={handleProfileClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      Profile
                     </button>
                     <button
-                      onClick={() => {
-                        onProfileClick();
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      My Saved Ideas
+                      onClick={handleSavedIdeasClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      Saved Ideas
                     </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      onClick={handleSubmissionsClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       My Submissions
                     </button>
-                    <hr className="my-1" />
-                    <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      onClick={handleSettingsClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Settings
                     </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      onClick={handleHelpSupportClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Help & Support
                     </button>
                     <hr className="my-1" />
                     <button
-                      onClick={() => {
-                        onLogoutClick();
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
+                      onClick={onLogoutClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                      Sign Out
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <button
-                onClick={onLoginClick}
-                className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                <LogIn className="h-4 w-4" />
-                <span className="hidden sm:inline">Login</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={onLoginClick}
+                  className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign In</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
