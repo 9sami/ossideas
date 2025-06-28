@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
@@ -15,16 +21,11 @@ import { Zap } from 'lucide-react';
 import FullScreenLoader from './FullScreenLoader';
 
 interface MainContentProps {
-  searchQuery: string;
   filterOpen: boolean;
-  onIdeaSelect: (idea: IdeaData) => void;
-  isLoggedIn: boolean;
-  onRegisterClick: () => void;
   onFilterToggle: () => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
-  searchQuery,
   filterOpen,
   onFilterToggle,
 }) => {
@@ -60,6 +61,29 @@ const MainContent: React.FC<MainContentProps> = ({
 
   const lastRepositoryElementRef = useRef<HTMLDivElement>(null);
 
+  // Check if initial data is loading (show full screen loader)
+  const isInitialLoading = useMemo(() => {
+    const hasAnyData =
+      repositories.length > 0 ||
+      newRepositories.length > 0 ||
+      trendingRepositories.length > 0 ||
+      communityRepositories.length > 0;
+
+    const isAnyLoading =
+      loading || newLoading || trendingLoading || communityLoading;
+
+    return isAnyLoading && !hasAnyData;
+  }, [
+    repositories.length,
+    newRepositories.length,
+    trendingRepositories.length,
+    communityRepositories.length,
+    loading,
+    newLoading,
+    trendingLoading,
+    communityLoading,
+  ]);
+
   // Infinite scroll observer
   useEffect(() => {
     if (loading) return;
@@ -70,7 +94,7 @@ const MainContent: React.FC<MainContentProps> = ({
           loadMore();
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     if (lastRepositoryElementRef.current) {
@@ -83,83 +107,6 @@ const MainContent: React.FC<MainContentProps> = ({
       }
     };
   }, [loading, hasMore, loadMore]);
-
-  // Apply search and filters to repositories
-  const applyFilters = useCallback(
-    (items: Repository[]) => {
-      let filtered = items;
-
-      // Apply search query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (repo) =>
-            repo.full_name.toLowerCase().includes(query) ||
-            (repo.description &&
-              repo.description.toLowerCase().includes(query)),
-        );
-      }
-
-      // Apply category filters
-      if (filters.categories.length > 0) {
-        filtered = filtered.filter((repo) =>
-          repo.topics?.some((topic) => filters.categories.includes(topic)),
-        );
-      }
-
-      // Apply license filters
-      if (filters.license.length > 0) {
-        filtered = filtered.filter(
-          (repo) =>
-            repo.license_name && filters.license.includes(repo.license_name),
-        );
-      }
-
-      // Apply opportunity score filters (using stargazers as proxy)
-      const [minScore, maxScore] = filters.opportunityScore;
-      if (minScore > 0 || maxScore < 100) {
-        filtered = filtered.filter((repo) => {
-          const score = Math.min((repo.stargazers_count / 1000) * 100, 100);
-          return score >= minScore && score <= maxScore;
-        });
-      }
-
-      // Apply boolean filters
-      if (filters.isNew) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        filtered = filtered.filter(
-          (repo) =>
-            repo.created_at_github &&
-            new Date(repo.created_at_github) > thirtyDaysAgo,
-        );
-      }
-
-      if (filters.isTrending) {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        filtered = filtered.filter(
-          (repo) =>
-            repo.last_commit_at &&
-            new Date(repo.last_commit_at) > sevenDaysAgo &&
-            repo.stargazers_count > 1000,
-        );
-      }
-
-      if (filters.communityPick) {
-        filtered = filtered.filter(
-          (repo) =>
-            repo.stargazers_count > 500 &&
-            (repo.forks_count + repo.watchers_count) /
-              Math.max(repo.stargazers_count, 1) >
-              0.1,
-        );
-      }
-
-      return filtered;
-    },
-    [searchQuery, filters],
-  );
 
   // Convert repositories to idea format for display
   const convertRepositoryToIdea = useCallback(
@@ -208,95 +155,42 @@ const MainContent: React.FC<MainContentProps> = ({
     [],
   );
 
-  // Helper function to check if a section should be filtered
-  const shouldFilterSection = (sectionId: string) => {
-    return (filters.appliedSections || []).includes(sectionId);
-  };
+  // Convert specialized repositories to ideas
+  const newArrivals = useMemo(
+    () => newRepositories.map(convertRepositoryToIdea),
+    [newRepositories, convertRepositoryToIdea],
+  );
 
-  // Apply filtering based on section settings - NOW ONLY USING BACKEND DATA
-  const trendingIdeas = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
-    const filteredRepos = shouldFilterSection('trending')
-      ? applyFilters(trendingRepositories)
-      : trendingRepositories;
-    return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, trendingRepositories, convertRepositoryToIdea]);
+  const trendingIdeas = useMemo(
+    () => trendingRepositories.map(convertRepositoryToIdea),
+    [trendingRepositories, convertRepositoryToIdea],
+  );
 
-  const communityPicks = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
-    const filteredRepos = shouldFilterSection('community')
-      ? applyFilters(communityRepositories)
-      : communityRepositories;
-    return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, communityRepositories, convertRepositoryToIdea]);
+  const communityPicks = useMemo(
+    () => communityRepositories.map(convertRepositoryToIdea),
+    [communityRepositories, convertRepositoryToIdea],
+  );
 
-  const newArrivals = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
-    const filteredRepos = shouldFilterSection('newArrivals')
-      ? applyFilters(newRepositories)
-      : newRepositories;
-    return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, newRepositories, convertRepositoryToIdea]);
-
-  // Handle idea selection - navigate to appropriate detail page
   const handleIdeaSelect = (idea: IdeaData) => {
-    // Check if this is a repository idea (has ossProject) or an AI idea
-    if (
-      idea.ossProject &&
-      idea.ossProject !== 'Unknown Repository' &&
-      idea.ossProject !== null
-    ) {
-      // Find the repository ID from the repositories array
-      const repo = repositories.find((r) => r.full_name === idea.ossProject);
-      if (repo) {
-        // Use the actual repository table ID to navigate to repository detail
-        navigate(`/repositories/${repo.id}`);
-      } else {
-        // If repository not found, treat as AI idea
-        navigate(`/ideas/${idea.id}`);
-      }
-    } else {
-      // This is an AI-generated idea, use the idea table ID
-      navigate(`/ideas/${idea.id}`);
-    }
+    navigate(`/ideas/${idea.id}`);
   };
 
-  // Check if any filters are active
-  const hasActiveFilters =
-    searchQuery ||
-    filters.categories.length > 0 ||
-    filters.license.length > 0 ||
-    filters.isNew ||
-    filters.isTrending ||
-    filters.communityPick ||
-    filters.opportunityScore[0] > 0 ||
-    filters.opportunityScore[1] < 100;
+  // Show full screen loader during initial load
+  if (isInitialLoading) {
+    return <FullScreenLoader message="Loading amazing ideas for you..." />;
+  }
 
   // Helper function to get section description with static counts
-  const getSectionDescription = (
-    sectionId: string,
-    currentCount: number,
-    totalCount?: number,
-  ) => {
-    const isFiltered = shouldFilterSection(sectionId);
-    
-    if (hasActiveFilters && isFiltered) {
-      return `${currentCount} ${currentCount === 1 ? 'result' : 'results'} match your filters`;
-    }
-    
-    // For discovery section, show total available count instead of current loaded count
-    if (sectionId === 'discovery') {
-      return `Curated startup opportunities from open source projects`;
-    }
-    
-    // Descriptive counts for other sections
+  const getSectionDescription = (sectionId: string, currentCount: number) => {
     switch (sectionId) {
       case 'trending':
-        return `${currentCount} hot repositories gaining momentum this week`;
+        return `${currentCount} trending repositories with high engagement`;
       case 'community':
-        return `${currentCount} repositories with high community engagement`;
+        return `${currentCount} community favorites with strong adoption`;
       case 'newArrivals':
-        return `${currentCount} repositories created in the last 30 days`;
+        return `${currentCount} recently added repositories`;
+      case 'discovery':
+        return `${currentCount} repositories to explore`;
       default:
         return `${currentCount} ${currentCount === 1 ? 'item' : 'items'}`;
     }
@@ -322,15 +216,16 @@ const MainContent: React.FC<MainContentProps> = ({
             href="https://bolt.new"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
+            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg">
             <div className="flex items-center space-x-1 px-5">
               <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
-              <span className="text-sm font-bold tracking-wide">BUILT WITH BOLT</span>
+              <span className="text-sm font-bold tracking-wide">
+                BUILT WITH BOLT
+              </span>
             </div>
           </a>
         </div>
-        
+
         {/* Submit Repository Section - Only show if user has no submissions */}
         {submissions.length === 0 && (
           <section className="mb-12">

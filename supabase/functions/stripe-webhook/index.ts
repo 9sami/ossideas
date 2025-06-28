@@ -163,27 +163,32 @@ async function handleEvent(event: Stripe.Event) {
   const stripeData = event?.data?.object ?? {};
 
   if (!stripeData) {
+    console.error('No event data found');
     return;
   }
 
   console.log(`Processing event: ${event.type} - ${event.id}`);
+  console.log(`Event data object type:`, typeof stripeData);
+  console.log(`Event data keys:`, Object.keys(stripeData));
 
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+        console.log('Processing checkout.session.completed event');
         await handleCheckoutSessionCompleted(
           stripeData as Stripe.Checkout.Session,
         );
         break;
 
       case 'checkout.session.expired':
+        console.log('Processing checkout.session.expired event');
         await handleCheckoutSessionExpired(
           stripeData as Stripe.Checkout.Session,
         );
         break;
 
       case 'customer.subscription.created':
-        console.log('Subscription created event');
+        console.log('Processing customer.subscription.created event');
         await handleSubscriptionEvent(
           stripeData as Stripe.Subscription,
           'created',
@@ -191,7 +196,7 @@ async function handleEvent(event: Stripe.Event) {
         break;
 
       case 'customer.subscription.updated':
-        console.log('Subscription updated event');
+        console.log('Processing customer.subscription.updated event');
         await handleSubscriptionEvent(
           stripeData as Stripe.Subscription,
           'updated',
@@ -199,25 +204,30 @@ async function handleEvent(event: Stripe.Event) {
         break;
 
       case 'customer.subscription.deleted':
-        console.log('Subscription deleted event');
+        console.log('Processing customer.subscription.deleted event');
         await handleSubscriptionDeleted(stripeData as Stripe.Subscription);
         break;
 
       case 'invoice.payment_succeeded':
-        console.log('Invoice payment succeeded');
+        console.log('Processing invoice.payment_succeeded event');
         await handleInvoicePaymentSucceeded(stripeData as Stripe.Invoice);
         break;
 
       case 'invoice.payment_failed':
-        console.log('Invoice payment failed');
+        console.log('Processing invoice.payment_failed event');
         await handleInvoicePaymentFailed(stripeData as Stripe.Invoice);
         break;
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
+        console.log(`Event data:`, JSON.stringify(stripeData, null, 2));
     }
   } catch (error) {
     console.error(`Error handling event ${event.type}:`, error);
+    console.error(
+      `Event data that caused error:`,
+      JSON.stringify(stripeData, null, 2),
+    );
     throw error;
   }
 }
@@ -414,6 +424,9 @@ async function syncSubscriptionToDatabase(
     console.log(
       `Syncing subscription ${subscription.id} to database (context: ${eventContext})`,
     );
+    console.log(`Subscription status: ${subscription.status}`);
+    console.log(`Subscription customer: ${subscription.customer}`);
+    console.log(`Subscription items count: ${subscription.items.data.length}`);
 
     const customerId = subscription.customer as string;
 
@@ -427,12 +440,19 @@ async function syncSubscriptionToDatabase(
 
     if (customerError || !customerData) {
       console.error('Failed to find customer in database:', customerError);
+      console.error(`Customer ID: ${customerId}`);
       throw new Error(`Customer not found: ${customerId}`);
     }
+
+    console.log(`Found customer data for user: ${customerData.user_id}`);
 
     // Get the primary subscription item (assuming one price per subscription)
     const subscriptionItem = subscription.items.data[0];
     if (!subscriptionItem) {
+      console.error(
+        `No subscription items found for subscription: ${subscription.id}`,
+      );
+      console.error(`Subscription items data:`, subscription.items.data);
       throw new Error(
         `No subscription items found for subscription: ${subscription.id}`,
       );
@@ -442,6 +462,13 @@ async function syncSubscriptionToDatabase(
     console.log(
       `Processing subscription with price: ${price.id}, amount: ${price.unit_amount}`,
     );
+    console.log(`Price object:`, {
+      id: price.id,
+      unit_amount: price.unit_amount,
+      currency: price.currency,
+      recurring: price.recurring,
+      metadata: price.metadata,
+    });
 
     // Extract plan information from price metadata or determine from amount
     let planName = 'Basic';
@@ -467,7 +494,20 @@ async function syncSubscriptionToDatabase(
       planInterval = price.recurring.interval;
     }
 
+    // Special handling for yearly subscriptions
+    if (planInterval === 'year') {
+      console.log(`Detected yearly subscription with plan: ${planName}`);
+      // You might want to add specific logic for yearly plans here
+      // For example, different plan names or special handling
+    }
+
     console.log(`Determined plan: ${planName}, interval: ${planInterval}`);
+    console.log(`Price metadata:`, price.metadata);
+    console.log(`Price recurring:`, price.recurring);
+    console.log(
+      `Full price object for debugging:`,
+      JSON.stringify(price, null, 2),
+    );
 
     // Log timestamp values for debugging
     console.log(`Subscription timestamps:`, {
@@ -489,6 +529,36 @@ async function syncSubscriptionToDatabase(
       }
     }
 
+    // Helper function to safely convert timestamps
+    const convertTimestamp = (
+      timestamp: number | undefined | null,
+      fieldName: string,
+    ): string | null => {
+      if (!timestamp) {
+        console.log(`${fieldName} is null/undefined, using current time`);
+        return new Date().toISOString();
+      }
+
+      try {
+        const date = new Date(timestamp * 1000);
+        if (isNaN(date.getTime())) {
+          console.log(
+            `${fieldName} timestamp ${timestamp} is invalid, using current time`,
+          );
+          return new Date().toISOString();
+        }
+        return date.toISOString();
+      } catch (error) {
+        console.error(
+          `Error converting ${fieldName}:`,
+          error,
+          'Value:',
+          timestamp,
+        );
+        return new Date().toISOString();
+      }
+    };
+
     // Prepare subscription data
     const subscriptionData = {
       user_id: customerData.user_id,
@@ -498,37 +568,15 @@ async function syncSubscriptionToDatabase(
       plan_name: planName,
       plan_interval: planInterval,
       status: subscription.status,
-      current_period_start: (() => {
-        try {
-          return subscription.current_period_start
-            ? new Date(subscription.current_period_start * 1000).toISOString()
-            : null;
-        } catch (error) {
-          console.error(
-            'Error converting current_period_start:',
-            error,
-            'Value:',
-            subscription.current_period_start,
-          );
-          return null;
-        }
-      })(),
-      current_period_end: (() => {
-        try {
-          return subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null;
-        } catch (error) {
-          console.error(
-            'Error converting current_period_end:',
-            error,
-            'Value:',
-            subscription.current_period_end,
-          );
-          return null;
-        }
-      })(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
+      current_period_start: convertTimestamp(
+        subscription.current_period_start,
+        'current_period_start',
+      ),
+      current_period_end: convertTimestamp(
+        subscription.current_period_end,
+        'current_period_end',
+      ),
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
       payment_method_brand: paymentMethodBrand,
       payment_method_last4: paymentMethodLast4,
       amount_cents: price.unit_amount || 0,
@@ -540,8 +588,11 @@ async function syncSubscriptionToDatabase(
       subscription_id: subscriptionData.stripe_subscription_id,
       price_id: subscriptionData.stripe_price_id,
       plan_name: subscriptionData.plan_name,
+      plan_interval: subscriptionData.plan_interval,
       status: subscriptionData.status,
       amount_cents: subscriptionData.amount_cents,
+      current_period_start: subscriptionData.current_period_start,
+      current_period_end: subscriptionData.current_period_end,
     });
 
     // Check if this subscription already exists in our database
@@ -553,10 +604,18 @@ async function syncSubscriptionToDatabase(
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing subscription:', checkError);
+      console.error('Check error details:', {
+        code: checkError.code,
+        message: checkError.message,
+        details: checkError.details,
+        hint: checkError.hint,
+      });
       throw new Error(
         `Failed to check existing subscription: ${checkError.message}`,
       );
     }
+
+    console.log(`Existing subscription check result:`, existingSubscription);
 
     if (existingSubscription) {
       console.log(`Updating existing subscription: ${subscription.id}`);
@@ -574,6 +633,12 @@ async function syncSubscriptionToDatabase(
 
       if (updateError) {
         console.error('Error updating subscription:', updateError);
+        console.error('Update error details:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        });
         throw new Error(
           `Failed to update subscription: ${updateError.message}`,
         );
@@ -600,6 +665,12 @@ async function syncSubscriptionToDatabase(
 
       if (cancelError) {
         console.error('Error canceling existing subscriptions:', cancelError);
+        console.error('Cancel error details:', {
+          code: cancelError.code,
+          message: cancelError.message,
+          details: cancelError.details,
+          hint: cancelError.hint,
+        });
         // Don't throw here, just log the error and continue
       } else {
         console.log(
@@ -614,6 +685,33 @@ async function syncSubscriptionToDatabase(
 
       if (insertError) {
         console.error('Error inserting subscription:', insertError);
+        console.error('Insert error details:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+        });
+        console.error(
+          'Subscription data that failed to insert:',
+          JSON.stringify(subscriptionData, null, 2),
+        );
+
+        // Try to get more details about the database schema
+        try {
+          const { error: tableError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .limit(0);
+
+          if (tableError) {
+            console.error('Error checking table schema:', tableError);
+          } else {
+            console.log('Table schema check passed');
+          }
+        } catch (schemaError) {
+          console.error('Error checking schema:', schemaError);
+        }
+
         throw new Error(
           `Failed to insert subscription: ${insertError.message}`,
         );
@@ -621,6 +719,10 @@ async function syncSubscriptionToDatabase(
 
       console.log(
         `Successfully created new subscription: ${subscription.id} for user: ${customerData.user_id}`,
+      );
+      console.log(
+        'Inserted subscription data:',
+        JSON.stringify(subscriptionData, null, 2),
       );
     }
   } catch (error) {

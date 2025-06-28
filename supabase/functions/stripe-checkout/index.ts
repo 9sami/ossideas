@@ -126,10 +126,9 @@ Deno.serve(async (req) => {
         // Clean up Stripe customer
         try {
           await stripe.customers.del(newCustomer.id);
-        } catch (deleteError) {
+        } catch {
           console.error(
             'Failed to delete Stripe customer after database error:',
-            deleteError,
           );
         }
 
@@ -142,7 +141,70 @@ Deno.serve(async (req) => {
       customerId = newCustomer.id;
       console.log(`Successfully set up new customer ${customerId}`);
     } else {
-      customerId = customer.customer_id;
+      // Verify the customer exists in Stripe
+      try {
+        const stripeCustomer = await stripe.customers.retrieve(
+          customer.customer_id,
+        );
+
+        // Check if customer is deleted in Stripe
+        if (stripeCustomer.deleted) {
+          console.log(
+            `Customer ${customer.customer_id} is deleted in Stripe, creating new customer`,
+          );
+          throw new Error('Customer deleted in Stripe');
+        }
+
+        customerId = customer.customer_id;
+        console.log(`Using existing Stripe customer ${customerId}`);
+      } catch {
+        console.log(
+          `Customer ${customer.customer_id} not found in Stripe or invalid, creating new customer`,
+        );
+
+        // Create new Stripe customer
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            userId: user.id,
+          },
+        });
+
+        console.log(
+          `Created new Stripe customer ${newCustomer.id} for user ${user.id}`,
+        );
+
+        // Update the database record with the new customer ID
+        const { error: updateCustomerError } = await supabase
+          .from('stripe_customers')
+          .update({ customer_id: newCustomer.id })
+          .eq('user_id', user.id)
+          .is('deleted_at', null);
+
+        if (updateCustomerError) {
+          console.error(
+            'Failed to update customer information in the database',
+            updateCustomerError,
+          );
+
+          // Clean up Stripe customer
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch {
+            console.error(
+              'Failed to delete Stripe customer after database error:',
+            );
+          }
+
+          return corsResponse(
+            { error: 'Failed to update customer mapping' },
+            500,
+          );
+        }
+
+        customerId = newCustomer.id;
+        console.log(`Successfully updated customer to ${customerId}`);
+      }
     }
 
     // Create Checkout Session for subscription
