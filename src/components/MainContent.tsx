@@ -40,7 +40,6 @@ const MainContent: React.FC<MainContentProps> = ({
       'trending',
       'community',
       'newArrivals',
-      'personalized',
       'discovery',
     ],
   });
@@ -48,7 +47,7 @@ const MainContent: React.FC<MainContentProps> = ({
   // Main repositories hook for discovery section
   const { repositories, loading, hasMore, error, loadMore } = useRepositories();
 
-  // Specialized hooks for different sections
+  // Specialized hooks for different sections - ALL FROM REPOSITORIES
   const { newRepositories, loading: newLoading } = useNewRepositories();
   const { trendingRepositories, loading: trendingLoading } =
     useTrendingRepositories();
@@ -161,7 +160,7 @@ const MainContent: React.FC<MainContentProps> = ({
     [searchQuery, filters],
   );
 
-  // Convert repositories to idea format for display
+  // Convert repositories to idea format for display - ONLY REPOSITORIES
   const convertRepositoryToIdea = useCallback(
     (repo: Repository): IdeaData => ({
       id: repo.id,
@@ -203,7 +202,7 @@ const MainContent: React.FC<MainContentProps> = ({
             Math.max(repo.stargazers_count, 1) >
             0.1,
       ),
-      isFromDatabase: false,
+      isFromDatabase: false, // These are repository-based ideas, not from ideas table
     }),
     [],
   );
@@ -213,50 +212,50 @@ const MainContent: React.FC<MainContentProps> = ({
     return (filters.appliedSections || []).includes(sectionId);
   };
 
-  // Apply filtering based on section settings - NOW ONLY USING BACKEND DATA
+  // Apply filtering based on section settings - ALL FROM REPOSITORIES ONLY
   const trendingIdeas = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
     const filteredRepos = shouldFilterSection('trending')
       ? applyFilters(trendingRepositories)
       : trendingRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, trendingRepositories, convertRepositoryToIdea]);
+  }, [searchQuery, filters, trendingRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
 
   const communityPicks = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
     const filteredRepos = shouldFilterSection('community')
       ? applyFilters(communityRepositories)
       : communityRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, communityRepositories, convertRepositoryToIdea]);
+  }, [searchQuery, filters, communityRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
 
   const newArrivals = useMemo(() => {
-    // Apply filters to original repositories first, then convert to ideas
     const filteredRepos = shouldFilterSection('newArrivals')
       ? applyFilters(newRepositories)
       : newRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, newRepositories, convertRepositoryToIdea]);
+  }, [searchQuery, filters, newRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
 
-  // Handle idea selection - navigate to appropriate detail page
+  // Discovery section - also from repositories only
+  const discoveryIdeas = useMemo(() => {
+    const filteredRepos = shouldFilterSection('discovery')
+      ? applyFilters(repositories)
+      : repositories;
+    return filteredRepos.map(convertRepositoryToIdea);
+  }, [searchQuery, filters, repositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
+
+  // Handle idea selection - navigate to repository detail page since all are repository-based
   const handleIdeaSelect = (idea: IdeaData) => {
-    // Check if this is a repository idea (has ossProject) or an AI idea
-    if (
-      idea.ossProject &&
-      idea.ossProject !== 'Unknown Repository' &&
-      idea.ossProject !== null
-    ) {
-      // Find the repository ID from the repositories array
-      const repo = repositories.find((r) => r.full_name === idea.ossProject);
-      if (repo) {
-        // Use the actual repository table ID to navigate to repository detail
-        navigate(`/repositories/${repo.id}`);
-      } else {
-        // If repository not found, treat as AI idea
-        navigate(`/ideas/${idea.id}`);
-      }
+    // Since all ideas are now repository-based, find the repository ID
+    const repo = repositories.find((r) => r.full_name === idea.ossProject) ||
+                 trendingRepositories.find((r) => r.full_name === idea.ossProject) ||
+                 communityRepositories.find((r) => r.full_name === idea.ossProject) ||
+                 newRepositories.find((r) => r.full_name === idea.ossProject);
+    
+    if (repo) {
+      // Navigate to repository detail page
+      navigate(`/repositories/${repo.id}`);
     } else {
-      // This is an AI-generated idea, use the idea table ID
+      // Fallback - shouldn't happen since all ideas are repository-based
+      console.warn('Repository not found for idea:', idea.ossProject);
       navigate(`/ideas/${idea.id}`);
     }
   };
@@ -276,7 +275,6 @@ const MainContent: React.FC<MainContentProps> = ({
   const getSectionDescription = (
     sectionId: string,
     currentCount: number,
-    totalCount?: number,
   ) => {
     const isFiltered = shouldFilterSection(sectionId);
     
@@ -284,12 +282,7 @@ const MainContent: React.FC<MainContentProps> = ({
       return `${currentCount} ${currentCount === 1 ? 'result' : 'results'} match your filters`;
     }
     
-    // For discovery section, show total available count instead of current loaded count
-    if (sectionId === 'discovery') {
-      return `Curated startup opportunities from open source projects`;
-    }
-    
-    // Descriptive counts for other sections
+    // Descriptive counts for sections
     switch (sectionId) {
       case 'trending':
         return `${currentCount} hot repositories gaining momentum this week`;
@@ -297,6 +290,8 @@ const MainContent: React.FC<MainContentProps> = ({
         return `${currentCount} repositories with high community engagement`;
       case 'newArrivals':
         return `${currentCount} repositories created in the last 30 days`;
+      case 'discovery':
+        return `Curated startup opportunities from open source projects`;
       default:
         return `${currentCount} ${currentCount === 1 ? 'item' : 'items'}`;
     }
@@ -377,7 +372,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </section>
         )}
 
-        {/* Trending Ideas Section */}
+        {/* Trending Ideas Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -404,7 +399,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* Community Picks Section */}
+        {/* Community Picks Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -431,7 +426,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* New Arrivals Section */}
+        {/* New Arrivals Section - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -458,7 +453,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </section>
 
-        {/* Discovery Section with Infinite Scroll */}
+        {/* Discovery Section with Infinite Scroll - FROM REPOSITORIES ONLY */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -466,7 +461,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 🔍 Discover Repositories
               </h2>
               <p className="text-gray-600">
-                {getSectionDescription('discovery', repositories.length)}
+                {getSectionDescription('discovery', discoveryIdeas.length)}
               </p>
             </div>
             {loading && repositories.length === 0 && (
@@ -475,11 +470,10 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {repositories.map((repo, index) => {
-              const idea = convertRepositoryToIdea(repo);
+            {discoveryIdeas.map((idea, index) => {
               if (repositories.length === index + 1) {
                 return (
-                  <div key={repo.id} ref={lastRepositoryElementRef}>
+                  <div key={idea.id} ref={lastRepositoryElementRef}>
                     <IdeaCard
                       idea={idea}
                       onClick={() => handleIdeaSelect(idea)}
@@ -489,7 +483,7 @@ const MainContent: React.FC<MainContentProps> = ({
               } else {
                 return (
                   <IdeaCard
-                    key={repo.id}
+                    key={idea.id}
                     idea={idea}
                     onClick={() => handleIdeaSelect(idea)}
                   />
