@@ -198,18 +198,18 @@ const RepositoryDetail: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 py-8 sm:py-12 lg:py-16">
+      <div className="bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 lg:mb-12">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4 break-words">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 break-words">
               {repository.full_name}
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed px-4">
+            <p className="text-lg sm:text-xl text-gray-600 mb-6 max-w-4xl mx-auto leading-relaxed">
               {repository.description || 'No description available'}
             </p>
 
             {/* Repository Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-5xl mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-center mb-3">
                   <div className="p-2 bg-yellow-100 rounded-lg">
@@ -262,10 +262,46 @@ const RepositoryDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Repository Details */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
+        {/* Business Ideas - Main Focus */}
+        {repositoryIdeas.length > 0 && (
+          <div className="mb-8 lg:mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+                💡 Business Ideas from this Repository
+              </h2>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Discover innovative business opportunities and applications inspired by this open-source project
+              </p>
+              <div className="inline-flex items-center mt-4 px-4 py-2 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                {repositoryIdeas.length} {repositoryIdeas.length === 1 ? 'idea' : 'ideas'} available
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {repositoryIdeas.slice(0, 6).map((idea) => (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  onClick={() => navigate(`/ideas/${idea.id}`)}
+                />
+              ))}
+            </div>
+
+            {repositoryIdeas.length > 6 && (
+              <div className="text-center">
+                <button className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-md hover:shadow-lg">
+                  View all {repositoryIdeas.length} business ideas →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Repository Details Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Topics & Languages - Span 2 columns on large screens */}
           <div className="lg:col-span-2 space-y-6">
             {/* Topics */}
             {repository.topics && repository.topics.length > 0 && (
@@ -316,46 +352,17 @@ const RepositoryDetail: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Related Ideas */}
-            {repositoryIdeas.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                  <div className="w-1 h-6 bg-orange-500 rounded-full mr-3"></div>
-                  Business Ideas from this Repository 
-                  <span className="ml-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
-                    {repositoryIdeas.length}
-                  </span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  {repositoryIdeas.slice(0, 4).map((idea) => (
-                    <IdeaCard
-                      key={idea.id}
-                      idea={idea}
-                      onClick={() => navigate(`/ideas/${idea.id}`)}
-                    />
-                  ))}
-                </div>
-                {repositoryIdeas.length > 4 && (
-                  <div className="text-center mt-6">
-                    <button className="px-6 py-3 text-orange-600 hover:text-orange-700 font-semibold hover:bg-orange-50 rounded-lg transition-colors">
-                      View all {repositoryIdeas.length} ideas →
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Repository Info & Stats - Span 2 columns on large screens */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Repository Info */}
             <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 <div className="w-1 h-5 bg-orange-500 rounded-full mr-3"></div>
                 Repository Info
               </h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-start space-x-3">
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <Calendar className="h-4 w-4 text-blue-600" />
