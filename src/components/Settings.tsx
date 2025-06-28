@@ -1,9 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Settings as SettingsIcon, Bell, Shield, Palette } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import SignInRequired from './SignInRequired';
+import AuthModal from './AuthModal';
 
 const Settings: React.FC = () => {
   const { authState } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const handleSignInClick = () => {
+    setAuthModalOpen(true);
+  };
+
+  const handleGoBack = () => {
+    window.history.back();
+  };
+
+  // Show sign-in prompt if user is not authenticated
+  if (!authState.user) {
+    return (
+      <>
+        <SignInRequired
+          title="Sign In Required"
+          description="You need to be signed in to access your account settings and preferences."
+          icon={SettingsIcon}
+          onSignInClick={handleSignInClick}
+          onGoBack={handleGoBack}
+        />
+        
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="login"
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
