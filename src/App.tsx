@@ -9,6 +9,7 @@ import RepositoryDetail from './components/RepositoryDetail';
 import UserProfile from './components/UserProfile';
 import SavedIdeas from './components/SavedIdeas';
 import MySubmissions from './components/MySubmissions';
+import EditSubmissionForm from './components/EditSubmissionForm';
 import Settings from './components/Settings';
 import HelpSupport from './components/HelpSupport';
 import PricingPage from './components/PricingPage';
@@ -16,6 +17,7 @@ import SuccessPage from './components/SuccessPage';
 import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
+import SubmitRepositoryForm from './components/SubmitRepositoryForm';
 import { useAuth } from './hooks/useAuth';
 
 const AppContent: React.FC = () => {
@@ -119,6 +121,7 @@ const AppContent: React.FC = () => {
             />
             <Route path="/saved-ideas" element={<SavedIdeas />} />
             <Route path="/submissions" element={<MySubmissions />} />
+            <Route path="/submissions/:id" element={<EditSubmissionForm />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
@@ -142,17 +145,7 @@ const AppContent: React.FC = () => {
                 </div>
               }
             />
-            <Route
-              path="/submit"
-              element={
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Submit Idea</h1>
-                  <p className="text-gray-600">
-                    Submit idea page coming soon...
-                  </p>
-                </div>
-              }
-            />
+            <Route path="/submit" element={<SubmitRepositoryForm />} />
           </Routes>
         </main>
       </div>
