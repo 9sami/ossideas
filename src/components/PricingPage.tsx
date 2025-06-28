@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Zap, Crown, Building2, ArrowRight, Sparkles, AlertCircle, Calendar, CreditCard, X, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Check,
+  Zap,
+  Crown,
+  Building2,
+  ArrowRight,
+  Sparkles,
+  AlertCircle,
+  Calendar,
+  CreditCard,
+  X,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { supabase } from '../lib/supabase';
-import { StripeProduct, getSubscriptionProducts, validateStripeConfig } from '../stripe-config';
+import {
+  StripeProduct,
+  validateStripeConfig,
+  getProductsByInterval,
+} from '../stripe-config';
 
 interface UserSubscription {
   id: string;
@@ -53,52 +70,65 @@ interface SubscriptionNotification {
 
 const PricingPage: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
+  const [userSubscription, setUserSubscription] =
+    useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [subscriptionNotification, setSubscriptionNotification] = useState<SubscriptionNotification | null>(null);
+  const [subscriptionNotification, setSubscriptionNotification] =
+    useState<SubscriptionNotification | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [billingInterval, setBillingInterval] = useState<'month' | 'year'>(
+    'month',
+  );
   const { authState, refreshUserData } = useAuth();
-  const { updateSubscription, cancelSubscription, reactivateSubscription, loading: subscriptionManagementLoading } = useSubscriptionManagement();
+  const {
+    updateSubscription,
+    cancelSubscription,
+    reactivateSubscription,
+    loading: subscriptionManagementLoading,
+  } = useSubscriptionManagement();
 
   // Memoize fetchUserSubscription to prevent unnecessary re-renders
-  const fetchUserSubscription = useCallback(async (isRetry = false) => {
-    if (!authState.user) {
-      setSubscriptionLoading(false);
-      setUserSubscription(null);
-      return;
-    }
-
-    try {
-      if (!isRetry) {
-        setSubscriptionLoading(true);
-      }
-      
-      // Get the most recent active subscription for this user
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
-
-      if (error) {
-        console.error('Error fetching subscription:', error);
+  const fetchUserSubscription = useCallback(
+    async (isRetry = false) => {
+      if (!authState.user) {
+        setSubscriptionLoading(false);
         setUserSubscription(null);
         return;
       }
 
-      setUserSubscription(data);
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-      setUserSubscription(null);
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  }, [authState.user?.id]);
+      try {
+        if (!isRetry) {
+          setSubscriptionLoading(true);
+        }
+
+        // Get the most recent active subscription for this user
+        const { data, error } = await supabase
+          .from('user_subscriptions')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
+
+        if (error) {
+          console.error('Error fetching subscription:', error);
+          setUserSubscription(null);
+          return;
+        }
+
+        setUserSubscription(data);
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+        setUserSubscription(null);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    },
+    [authState.user?.id],
+  );
 
   // Polling fallback for when WebSocket fails
   const startPolling = useCallback(() => {
@@ -110,7 +140,12 @@ const PricingPage: React.FC = () => {
     }, 2000); // Poll every 2 seconds when operations are in progress
 
     return () => clearInterval(pollInterval);
-  }, [authState.user, loadingPlan, subscriptionManagementLoading, fetchUserSubscription]);
+  }, [
+    authState.user,
+    loadingPlan,
+    subscriptionManagementLoading,
+    fetchUserSubscription,
+  ]);
 
   useEffect(() => {
     // Validate Stripe configuration
@@ -133,8 +168,11 @@ const PricingPage: React.FC = () => {
 
     const setupRealtimeSubscription = () => {
       try {
-        console.log('Setting up real-time subscription for user:', authState.user?.id);
-        
+        console.log(
+          'Setting up real-time subscription for user:',
+          authState.user?.id,
+        );
+
         // Subscribe to subscription changes for this user
         subscriptionChannel = supabase
           .channel(`subscription-changes-${authState.user?.id}`)
@@ -148,32 +186,37 @@ const PricingPage: React.FC = () => {
             },
             async (payload) => {
               console.log('Real-time subscription change:', payload);
-              
+
               // Store previous subscription data for comparison
               const previousSubscription = userSubscription;
-              
+
               // Refresh subscription data when changes occur
               await fetchUserSubscription(true);
-              
+
               // Show notification for subscription changes
-              if (payload.eventType === 'UPDATE' && previousSubscription && payload.new && payload.old) {
+              if (
+                payload.eventType === 'UPDATE' &&
+                previousSubscription &&
+                payload.new &&
+                payload.old
+              ) {
                 const newData = payload.new as any;
                 const oldData = payload.old as any;
-                
+
                 // Check if this is a plan change (price_id changed)
                 if (oldData.stripe_price_id !== newData.stripe_price_id) {
                   const oldPlan = oldData.plan_name;
                   const newPlan = newData.plan_name;
                   const oldAmount = oldData.amount_cents;
                   const newAmount = newData.amount_cents;
-                  
+
                   if (newAmount > oldAmount) {
                     // Upgrade
                     setSubscriptionNotification({
                       type: 'upgrade',
                       fromPlan: oldPlan,
                       toPlan: newPlan,
-                      message: `Successfully upgraded from ${oldPlan} to ${newPlan} plan!`
+                      message: `Successfully upgraded from ${oldPlan} to ${newPlan} plan!`,
                     });
                   } else if (newAmount < oldAmount) {
                     // Downgrade
@@ -181,76 +224,81 @@ const PricingPage: React.FC = () => {
                       type: 'downgrade',
                       fromPlan: oldPlan,
                       toPlan: newPlan,
-                      message: `Successfully switched from ${oldPlan} to ${newPlan} plan!`
+                      message: `Successfully switched from ${oldPlan} to ${newPlan} plan!`,
                     });
                   }
-                  
+
                   // Auto-hide notification after 5 seconds
                   setTimeout(() => {
                     setSubscriptionNotification(null);
                   }, 5000);
                 }
-                
+
                 // Check if cancel_at_period_end changed
-                if (oldData.cancel_at_period_end !== newData.cancel_at_period_end) {
+                if (
+                  oldData.cancel_at_period_end !== newData.cancel_at_period_end
+                ) {
                   if (newData.cancel_at_period_end) {
                     setSubscriptionNotification({
                       type: 'cancel',
-                      message: `Your ${newData.plan_name} subscription will be canceled at the end of the current billing period.`
+                      message: `Your ${newData.plan_name} subscription will be canceled at the end of the current billing period.`,
                     });
                   } else {
                     setSubscriptionNotification({
                       type: 'reactivate',
-                      message: `Your ${newData.plan_name} subscription has been reactivated!`
+                      message: `Your ${newData.plan_name} subscription has been reactivated!`,
                     });
                   }
-                  
+
                   // Auto-hide notification after 5 seconds
                   setTimeout(() => {
                     setSubscriptionNotification(null);
                   }, 5000);
                 }
               }
-              
+
               // Also refresh user data to ensure everything is in sync
               await refreshUserData();
-            }
+            },
           )
           .subscribe((status) => {
             console.log('Subscription channel status:', status);
-            
+
             if (status === 'SUBSCRIBED') {
               console.log('Successfully subscribed to real-time updates');
               setRetryCount(0);
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              console.warn('Real-time subscription failed, falling back to polling');
-              
+              console.warn(
+                'Real-time subscription failed, falling back to polling',
+              );
+
               // Start polling as fallback
               if (!pollCleanup) {
                 pollCleanup = startPolling();
               }
-              
+
               // Retry connection after a delay
               if (retryCount < 3) {
                 reconnectTimeout = setTimeout(() => {
-                  console.log(`Retrying real-time connection (attempt ${retryCount + 1})`);
-                  setRetryCount(prev => prev + 1);
+                  console.log(
+                    `Retrying real-time connection (attempt ${retryCount + 1})`,
+                  );
+                  setRetryCount((prev) => prev + 1);
                   setupRealtimeSubscription();
                 }, 5000 * (retryCount + 1)); // Exponential backoff
               }
             } else if (status === 'CLOSED') {
               console.log('Real-time subscription closed');
-              
+
               // Start polling as fallback
               if (!pollCleanup) {
                 pollCleanup = startPolling();
               }
             }
           });
-
       } catch (error) {
         console.error('Error setting up real-time subscription:', error);
-        
+
         // Start polling as fallback
         if (!pollCleanup) {
           pollCleanup = startPolling();
@@ -275,17 +323,23 @@ const PricingPage: React.FC = () => {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [authState.user?.id, fetchUserSubscription, refreshUserData, startPolling, retryCount]);
+  }, [
+    authState.user?.id,
+    fetchUserSubscription,
+    refreshUserData,
+    startPolling,
+    retryCount,
+  ]);
 
-  // Get subscription products
-  const subscriptionProducts = getSubscriptionProducts();
+  // Get subscription products filtered by interval
+  const subscriptionProducts = getProductsByInterval(billingInterval);
 
   // Create plans from Stripe products
   const plans: PricingPlan[] = [
     // Basic Plan
     ...subscriptionProducts
-      .filter(product => product.name === 'Basic')
-      .map(product => ({
+      .filter((product) => product.name === 'Basic')
+      .map((product) => ({
         id: product.id,
         name: product.name,
         price: product.price / 100, // Convert from cents
@@ -297,13 +351,13 @@ const PricingPage: React.FC = () => {
         buttonText: getButtonText(product, userSubscription),
         gradient: 'from-blue-500 to-blue-600',
         iconBg: 'bg-blue-100',
-        iconColor: 'text-blue-600'
+        iconColor: 'text-blue-600',
       })),
-    
+
     // Pro Plan
     ...subscriptionProducts
-      .filter(product => product.name === 'Pro')
-      .map(product => ({
+      .filter((product) => product.name === 'Pro')
+      .map((product) => ({
         id: product.id,
         name: product.name,
         price: product.price / 100, // Convert from cents
@@ -316,9 +370,9 @@ const PricingPage: React.FC = () => {
         buttonText: getButtonText(product, userSubscription),
         gradient: 'from-orange-500 to-orange-600',
         iconBg: 'bg-orange-100',
-        iconColor: 'text-orange-600'
+        iconColor: 'text-orange-600',
       })),
-    
+
     // Enterprise Plan (custom)
     {
       id: 'enterprise',
@@ -335,18 +389,40 @@ const PricingPage: React.FC = () => {
         'Custom reporting and analytics',
         'Team collaboration tools',
         'Priority phone support',
-        'Custom training and onboarding'
+        'Custom training and onboarding',
       ],
       icon: Building2,
       enterprise: true,
-      buttonText: "Contact Sales",
+      buttonText: 'Contact Sales',
       gradient: 'from-gray-500 to-gray-600',
       iconBg: 'bg-gray-100',
-      iconColor: 'text-gray-600'
-    }
+      iconColor: 'text-gray-600',
+    },
   ];
 
-  function getButtonText(product: StripeProduct, subscription: UserSubscription | null): string {
+  // Helper function to get monthly price for yearly plans
+  const getMonthlyPrice = (plan: PricingPlan) => {
+    if (plan.period === 'year' && plan.price > 0) {
+      return plan.price / 12;
+    }
+    return plan.price;
+  };
+
+  // Helper function to get original monthly price for comparison
+  const getOriginalMonthlyPrice = (plan: PricingPlan) => {
+    if (plan.period === 'year' && plan.stripeProduct) {
+      // Find the corresponding monthly product
+      const monthlyProducts = getProductsByInterval('month');
+      const monthlyProduct = monthlyProducts.find((p) => p.name === plan.name);
+      return monthlyProduct ? monthlyProduct.price / 100 : plan.price / 12;
+    }
+    return plan.price;
+  };
+
+  function getButtonText(
+    product: StripeProduct,
+    subscription: UserSubscription | null,
+  ): string {
     if (!subscription) {
       return `Start ${product.name} Plan`;
     }
@@ -381,7 +457,10 @@ const PricingPage: React.FC = () => {
   const handleSubscribe = async (plan: PricingPlan) => {
     if (plan.enterprise) {
       // Handle enterprise contact
-      window.open('mailto:enterprise@ossideas.com?subject=Enterprise Plan Inquiry', '_blank');
+      window.open(
+        'mailto:enterprise@ossideas.com?subject=Enterprise Plan Inquiry',
+        '_blank',
+      );
       return;
     }
 
@@ -407,13 +486,19 @@ const PricingPage: React.FC = () => {
       if (isCurrentPlan(plan) && userSubscription.cancel_at_period_end) {
         setLoadingPlan(plan.id);
         try {
-          const result = await reactivateSubscription(userSubscription.stripe_subscription_id);
+          const result = await reactivateSubscription(
+            userSubscription.stripe_subscription_id,
+          );
           if (result.success) {
-            setSuccessMessage(result.message || 'Subscription reactivated successfully!');
+            setSuccessMessage(
+              result.message || 'Subscription reactivated successfully!',
+            );
             // Refresh subscription data after a short delay
             setTimeout(() => fetchUserSubscription(true), 1000);
           } else {
-            setCheckoutError(result.error || 'Failed to reactivate subscription');
+            setCheckoutError(
+              result.error || 'Failed to reactivate subscription',
+            );
           }
         } catch (error) {
           setCheckoutError('Failed to reactivate subscription');
@@ -432,10 +517,17 @@ const PricingPage: React.FC = () => {
       if (!isCurrentPlan(plan)) {
         setLoadingPlan(plan.id);
         try {
-          console.log(`Updating subscription from ${userSubscription.stripe_price_id} to ${plan.stripeProduct.priceId}`);
-          const result = await updateSubscription(userSubscription.stripe_subscription_id, plan.stripeProduct.priceId);
+          console.log(
+            `Updating subscription from ${userSubscription.stripe_price_id} to ${plan.stripeProduct.priceId}`,
+          );
+          const result = await updateSubscription(
+            userSubscription.stripe_subscription_id,
+            plan.stripeProduct.priceId,
+          );
           if (result.success) {
-            setSuccessMessage(result.message || 'Subscription updated successfully!');
+            setSuccessMessage(
+              result.message || 'Subscription updated successfully!',
+            );
             // Refresh subscription data after a short delay to allow webhook processing
             setTimeout(() => fetchUserSubscription(true), 2000);
           } else {
@@ -455,10 +547,17 @@ const PricingPage: React.FC = () => {
     setLoadingPlan(plan.id);
 
     try {
-      console.log('Starting checkout for plan:', plan.name, 'Price ID:', plan.stripeProduct.priceId);
+      console.log(
+        'Starting checkout for plan:',
+        plan.name,
+        'Price ID:',
+        plan.stripeProduct.priceId,
+      );
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session) {
         throw new Error('No active session found. Please sign in again.');
       }
@@ -472,29 +571,34 @@ const PricingPage: React.FC = () => {
 
       console.log('Sending checkout request:', requestBody);
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(requestBody),
         },
-        body: JSON.stringify(requestBody),
-      });
+      );
 
       console.log('Checkout response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Checkout response error:', errorText);
-        
+
         let errorData;
         try {
           errorData = JSON.parse(errorText);
         } catch {
           errorData = { error: errorText };
         }
-        
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+
+        throw new Error(
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
@@ -508,7 +612,8 @@ const PricingPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
       setCheckoutError(`Failed to start checkout: ${errorMessage}`);
     } finally {
       setLoadingPlan(null);
@@ -520,11 +625,19 @@ const PricingPage: React.FC = () => {
       return;
     }
 
-    if (window.confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.',
+      )
+    ) {
       try {
-        const result = await cancelSubscription(userSubscription.stripe_subscription_id);
+        const result = await cancelSubscription(
+          userSubscription.stripe_subscription_id,
+        );
         if (result.success) {
-          setSuccessMessage(result.message || 'Subscription canceled successfully!');
+          setSuccessMessage(
+            result.message || 'Subscription canceled successfully!',
+          );
           // Refresh subscription data after a short delay
           setTimeout(() => fetchUserSubscription(true), 1000);
         } else {
@@ -549,7 +662,7 @@ const PricingPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -572,7 +685,7 @@ const PricingPage: React.FC = () => {
     if (subscription.cancel_at_period_end) {
       return `Cancels on ${formatDate(subscription.current_period_end)}`;
     }
-    
+
     switch (subscription.status) {
       case 'active':
         return `Renews on ${formatDate(subscription.current_period_end)}`;
@@ -622,7 +735,10 @@ const PricingPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Subscription Change Notification */}
         {subscriptionNotification && (
-          <div className={`border rounded-lg p-4 mb-8 max-w-4xl mx-auto ${getNotificationColor(subscriptionNotification.type)}`}>
+          <div
+            className={`border rounded-lg p-4 mb-8 max-w-4xl mx-auto ${getNotificationColor(
+              subscriptionNotification.type,
+            )}`}>
             <div className="flex items-start space-x-3">
               {(() => {
                 const Icon = getNotificationIcon(subscriptionNotification.type);
@@ -630,17 +746,22 @@ const PricingPage: React.FC = () => {
               })()}
               <div className="flex-1">
                 <h3 className="text-sm font-medium">
-                  {subscriptionNotification.type === 'upgrade' && 'Plan Upgraded!'}
-                  {subscriptionNotification.type === 'downgrade' && 'Plan Changed!'}
-                  {subscriptionNotification.type === 'reactivate' && 'Subscription Reactivated!'}
-                  {subscriptionNotification.type === 'cancel' && 'Subscription Canceled'}
+                  {subscriptionNotification.type === 'upgrade' &&
+                    'Plan Upgraded!'}
+                  {subscriptionNotification.type === 'downgrade' &&
+                    'Plan Changed!'}
+                  {subscriptionNotification.type === 'reactivate' &&
+                    'Subscription Reactivated!'}
+                  {subscriptionNotification.type === 'cancel' &&
+                    'Subscription Canceled'}
                 </h3>
-                <p className="text-sm mt-1">{subscriptionNotification.message}</p>
+                <p className="text-sm mt-1">
+                  {subscriptionNotification.message}
+                </p>
               </div>
               <button
                 onClick={() => setSubscriptionNotification(null)}
-                className="text-current hover:opacity-70"
-              >
+                className="text-current hover:opacity-70">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -653,12 +774,16 @@ const PricingPage: React.FC = () => {
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-medium text-red-800">Stripe Configuration Required</h3>
+                <h3 className="text-sm font-medium text-red-800">
+                  Stripe Configuration Required
+                </h3>
                 <p className="text-sm text-red-700 mt-1">
-                  Please update your Stripe price IDs in the configuration file: {configError}
+                  Please update your Stripe price IDs in the configuration file:{' '}
+                  {configError}
                 </p>
                 <p className="text-xs text-red-600 mt-2">
-                  Go to your Stripe Dashboard → Products → Create prices, then update src/stripe-config.ts with the real price IDs.
+                  Go to your Stripe Dashboard → Products → Create prices, then
+                  update src/stripe-config.ts with the real price IDs.
                 </p>
               </div>
             </div>
@@ -676,8 +801,7 @@ const PricingPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setSuccessMessage(null)}
-                className="text-green-400 hover:text-green-600"
-              >
+                className="text-green-400 hover:text-green-600">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -695,8 +819,7 @@ const PricingPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setCheckoutError(null)}
-                className="text-red-400 hover:text-red-600"
-              >
+                className="text-red-400 hover:text-red-600">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -709,16 +832,55 @@ const PricingPage: React.FC = () => {
             <Sparkles className="h-4 w-4 mr-2" />
             Choose Your Perfect Plan
           </div>
-          
+
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Simple, Transparent
-            <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"> Pricing</span>
+            <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+              {' '}
+              Pricing
+            </span>
           </h1>
-          
+
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Start your entrepreneurial journey with the right plan for your needs. 
-            All plans include our core features with no hidden fees.
+            Start your entrepreneurial journey with the right plan for your
+            needs. All plans include our core features with no hidden fees.
           </p>
+
+          {/* Billing Interval Toggle */}
+          <div className="flex items-center justify-center space-x-4 mb-8">
+            <span
+              className={`text-sm font-medium ${
+                billingInterval === 'month' ? 'text-gray-900' : 'text-gray-500'
+              }`}>
+              Monthly
+            </span>
+            <button
+              onClick={() =>
+                setBillingInterval(
+                  billingInterval === 'month' ? 'year' : 'month',
+                )
+              }
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                billingInterval === 'year' ? 'bg-orange-600' : 'bg-gray-200'
+              }`}>
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  billingInterval === 'year' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span
+              className={`text-sm font-medium ${
+                billingInterval === 'year' ? 'text-gray-900' : 'text-gray-500'
+              }`}>
+              Yearly
+            </span>
+            {billingInterval === 'year' && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Save up to 20%
+              </span>
+            )}
+          </div>
 
           {/* Current Subscription Status - Only show if user is logged in and has a subscription */}
           {authState.user && !subscriptionLoading && userSubscription && (
@@ -735,23 +897,34 @@ const PricingPage: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {userSubscription.plan_name} Plan
                       </h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(userSubscription.status)}`}>
-                        {userSubscription.status === 'active' ? 'Active' : userSubscription.status}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                          userSubscription.status,
+                        )}`}>
+                        {userSubscription.status === 'active'
+                          ? 'Active'
+                          : userSubscription.status}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-1">
-                      {formatPrice(userSubscription.amount_cents / 100, userSubscription.currency)} per {userSubscription.plan_interval}
+                      {formatPrice(
+                        userSubscription.amount_cents / 100,
+                        userSubscription.currency,
+                      )}{' '}
+                      per {userSubscription.plan_interval}
                     </p>
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-1" />
                       {getStatusText(userSubscription)}
                     </div>
-                    {userSubscription.payment_method_brand && userSubscription.payment_method_last4 && (
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        {userSubscription.payment_method_brand.toUpperCase()} ending in {userSubscription.payment_method_last4}
-                      </div>
-                    )}
+                    {userSubscription.payment_method_brand &&
+                      userSubscription.payment_method_last4 && (
+                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          {userSubscription.payment_method_brand.toUpperCase()}{' '}
+                          ending in {userSubscription.payment_method_last4}
+                        </div>
+                      )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 space-x-2">
@@ -761,15 +934,15 @@ const PricingPage: React.FC = () => {
                       Ending Soon
                     </div>
                   )}
-                  {userSubscription.is_active && !userSubscription.cancel_at_period_end && (
-                    <button
-                      onClick={handleCancelSubscription}
-                      disabled={subscriptionManagementLoading}
-                      className="px-3 py-1 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  )}
+                  {userSubscription.is_active &&
+                    !userSubscription.cancel_at_period_end && (
+                      <button
+                        onClick={handleCancelSubscription}
+                        disabled={subscriptionManagementLoading}
+                        className="px-3 py-1 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                        Cancel
+                      </button>
+                    )}
                 </div>
               </div>
             </div>
@@ -792,18 +965,17 @@ const PricingPage: React.FC = () => {
             const Icon = plan.icon;
             const currency = plan.stripeProduct?.currency || 'USD';
             const isCurrentUserPlan = isCurrentPlan(plan);
-            
+
             return (
               <div
                 key={plan.id}
                 className={`flex flex-col relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
                   isCurrentUserPlan
                     ? 'border-orange-200 ring-4 ring-orange-100'
-                    : plan.popular 
-                    ? 'border-orange-200 ring-4 ring-orange-100' 
+                    : plan.popular
+                    ? 'border-orange-200 ring-4 ring-orange-100'
                     : 'border-gray-200 hover:border-orange-200'
-                }`}
-              >
+                }`}>
                 {/* Current Plan Badge */}
                 {isCurrentUserPlan && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -825,20 +997,29 @@ const PricingPage: React.FC = () => {
                 <div className="p-8">
                   {/* Plan Header */}
                   <div className="text-center mb-8">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 ${plan.iconBg} rounded-2xl mb-4`}>
+                    <div
+                      className={`inline-flex items-center justify-center w-16 h-16 ${plan.iconBg} rounded-2xl mb-4`}>
                       <Icon className={`h-8 w-8 ${plan.iconColor}`} />
                     </div>
-                    
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">{plan.description}</p>
+
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      {plan.name}
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {plan.description}
+                    </p>
                   </div>
 
                   {/* Pricing */}
                   <div className="text-center mb-8">
                     {plan.enterprise ? (
                       <div>
-                        <div className="text-4xl font-bold text-gray-900 mb-2">Custom</div>
-                        <div className="text-gray-500">Tailored to your needs</div>
+                        <div className="text-4xl font-bold text-gray-900 mb-2">
+                          Custom
+                        </div>
+                        <div className="text-gray-500">
+                          Tailored to your needs
+                        </div>
                       </div>
                     ) : (
                       <div>
@@ -847,9 +1028,27 @@ const PricingPage: React.FC = () => {
                             {formatPrice(plan.price, currency)}
                           </span>
                           {plan.period !== 'one-time' && (
-                            <span className="text-gray-500 ml-2">/{plan.period}</span>
+                            <span className="text-gray-500 ml-2">
+                              /{plan.period}
+                            </span>
                           )}
                         </div>
+                        {/* Show monthly equivalent and savings for yearly plans */}
+                        {plan.period === 'year' && (
+                          <div className="text-sm text-gray-500">
+                            <span className="line-through">
+                              {formatPrice(
+                                getOriginalMonthlyPrice(plan),
+                                currency,
+                              )}
+                              /month
+                            </span>
+                            <span className="ml-2 text-green-600 font-medium">
+                              {formatPrice(getMonthlyPrice(plan), currency)}
+                              /month
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -861,7 +1060,9 @@ const PricingPage: React.FC = () => {
                         <div className="flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-green-600" />
                         </div>
-                        <span className="text-gray-700 text-sm leading-relaxed">{feature}</span>
+                        <span className="text-gray-700 text-sm leading-relaxed">
+                          {feature}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -869,27 +1070,34 @@ const PricingPage: React.FC = () => {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleSubscribe(plan)}
-                    disabled={loadingPlan === plan.id || subscriptionManagementLoading || (isCurrentUserPlan && !userSubscription?.cancel_at_period_end)}
+                    disabled={
+                      loadingPlan === plan.id ||
+                      subscriptionManagementLoading ||
+                      (isCurrentUserPlan &&
+                        !userSubscription?.cancel_at_period_end)
+                    }
                     className={`w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
-                      isCurrentUserPlan && !userSubscription?.cancel_at_period_end
+                      isCurrentUserPlan &&
+                      !userSubscription?.cancel_at_period_end
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                         : plan.popular || isCurrentUserPlan
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`
                         : plan.enterprise
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105`
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {loadingPlan === plan.id || subscriptionManagementLoading ? (
+                    }`}>
+                    {loadingPlan === plan.id ||
+                    subscriptionManagementLoading ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       </>
                     ) : (
                       <>
                         <span>{plan.buttonText}</span>
-                        {!(isCurrentUserPlan && !userSubscription?.cancel_at_period_end) && (
-                          <ArrowRight className="h-4 w-4" />
-                        )}
+                        {!(
+                          isCurrentUserPlan &&
+                          !userSubscription?.cancel_at_period_end
+                        ) && <ArrowRight className="h-4 w-4" />}
                       </>
                     )}
                   </button>
@@ -904,37 +1112,49 @@ const PricingPage: React.FC = () => {
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Frequently Asked Questions
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
               {
-                question: "Can I change plans anytime?",
-                answer: "Yes! You can upgrade or downgrade your plan at any time. Changes will be prorated and reflected immediately."
+                question: 'Can I change plans anytime?',
+                answer:
+                  'Yes! You can upgrade or downgrade your plan at any time. Changes will be prorated and reflected immediately.',
               },
               {
-                question: "What payment methods do you accept?",
-                answer: "We accept all major credit cards through Stripe's secure payment processing."
+                question: 'What payment methods do you accept?',
+                answer:
+                  "We accept all major credit cards through Stripe's secure payment processing.",
               },
               {
-                question: "Is there a free trial?",
-                answer: "We offer a 7-day free trial for all paid plans. No credit card required to start your trial."
+                question: 'Is there a free trial?',
+                answer:
+                  'We offer a 7-day free trial for all paid plans. No credit card required to start your trial.',
               },
               {
-                question: "What happens if I cancel?",
-                answer: "You can cancel anytime. You'll continue to have access to your plan features until the end of your billing period."
+                question: 'What happens if I cancel?',
+                answer:
+                  "You can cancel anytime. You'll continue to have access to your plan features until the end of your billing period.",
               },
               {
-                question: "Do you offer refunds?",
-                answer: "We offer a 30-day money-back guarantee for all subscription plans. One-time purchases are final but we're happy to help with any issues."
+                question: 'Do you offer refunds?',
+                answer:
+                  "We offer a 30-day money-back guarantee for all subscription plans. One-time purchases are final but we're happy to help with any issues.",
               },
               {
-                question: "Can I get an invoice for my purchase?",
-                answer: "Yes! You'll automatically receive an invoice via email after each payment. You can also download invoices from your account dashboard."
-              }
+                question: 'Can I get an invoice for my purchase?',
+                answer:
+                  "Yes! You'll automatically receive an invoice via email after each payment. You can also download invoices from your account dashboard.",
+              },
             ].map((faq, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+              <div
+                key={index}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  {faq.question}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {faq.answer}
+                </p>
               </div>
             ))}
           </div>
