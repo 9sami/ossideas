@@ -38,12 +38,7 @@ const MainContent: React.FC<MainContentProps> = ({
     isNew: false,
     isTrending: false,
     communityPick: false,
-    appliedSections: [
-      'trending',
-      'community',
-      'newArrivals',
-      'discovery',
-    ],
+    appliedSections: ['trending', 'community', 'newArrivals', 'discovery'],
   });
 
   // Main repositories hook for discovery section
@@ -76,9 +71,12 @@ const MainContent: React.FC<MainContentProps> = ({
   }, [searchQuery, filters]);
 
   // Helper function to check if a section should be filtered
-  const shouldFilterSection = useCallback((sectionId: string) => {
-    return hasActiveFilters && filters.appliedSections.includes(sectionId);
-  }, [hasActiveFilters, filters.appliedSections]);
+  const shouldFilterSection = useCallback(
+    (sectionId: string) => {
+      return hasActiveFilters && filters.appliedSections.includes(sectionId);
+    },
+    [hasActiveFilters, filters.appliedSections],
+  );
 
   // Check if initial data is loading (show full screen loader)
   const isInitialLoading = useMemo(() => {
@@ -257,21 +255,42 @@ const MainContent: React.FC<MainContentProps> = ({
       ? applyFilters(trendingRepositories)
       : trendingRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, trendingRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
+  }, [
+    searchQuery,
+    filters,
+    trendingRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
   const communityPicks = useMemo(() => {
     const filteredRepos = shouldFilterSection('community')
       ? applyFilters(communityRepositories)
       : communityRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, communityRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
+  }, [
+    searchQuery,
+    filters,
+    communityRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
   const newArrivals = useMemo(() => {
     const filteredRepos = shouldFilterSection('newArrivals')
       ? applyFilters(newRepositories)
       : newRepositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, newRepositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
+  }, [
+    searchQuery,
+    filters,
+    newRepositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
   // Discovery section - also from repositories only
   const discoveryIdeas = useMemo(() => {
@@ -279,16 +298,24 @@ const MainContent: React.FC<MainContentProps> = ({
       ? applyFilters(repositories)
       : repositories;
     return filteredRepos.map(convertRepositoryToIdea);
-  }, [searchQuery, filters, repositories, convertRepositoryToIdea, applyFilters, shouldFilterSection]);
+  }, [
+    searchQuery,
+    filters,
+    repositories,
+    convertRepositoryToIdea,
+    applyFilters,
+    shouldFilterSection,
+  ]);
 
   // Handle idea selection - navigate to repository detail page since all are repository-based
   const handleIdeaSelect = (idea: IdeaData) => {
     // Since all ideas are now repository-based, find the repository ID
-    const repo = repositories.find((r) => r.full_name === idea.ossProject) ||
-                 trendingRepositories.find((r) => r.full_name === idea.ossProject) ||
-                 communityRepositories.find((r) => r.full_name === idea.ossProject) ||
-                 newRepositories.find((r) => r.full_name === idea.ossProject);
-    
+    const repo =
+      repositories.find((r) => r.full_name === idea.ossProject) ||
+      trendingRepositories.find((r) => r.full_name === idea.ossProject) ||
+      communityRepositories.find((r) => r.full_name === idea.ossProject) ||
+      newRepositories.find((r) => r.full_name === idea.ossProject);
+
     if (repo) {
       // Navigate to repository detail page
       navigate(`/repositories/${repo.id}`);
@@ -305,16 +332,15 @@ const MainContent: React.FC<MainContentProps> = ({
   }
 
   // Helper function to get section description with static counts
-  const getSectionDescription = (
-    sectionId: string,
-    currentCount: number,
-  ) => {
+  const getSectionDescription = (sectionId: string, currentCount: number) => {
     const isFiltered = shouldFilterSection(sectionId);
-    
+
     if (hasActiveFilters && isFiltered) {
-      return `${currentCount} ${currentCount === 1 ? 'result' : 'results'} match your filters`;
+      return `${currentCount} ${
+        currentCount === 1 ? 'result' : 'results'
+      } match your filters`;
     }
-    
+
     // Descriptive counts for sections
     switch (sectionId) {
       case 'trending':
