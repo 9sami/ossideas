@@ -5,7 +5,6 @@ import {
   Heart,
   Share2,
   ExternalLink,
-  Download,
   Zap,
   Users,
   DollarSign,
@@ -184,11 +183,6 @@ const IdeaDetail: React.FC = () => {
               <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                 <Share2 className="h-4 w-4" />
                 <span>Share</span>
-              </button>
-
-              <button className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
               </button>
             </div>
           </div>
