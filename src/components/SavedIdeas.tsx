@@ -2,19 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bookmark, Heart } from 'lucide-react';
 import IdeaCard from './IdeaCard';
+import { useSavedIdeas } from '../hooks/useSavedIdeas';
 import { IdeaData } from '../types';
 import FullScreenLoader from './FullScreenLoader';
 
 const SavedIdeas: React.FC = () => {
   const navigate = useNavigate();
-  const [savedIdeas, setSavedIdeas] = React.useState<IdeaData[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    // TODO: Fetch saved ideas from database
-    // For now, show empty state
-    setLoading(false);
-  }, []);
+  const { savedIdeas, loading, error } = useSavedIdeas();
 
   const handleIdeaSelect = (idea: IdeaData) => {
     if (idea.ossProject && idea.ossProject !== 'Unknown Repository') {
@@ -28,6 +22,27 @@ const SavedIdeas: React.FC = () => {
 
   if (loading) {
     return <FullScreenLoader message="Loading saved ideas..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Heart className="h-12 w-12 text-red-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Error loading saved ideas
+          </h3>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

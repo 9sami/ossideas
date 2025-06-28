@@ -184,6 +184,7 @@ const MainContent: React.FC<MainContentProps> = ({
             Math.max(repo.stargazers_count, 1) >
             0.1,
       ),
+      isFromDatabase: false,
     }),
     [],
   );

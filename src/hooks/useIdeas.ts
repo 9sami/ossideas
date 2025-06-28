@@ -292,5 +292,6 @@ export const convertIdeaToIdeaData = (idea: Idea): IdeaData => {
     isNew: false, // Ideas are not "new" in the same sense as repositories
     isTrending: false, // Ideas are not "trending" in the same sense as repositories
     communityPick: false, // Ideas are not "community picks" in the same sense as repositories
+    isFromDatabase: true, // These ideas come from the ideas table
   };
 };

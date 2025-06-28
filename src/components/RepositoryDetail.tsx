@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useRepositoryById } from '../hooks/useRepositoryById';
 import { useIdeas, convertIdeaToIdeaData } from '../hooks/useIdeas';
+import { useSavedIdeas } from '../hooks/useSavedIdeas';
 import IdeaCard from './IdeaCard';
 import FullScreenLoader from './FullScreenLoader';
 
@@ -22,7 +23,23 @@ const RepositoryDetail: React.FC = () => {
   const navigate = useNavigate();
   const { repository, loading, error } = useRepositoryById(id);
   const { ideas } = useIdeas();
-  const [isSaved, setIsSaved] = useState(false);
+  const { isIdeaSaved, toggleSaveIdea } = useSavedIdeas();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isSaved = id ? isIdeaSaved(id) : false;
+
+  const handleSaveClick = async () => {
+    if (!id) return;
+
+    setIsSaving(true);
+    try {
+      await toggleSaveIdea(id);
+    } catch (error) {
+      console.error('Error toggling save:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Filter ideas that belong to this repository
   const repositoryIdeas = ideas
@@ -84,14 +101,19 @@ const RepositoryDetail: React.FC = () => {
 
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => setIsSaved(!isSaved)}
+                onClick={handleSaveClick}
+                disabled={isSaving}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  isSaved
+                  isSaving
+                    ? 'bg-orange-500 text-white opacity-50 cursor-not-allowed'
+                    : isSaved
                     ? 'bg-orange-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}>
                 <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
-                <span>{isSaved ? 'Saved' : 'Save'}</span>
+                <span>
+                  {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
+                </span>
               </button>
 
               <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">

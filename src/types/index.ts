@@ -17,6 +17,7 @@ export interface IdeaData {
   isNew?: boolean;
   isTrending?: boolean;
   communityPick?: boolean;
+  isFromDatabase?: boolean;
 }
 
 export interface FilterOptions {
