@@ -1,8 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe@17.7.0';
+import Stripe from 'npm:stripe@18.0.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+);
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
@@ -82,8 +85,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (getCustomerError) {
-      console.error('Failed to fetch customer information from the database', getCustomerError);
-      return corsResponse({ error: 'Failed to fetch customer information' }, 500);
+      console.error(
+        'Failed to fetch customer information from the database',
+        getCustomerError,
+      );
+      return corsResponse(
+        { error: 'Failed to fetch customer information' },
+        500,
+      );
     }
 
     let customerId;
@@ -97,24 +106,37 @@ Deno.serve(async (req) => {
         },
       });
 
-      console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
+      console.log(
+        `Created new Stripe customer ${newCustomer.id} for user ${user.id}`,
+      );
 
-      const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
-        user_id: user.id,
-        customer_id: newCustomer.id,
-      });
+      const { error: createCustomerError } = await supabase
+        .from('stripe_customers')
+        .insert({
+          user_id: user.id,
+          customer_id: newCustomer.id,
+        });
 
       if (createCustomerError) {
-        console.error('Failed to save customer information in the database', createCustomerError);
-        
+        console.error(
+          'Failed to save customer information in the database',
+          createCustomerError,
+        );
+
         // Clean up Stripe customer
         try {
           await stripe.customers.del(newCustomer.id);
         } catch (deleteError) {
-          console.error('Failed to delete Stripe customer after database error:', deleteError);
+          console.error(
+            'Failed to delete Stripe customer after database error:',
+            deleteError,
+          );
         }
 
-        return corsResponse({ error: 'Failed to create customer mapping' }, 500);
+        return corsResponse(
+          { error: 'Failed to create customer mapping' },
+          500,
+        );
       }
 
       customerId = newCustomer.id;
@@ -143,11 +165,14 @@ Deno.serve(async (req) => {
       },
     });
 
-    console.log(`Created checkout session ${session.id} for customer ${customerId}`);
+    console.log(
+      `Created checkout session ${session.id} for customer ${customerId}`,
+    );
 
     return corsResponse({ sessionId: session.id, url: session.url });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     console.error(`Checkout error: ${errorMessage}`);
     return corsResponse({ error: errorMessage }, 500);
   }
@@ -156,7 +181,10 @@ Deno.serve(async (req) => {
 type ExpectedType = 'string' | { values: string[] };
 type Expectations<T> = { [K in keyof T]: ExpectedType };
 
-function validateParameters<T extends Record<string, unknown>>(values: T, expected: Expectations<T>): string | undefined {
+function validateParameters<T extends Record<string, unknown>>(
+  values: T,
+  expected: Expectations<T>,
+): string | undefined {
   for (const [key, expectedType] of Object.entries(expected)) {
     const value = values[key];
 
@@ -166,7 +194,9 @@ function validateParameters<T extends Record<string, unknown>>(values: T, expect
       }
     } else if (typeof expectedType === 'object' && 'values' in expectedType) {
       if (!expectedType.values.includes(value as string)) {
-        return `Expected ${key} to be one of: ${expectedType.values.join(', ')}`;
+        return `Expected ${key} to be one of: ${expectedType.values.join(
+          ', ',
+        )}`;
       }
     }
   }

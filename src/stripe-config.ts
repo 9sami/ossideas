@@ -16,7 +16,7 @@ export interface StripeProduct {
 export const stripeProducts: StripeProduct[] = [
   {
     id: 'basic-monthly',
-    priceId: 'price_1RckgcQPndpMZzHjtx2QQeEy',
+    priceId: 'price_1RetLjLSoWUjpqIF9wkLYgbF',
     name: 'Basic',
     description: 'Perfect for individual entrepreneurs and small projects',
     mode: 'subscription',
@@ -29,12 +29,12 @@ export const stripeProducts: StripeProduct[] = [
       'Save up to 10 ideas',
       'Email support',
       'Monthly idea updates',
-      'Basic market insights'
-    ]
+      'Basic market insights',
+    ],
   },
   {
     id: 'pro-monthly',
-    priceId: 'price_1RckfqQPndpMZzHjVfWXBcR8',
+    priceId: 'price_1RetGPLSoWUjpqIFB9zXvjMC',
     name: 'Pro',
     description: 'Ideal for serious entrepreneurs and growing teams',
     mode: 'subscription',
@@ -51,21 +51,25 @@ export const stripeProducts: StripeProduct[] = [
       'Detailed market analysis',
       'Export to Notion, PDF, and more',
       'Community access and networking',
-      'Early access to new features'
-    ]
-  }
+      'Early access to new features',
+    ],
+  },
 ];
 
 export const getProductById = (id: string): StripeProduct | undefined => {
-  return stripeProducts.find(product => product.id === id);
+  return stripeProducts.find((product) => product.id === id);
 };
 
-export const getProductByPriceId = (priceId: string): StripeProduct | undefined => {
-  return stripeProducts.find(product => product.priceId === priceId);
+export const getProductByPriceId = (
+  priceId: string,
+): StripeProduct | undefined => {
+  return stripeProducts.find((product) => product.priceId === priceId);
 };
 
-export const getProductsByInterval = (interval: 'month' | 'year'): StripeProduct[] => {
-  return stripeProducts.filter(product => product.interval === interval);
+export const getProductsByInterval = (
+  interval: 'month' | 'year',
+): StripeProduct[] => {
+  return stripeProducts.filter((product) => product.interval === interval);
 };
 
 export const getSubscriptionProducts = (): StripeProduct[] => {
@@ -73,17 +77,22 @@ export const getSubscriptionProducts = (): StripeProduct[] => {
 };
 
 // Helper function to validate if price IDs are properly configured
-export const validateStripeConfig = (): { isValid: boolean; errors: string[] } => {
+export const validateStripeConfig = (): {
+  isValid: boolean;
+  errors: string[];
+} => {
   const errors: string[] = [];
-  
-  stripeProducts.forEach(product => {
+
+  stripeProducts.forEach((product) => {
     if (product.priceId.startsWith('price_1QYourActual')) {
-      errors.push(`${product.name} ${product.interval} plan needs a real Stripe price ID`);
+      errors.push(
+        `${product.name} ${product.interval} plan needs a real Stripe price ID`,
+      );
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
