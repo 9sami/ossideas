@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { IdeaData } from '../types';
+import { convertIdeaToIdeaData, Idea } from './useIdeas';
 
 export const useSavedIdeas = () => {
   const { authState } = useAuth();
@@ -44,37 +45,51 @@ export const useSavedIdeas = () => {
       // Get the idea IDs
       const ideaIds = savedRecords.map((record) => record.idea_id);
 
-      // Fetch the actual idea data
+      // Fetch the complete idea data with repository and analysis information
       const { data: ideas, error: ideasError } = await supabase
         .from('ideas')
-        .select('*')
+        .select(
+          `
+          *,
+          repository:repositories(
+            id,
+            full_name,
+            description,
+            stargazers_count,
+            forks_count,
+            topics,
+            license_name,
+            readme_content,
+            languages
+          ),
+          analysis_results(
+            id,
+            analysis_type_id,
+            title,
+            summary_description,
+            overall_score,
+            analysis_payload,
+            analysis_type:analysis_types(
+              name,
+              slug
+            )
+          )
+        `,
+        )
         .in('id', ideaIds);
 
       if (ideasError) {
         throw ideasError;
       }
 
-      // Transform the data to match IdeaData interface
-      const transformedIdeas: IdeaData[] = (ideas || []).map((idea) => ({
-        id: idea.id,
-        title: idea.title,
-        tagline: idea.tagline,
-        description: idea.description,
-        ossProject: idea.oss_project || 'Unknown Repository',
-        categories: idea.categories || [],
-        opportunityScore: idea.opportunity_score || 0,
-        license: idea.license || 'Unknown',
-        marketSize: idea.market_size || 'Unknown',
-        targetAudience: idea.target_audience || 'Unknown',
-        monetizationStrategy: idea.monetization_strategy || 'Unknown',
-        techStack: idea.tech_stack || [],
-        competitiveAdvantage: idea.competitive_advantage || 'Unknown',
-        risks: idea.risks || [],
-        isSaved: true,
-        isNew: idea.is_new || false,
-        isTrending: idea.is_trending || false,
-        communityPick: idea.community_pick || false,
-      }));
+      // Convert the ideas using the same function as useIdeas hook
+      const transformedIdeas: IdeaData[] = (ideas || []).map((idea: Idea) => {
+        const ideaData = convertIdeaToIdeaData(idea);
+        return {
+          ...ideaData,
+          isSaved: true, // Mark as saved since these are from saved ideas
+        };
+      });
 
       setSavedIdeas(transformedIdeas);
       setSavedIdeaIds(new Set(ideaIds));

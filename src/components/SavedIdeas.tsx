@@ -11,13 +11,8 @@ const SavedIdeas: React.FC = () => {
   const { savedIdeas, loading, error } = useSavedIdeas();
 
   const handleIdeaSelect = (idea: IdeaData) => {
-    if (idea.ossProject && idea.ossProject !== 'Unknown Repository') {
-      // Navigate to repository detail
-      navigate(`/repositories/${idea.id}`);
-    } else {
-      // Navigate to idea detail
-      navigate(`/ideas/${idea.id}`);
-    }
+    // All saved ideas come from the ideas table, so navigate to idea detail
+    navigate(`/ideas/${idea.id}`);
   };
 
   if (loading) {
