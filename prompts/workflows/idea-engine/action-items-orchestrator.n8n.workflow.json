@@ -9,10 +9,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        1280,
-        110
+        -120,
+        -40
       ],
-      "id": "420456bf-2b05-41f0-a8fd-3435cd2290d5",
+      "id": "8ab5b5c5-3e1f-44de-900c-44029152d8d7",
       "name": "Structured Output Parser"
     },
     {
@@ -23,10 +23,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        1040,
-        120
+        -360,
+        -40
       ],
-      "id": "f3409270-eb63-4de8-876d-a33b2a0a44ab",
+      "id": "7543a2c2-47d1-405d-86af-0a755c226afa",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
@@ -44,10 +44,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        1160,
-        110
+        -240,
+        -40
       ],
-      "id": "946cbb40-b9bf-4dae-9bf6-569ced77baaf",
+      "id": "3e6f63be-4b46-437a-850f-c7fbabc8b262",
       "name": "Simple Memory"
     },
     {
@@ -59,22 +59,37 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -60,
-        365
+        -1900,
+        90
       ],
-      "id": "7049c099-2a27-4a50-90f5-29e15c627092",
+      "id": "9416493e-740c-445e-8a17-8741fc7ebd86",
       "name": "IdeaBatch"
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas?select=id,title,overview,repository_id&not.id=in.(\n  select idea_id from analysis_results where analysis_type_id=4 and idea_id is not null\n)&limit=5",
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*, analysis_results(*),repository:repositories(*)"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_action_items"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {
-              "fullResponse": true,
               "responseFormat": "json"
             }
           }
@@ -83,10 +98,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -280,
-        365
+        -1680,
+        -260
       ],
-      "id": "1b5f78eb-44bc-47f7-8b87-bce730a556cf",
+      "id": "9596c29a-ca0d-4f5c-aac2-218d34c50c52",
       "name": "GetIdeasWithoutActionItems",
       "credentials": {
         "supabaseApi": {
@@ -109,10 +124,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -500,
-        365
+        -2120,
+        90
       ],
-      "id": "0d99348e-abb9-4cf3-a1fd-151fe103c06f",
+      "id": "96e065e2-4b00-4858-a898-24f730aa6fd4",
       "name": "Schedule Trigger"
     },
     {
@@ -127,10 +142,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.9,
       "position": [
-        1040,
-        -110
+        -328,
+        -260
       ],
-      "id": "4507b085-18bf-4e96-b5ce-d062c1966969",
+      "id": "61646dab-2fa0-4fcf-8cda-9bc8a27bfbe8",
       "name": "ActionItemsAgent",
       "alwaysOutputData": true,
       "onError": "continueErrorOutput"
@@ -170,10 +185,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1480,
-        -110
+        80,
+        -360
       ],
-      "id": "6dceaceb-c598-4fda-a083-c78a9d3ab600",
+      "id": "00eaecb5-eca4-4858-bfc4-81aa7536bbb0",
       "name": "StoreActionItemsAnalysis",
       "credentials": {
         "supabaseApi": {
@@ -209,10 +224,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1480,
-        110
+        80,
+        -160
       ],
-      "id": "7a9e0d15-1e5a-459b-be2a-d0a7f41fec76",
+      "id": "04674474-e353-4a05-9c31-680748750ba7",
       "name": "LogError",
       "credentials": {
         "supabaseApi": {
@@ -228,10 +243,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        820,
-        -110
+        -580,
+        -260
       ],
-      "id": "4fd1d239-0fde-4e6c-a0db-9d2ad177e0d4",
+      "id": "10455168-41f6-44b1-8e20-eb33a1ceb32f",
       "name": "Wait",
       "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
     },
@@ -245,10 +260,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        160,
-        365
+        -1460,
+        -260
       ],
-      "id": "ecc16951-dec7-414e-a71a-074790e3f957",
+      "id": "1e2f2c60-1c41-4c76-8ef9-44f5fa57f757",
       "name": "GetRepositoryDetails",
       "credentials": {
         "supabaseApi": {
@@ -259,15 +274,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// Transform the data into the format expected by ActionItemsAgent\nconst idea = $('GetIdeasWithoutActionItems').first().json.data[0];\nconst repository = $('GetRepositoryDetails').first().json[0];\nconst mvpFeatures = $('GetMVPFeatures').first().json[0];\n\nif (!idea || !repository) {\n  return { json: { error: 'Missing idea or repository data' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: repository.id,\n    name: repository.name,\n    full_name: repository.full_name,\n    description: repository.description,\n    html_url: repository.html_url,\n    stargazers_count: repository.stargazers_count,\n    forks_count: repository.forks_count,\n    topics: repository.topics,\n    license_name: repository.license_name,\n    languages: repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  }\n};\n\n// Add MVP features if available\nif (mvpFeatures && mvpFeatures.analysis_payload) {\n  try {\n    const mvpFeaturesData = typeof mvpFeatures.analysis_payload === 'string' \n      ? JSON.parse(mvpFeatures.analysis_payload)\n      : mvpFeatures.analysis_payload;\n      \n    formattedData.mvpFeatures = mvpFeaturesData;\n  } catch (e) {\n    console.log('Error parsing MVP features:', e);\n    // Continue without MVP features\n  }\n}\n\nreturn { json: formattedData };"
+        "jsCode": "// Transform the data into the format expected by ActionItemsAgent\nconst idea = $('GetIdeasWithoutActionItems').first().json\nconst repository = $('GetRepositoryDetails').first().json;\nconst mvpFeatures = $('GetMVPFeatures').first().json;\n\nif (!idea || !repository) {\n  return { json: { error: 'Missing idea or repository data' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: repository.id,\n    name: repository.name,\n    full_name: repository.full_name,\n    description: repository.description,\n    html_url: repository.html_url,\n    stargazers_count: repository.stargazers_count,\n    forks_count: repository.forks_count,\n    topics: repository.topics,\n    license_name: repository.license_name,\n    languages: repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  },\n  mvpFeatures: null\n};\n\n// Add MVP features if available\nif (mvpFeatures && mvpFeatures.analysis_payload) {\n  try {\n    const mvpFeaturesData = typeof mvpFeatures.analysis_payload === 'string' \n      ? JSON.parse(mvpFeatures.analysis_payload)\n      : mvpFeatures.analysis_payload;\n      \n    formattedData.mvpFeatures = mvpFeaturesData;\n  } catch (e) {\n    console.log('Error parsing MVP features:', e);\n    // Continue without MVP features\n  }\n}\n\nreturn { json: formattedData };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        600,
-        365
+        -1020,
+        -260
       ],
-      "id": "6c0cacb1-936b-4f0d-8357-7173dd7b19aa",
+      "id": "1f580739-9a7b-4fd7-8b22-43c6919bd96b",
       "name": "FormatInputData"
     },
     {
@@ -276,7 +291,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
+            "typeValidation": "loose",
             "version": 2
           },
           "conditions": [
@@ -288,19 +303,29 @@
                 "type": "string",
                 "operation": "isNotEmpty"
               }
+            },
+            {
+              "id": "d3ef30c6-d58d-4593-9d63-f067154d4879",
+              "leftValue": "={{ $json.mvpFeatures.features.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
         },
+        "looseTypeValidation": true,
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        820,
-        365
+        -800,
+        -240
       ],
-      "id": "211ed9b6-0374-422e-952e-493c9cc00cde",
+      "id": "89c27127-2bb4-4e18-a258-9c9631070b6e",
       "name": "If"
     },
     {
@@ -310,10 +335,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1760,
-        -110
+        520,
+        -135
       ],
-      "id": "99413120-f939-4793-b5c5-bb6972cfaf7f",
+      "id": "64a95bf8-2c0f-46e1-9a04-0f2748083cbb",
       "name": "WaitBeforeNextBatch",
       "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
     },
@@ -322,16 +347,53 @@
         "operation": "getAll",
         "tableId": "analysis_results",
         "filterType": "string",
-        "filterString": "=select=id,analysis_type_id,idea_id,analysis_payload&idea_id=eq.{{ $('GetIdeasWithoutActionItems').item.json.data[0].id }}&analysis_type_id=eq.3"
+        "filterString": "=select=id,analysis_type_id,idea_id,analysis_payload&idea_id=eq.{{ $('GetIdeasWithoutActionItems').item.json.id }}&analysis_type_id=eq.3"
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        380,
-        365
+        -1240,
+        -260
       ],
-      "id": "ecc16951-dec7-414e-a71a-074790e3f958",
+      "id": "843fc6e1-cbe8-4ba8-aaaa-2a99f0b35694",
       "name": "GetMVPFeatures",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_competitive_analysis"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -360
+      ],
+      "id": "db90b85c-5eba-4d6a-89ab-3d66333b3116",
+      "name": "UpdateIdeaStatus",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -340,6 +402,7 @@
       }
     }
   ],
+  "pinData": {},
   "connections": {
     "Structured Output Parser": {
       "ai_outputParser": [
@@ -430,7 +493,7 @@
       "main": [
         [
           {
-            "node": "WaitBeforeNextBatch",
+            "node": "UpdateIdeaStatus",
             "type": "main",
             "index": 0
           }
@@ -520,24 +583,47 @@
           }
         ]
       ]
+    },
+    "UpdateIdeaStatus": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1",
+  "versionId": "06052a78-c82a-4932-8ddd-d0123a36eaf7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
   },
-  "id": "ActionItemsWorkflow",
+  "id": "bwcpAa6p1fCefAZW",
   "tags": [
     {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
       "name": "production"
     },
     {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
       "name": "ossideas"
+    },
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
     }
   ]
 }
