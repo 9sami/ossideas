@@ -59,11 +59,15 @@ Based on the provided ranking of important sections for business ideas and the e
 - Public Tagline: One-sentence value proposition
 
 **Current Agent Contribution:**
-- **IdeaAgent**: Currently generates a title but not a dedicated tagline
+- **IdeaAgent**: Currently generates a title that's stored in `ideas.title` but doesn't explicitly generate a tagline
+- From `IdeaAgent/system_prompt.md`, we can see it's designed to create a "crisp, descriptive name for the idea" but doesn't specifically mention taglines
+- The output schema in `IdeaAgent/analysis_structured_output.json` only includes a title field, not a tagline
 
 **Proposed Enhancement:**
-- Enhance **IdeaAgent** to explicitly generate both a title and tagline
-- Store in `analysis_results` with `analysis_type_id = 1`
+- Modify **IdeaAgent** to explicitly generate both a title and tagline
+- Update the agent's system prompt to emphasize the importance of a concise, compelling tagline
+- Modify the output schema to include a tagline field
+- Store the complete title and tagline data in `analysis_results` with `analysis_type_id = 1`
 - Continue to store the title in `ideas.title` for quick access
 
 **Database Storage:**
@@ -76,6 +80,11 @@ Based on the provided ranking of important sections for business ideas and the e
   }
   ```
 - `ideas.title` (existing field)
+
+**Implementation Details:**
+- Update `IdeaAgent/system_prompt.md` to include instructions for generating a tagline
+- Modify `IdeaAgent/analysis_structured_output.json` to include the tagline field
+- Update the n8n workflow in `prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json` to store the title and tagline in the appropriate tables
 
 ### 2. Opportunity Summary (Problem & Vision) (15% Importance)
 
@@ -412,7 +421,7 @@ Based on the database schema and existing workflow, we recommend the following i
 
 ### 2. Create New Analysis Agents
 
-Rather than creating 38 new agents, we recommend focusing on the highest-priority analysis types:
+Rather than creating separate agents for all 40 analysis types, we recommend focusing on the highest-priority analysis types (1-10) and integrating them into the existing workflow:
 
 1. **MVPFeaturesAgent** (for analysis_type_id = 3)
 2. **ActionItemsAgent** (for analysis_type_id = 4)
@@ -424,7 +433,7 @@ Rather than creating 38 new agents, we recommend focusing on the highest-priorit
 
 ### 3. Workflow Integration
 
-Each new agent should be integrated into the existing workflow:
+The existing n8n workflow in `prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json` can be extended to:
 
 1. **Repository Processing**:
    - RepositoryFilterAgent → RepositoryRankAgent → TunerAgent → TunedOpportunityAgent → IdeaAgent
