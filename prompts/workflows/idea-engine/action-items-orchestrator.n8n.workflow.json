@@ -1,0 +1,543 @@
+{
+  "name": "Idea Engine - 5. Action Items Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"actionItems\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"task\": {\n            \"type\": \"string\",\n            \"description\": \"Specific action to take\"\n          },\n          \"priority\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Priority level of the task\"\n          },\n          \"timeframe\": {\n            \"type\": \"string\",\n            \"description\": \"Estimated time to complete\"\n          },\n          \"resources\": {\n            \"type\": \"string\",\n            \"description\": \"Required resources or skills\"\n          }\n        }\n      }\n    },\n    \"immediateNextSteps\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Actions that should be taken immediately\"\n    },\n    \"milestones\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Milestone name\"\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"What this milestone represents\"\n          },\n          \"targetDate\": {\n            \"type\": \"string\",\n            \"description\": \"Estimated target date or timeframe\"\n          }\n        }\n      }\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        110
+      ],
+      "id": "420456bf-2b05-41f0-a8fd-3435cd2290d5",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        120
+      ],
+      "id": "f3409270-eb63-4de8-876d-a33b2a0a44ab",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1160,
+        110
+      ],
+      "id": "946cbb40-b9bf-4dae-9bf6-569ced77baaf",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -60,
+        365
+      ],
+      "id": "7049c099-2a27-4a50-90f5-29e15c627092",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas?select=id,title,overview,repository_id&not.id=in.(\n  select idea_id from analysis_results where analysis_type_id=4 and idea_id is not null\n)&limit=5",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        365
+      ],
+      "id": "1b5f78eb-44bc-47f7-8b87-bce730a556cf",
+      "name": "GetIdeasWithoutActionItems",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        365
+      ],
+      "id": "0d99348e-abb9-4cf3-a1fd-151fe103c06f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('FormatInputData').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# ActionItemsAgent System Prompt\n\n## ROLE:\nYou are **ActionItemsAgent**, an AI product strategist specialized in creating practical, actionable next steps to transform business ideas into reality.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n3. MVP core features (if available)\n\nProduce a structured JSON output that identifies 3-5 immediate, tangible action items that:\n- Are specific, measurable, and achievable\n- Have clear timeframes and resource requirements\n- Are prioritized by importance and sequence\n- Will move the idea from concept to implementation\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  },\n  \"mvpFeatures\": {\n    \"features\": [\n      {\n        \"name\": \"string\",\n        \"description\": \"string\",\n        \"priority\": \"high|medium|low\",\n        \"userValue\": \"string\"\n      }\n    ],\n    \"mvpScope\": \"string\",\n    \"futureFeatures\": [\"string\"]\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"actionItems\": [\n    {\n      \"task\": \"Specific action to take\",\n      \"priority\": \"high|medium|low\",\n      \"timeframe\": \"Estimated time to complete (e.g., '1-2 weeks')\",\n      \"resources\": \"Required resources or skills\"\n    }\n  ],\n  \"immediateNextSteps\": [\n    \"First thing to do right now\",\n    \"Second immediate action\"\n  ],\n  \"milestones\": [\n    {\n      \"name\": \"Milestone name\",\n      \"description\": \"What this milestone represents\",\n      \"targetDate\": \"Estimated target date or timeframe\"\n    }\n  ]\n}\n```\n\n## GUIDELINES:\n\n1. **Practical & Actionable**: Each task should be concrete and immediately actionable, not vague or theoretical.\n\n2. **Technical Relevance**: Consider the repository's technology stack when suggesting implementation steps.\n\n3. **Logical Sequence**: Order tasks in a logical sequence that builds toward a working MVP.\n\n4. **Resource Awareness**: Be realistic about resource requirements and technical complexity.\n\n5. **Prioritization**: Label each action item as high, medium, or low priority based on:\n   - Critical path dependencies\n   - Impact on validating core assumptions\n   - Technical prerequisites\n\n6. **Immediate Next Steps**: Identify 2-3 actions that should be taken immediately to gain momentum.\n\n7. **Key Milestones**: Define 2-3 major milestones that mark significant progress points.\n\n8. **Validation Focus**: Include actions specifically designed to validate key assumptions.\n\n9. **Market Testing**: Include steps for early user feedback and market testing.\n\n10. **Technical Feasibility**: Ensure action items align with the technical capabilities evident in the repository.\n\nRemember: Good action items convert abstract ideas into concrete steps. They should be specific enough that someone could start working on them immediately without needing further clarification."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1040,
+        -110
+      ],
+      "id": "4507b085-18bf-4e96-b5ce-d062c1966969",
+      "name": "ActionItemsAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "4"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=Next Steps & Action Items for {{ $('FormatInputData').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.immediateNextSteps.join(', ') }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        -110
+      ],
+      "id": "6dceaceb-c598-4fda-a083-c78a9d3ab600",
+      "name": "StoreActionItemsAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with ActionItemsAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "action-items-agent"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        110
+      ],
+      "id": "7a9e0d15-1e5a-459b-be2a-d0a7f41fec76",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        820,
+        -110
+      ],
+      "id": "4fd1d239-0fde-4e6c-a0db-9d2ad177e0d4",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "repositories",
+        "filterType": "string",
+        "filterString": "=select=*&id=eq.{{ $json.repository_id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        365
+      ],
+      "id": "ecc16951-dec7-414e-a71a-074790e3f957",
+      "name": "GetRepositoryDetails",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by ActionItemsAgent\nconst idea = $('GetIdeasWithoutActionItems').first().json.data[0];\nconst repository = $('GetRepositoryDetails').first().json[0];\nconst mvpFeatures = $('GetMVPFeatures').first().json[0];\n\nif (!idea || !repository) {\n  return { json: { error: 'Missing idea or repository data' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: repository.id,\n    name: repository.name,\n    full_name: repository.full_name,\n    description: repository.description,\n    html_url: repository.html_url,\n    stargazers_count: repository.stargazers_count,\n    forks_count: repository.forks_count,\n    topics: repository.topics,\n    license_name: repository.license_name,\n    languages: repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  }\n};\n\n// Add MVP features if available\nif (mvpFeatures && mvpFeatures.analysis_payload) {\n  try {\n    const mvpFeaturesData = typeof mvpFeatures.analysis_payload === 'string' \n      ? JSON.parse(mvpFeatures.analysis_payload)\n      : mvpFeatures.analysis_payload;\n      \n    formattedData.mvpFeatures = mvpFeaturesData;\n  } catch (e) {\n    console.log('Error parsing MVP features:', e);\n    // Continue without MVP features\n  }\n}\n\nreturn { json: formattedData };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        365
+      ],
+      "id": "6c0cacb1-936b-4f0d-8357-7173dd7b19aa",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6b72279-cb04-4bdc-b7a5-8323edd005a1",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        820,
+        365
+      ],
+      "id": "211ed9b6-0374-422e-952e-493c9cc00cde",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        -110
+      ],
+      "id": "99413120-f939-4793-b5c5-bb6972cfaf7f",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "analysis_results",
+        "filterType": "string",
+        "filterString": "=select=id,analysis_type_id,idea_id,analysis_payload&idea_id=eq.{{ $('GetIdeasWithoutActionItems').item.json.data[0].id }}&analysis_type_id=eq.3"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        380,
+        365
+      ],
+      "id": "ecc16951-dec7-414e-a71a-074790e3f958",
+      "name": "GetMVPFeatures",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "ActionItemsAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ActionItemsAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "ActionItemsAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeasWithoutActionItems",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutActionItems": {
+      "main": [
+        [
+          {
+            "node": "GetRepositoryDetails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ActionItemsAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreActionItemsAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreActionItemsAnalysis": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "ActionItemsAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetRepositoryDetails": {
+      "main": [
+        [
+          {
+            "node": "GetMVPFeatures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetMVPFeatures": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "ActionItemsWorkflow",
+  "tags": [
+    {
+      "name": "production"
+    },
+    {
+      "name": "ossideas"
+    }
+  ]
+}

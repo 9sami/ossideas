@@ -9,10 +9,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        1280,
-        110
+        240,
+        320
       ],
-      "id": "420456bf-2b05-41f0-a8fd-3435cd2290d5",
+      "id": "516198d5-36f1-4d84-9c04-c09cb5b24659",
       "name": "Structured Output Parser"
     },
     {
@@ -23,15 +23,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        1040,
-        120
+        0,
+        320
       ],
-      "id": "f3409270-eb63-4de8-876d-a33b2a0a44ab",
+      "id": "ff98ae4d-0d51-4460-9605-8219c7e37b8f",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
-          "id": "NhWYxdG7RtFxT59p",
-          "name": "Google Gemini(PaLM) Api account - technical4"
+          "id": "J3nBTM1ke9qYpCas",
+          "name": "Google Gemini(PaLM) Api account 3"
         }
       }
     },
@@ -44,10 +44,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        1160,
-        110
+        120,
+        320
       ],
-      "id": "946cbb40-b9bf-4dae-9bf6-569ced77baaf",
+      "id": "4f0f0639-3bca-4b86-83db-124bcf77b044",
       "name": "Simple Memory"
     },
     {
@@ -59,45 +59,18 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -60,
-        365
+        -880,
+        400
       ],
-      "id": "7049c099-2a27-4a50-90f5-29e15c627092",
+      "id": "d57086f9-194e-4d95-b79f-1aa006d16778",
       "name": "IdeaBatch"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/get_ideas_without_mvp_features",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"limit_count\": 5\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -280,
-        365
-      ],
-      "id": "1b5f78eb-44bc-47f7-8b87-bce730a556cf",
-      "name": "GetIdeasWithoutMVPFeatures",
-      "credentials": {
-        "supabaseApi": {
-          "id": "h6glGddJTttd41ys",
-          "name": "Supabase account"
-        }
-      }
     },
     {
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 5
+              "field": "minutes"
             }
           ]
         }
@@ -105,10 +78,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -500,
-        365
+        -1320,
+        400
       ],
-      "id": "0d99348e-abb9-4cf3-a1fd-151fe103c06f",
+      "id": "e7c6ab26-bc72-4744-8b89-b964d2f0aeca",
       "name": "Schedule Trigger"
     },
     {
@@ -123,10 +96,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.9,
       "position": [
-        1040,
-        -110
+        32,
+        100
       ],
-      "id": "4507b085-18bf-4e96-b5ce-d062c1966969",
+      "id": "a4d1323d-55b1-4633-b949-db255cb4f6a6",
       "name": "MVPFeaturesAgent",
       "alwaysOutputData": true,
       "onError": "continueErrorOutput"
@@ -146,11 +119,11 @@
             },
             {
               "fieldId": "idea_id",
-              "fieldValue": "={{ $('GetIdeaDetails').item.json.idea.id }}"
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
             },
             {
               "fieldId": "title",
-              "fieldValue": "=MVP Core Features for {{ $('GetIdeaDetails').item.json.idea.title }}"
+              "fieldValue": "=MVP Core Features for {{ $('FormatInputData').item.json.idea.title }}"
             },
             {
               "fieldId": "summary_description",
@@ -166,10 +139,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1480,
-        -110
+        440,
+        0
       ],
-      "id": "6dceaceb-c598-4fda-a083-c78a9d3ab600",
+      "id": "280b4e23-cb11-45eb-be0b-4bacba1e3c3f",
       "name": "StoreMVPFeaturesAnalysis",
       "credentials": {
         "supabaseApi": {
@@ -193,7 +166,7 @@
             },
             {
               "fieldId": "source",
-              "fieldValue": "mvp-features-agent"
+              "fieldValue": "mvp-features-agent - https://n8n.devkind.net/workflow/wnlSgpOaLcYonkZC"
             },
             {
               "fieldId": "severity",
@@ -205,10 +178,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1480,
-        110
+        440,
+        200
       ],
-      "id": "7a9e0d15-1e5a-459b-be2a-d0a7f41fec76",
+      "id": "d9530caf-1827-47fd-bc23-318f1091de09",
       "name": "LogError",
       "credentials": {
         "supabaseApi": {
@@ -218,16 +191,14 @@
       }
     },
     {
-      "parameters": {
-        "amount": 25
-      },
+      "parameters": {},
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        820,
-        -110
+        -220,
+        100
       ],
-      "id": "4fd1d239-0fde-4e6c-a0db-9d2ad177e0d4",
+      "id": "8338fb71-d44a-40a4-bd27-22ab52ad7516",
       "name": "Wait",
       "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
     },
@@ -236,15 +207,15 @@
         "operation": "getAll",
         "tableId": "ideas",
         "filterType": "string",
-        "filterString": "=select=*,repository:repositories(*),overview&id=eq.{{ $json.id }}"
+        "filterString": "=select=*,repository:repositories(*),analysis_results(*)&id=eq.{{ $json.id }}"
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        160,
-        365
+        -660,
+        100
       ],
-      "id": "ecc16951-dec7-414e-a71a-074790e3f957",
+      "id": "949d43b0-b799-4f62-b345-f304bf10bf21",
       "name": "GetIdeaDetails",
       "credentials": {
         "supabaseApi": {
@@ -255,49 +226,16 @@
     },
     {
       "parameters": {
-        "jsCode": "// Transform the data into the format expected by MVPFeaturesAgent\nconst idea = $input.first().json[0];\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\nreturn {\n  json: {\n    repository: {\n      id: idea.repository.id,\n      name: idea.repository.name,\n      full_name: idea.repository.full_name,\n      description: idea.repository.description,\n      html_url: idea.repository.html_url,\n      stargazers_count: idea.repository.stargazers_count,\n      forks_count: idea.repository.forks_count,\n      topics: idea.repository.topics,\n      license_name: idea.repository.license_name,\n      languages: idea.repository.languages\n    },\n    idea: {\n      id: idea.id,\n      title: idea.title,\n      tagline: tagline,\n      overview: idea.overview\n    }\n  }\n};"
+        "jsCode": "// Transform the data into the format expected by MVPFeaturesAgent\nconst idea = $input.first().json;\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\nreturn {\n  json: {\n    repository: {\n      id: idea.repository.id,\n      name: idea.repository.name,\n      full_name: idea.repository.full_name,\n      description: idea.repository.description,\n      html_url: idea.repository.html_url,\n      stargazers_count: idea.repository.stargazers_count,\n      forks_count: idea.repository.forks_count,\n      topics: idea.repository.topics,\n      license_name: idea.repository.license_name,\n      languages: idea.repository.languages\n    },\n    idea: {\n      id: idea.id,\n      title: idea.title,\n      tagline: tagline,\n      overview: idea.overview\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        380,
-        365
+        -440,
+        100
       ],
-      "id": "6c0cacb1-936b-4f0d-8357-7173dd7b19aa",
+      "id": "e96535e4-8c20-4661-853b-29e1b889881f",
       "name": "FormatInputData"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "a6b72279-cb04-4bdc-b7a5-8323edd005a1",
-              "leftValue": "={{ $json.error }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isNotEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        600,
-        365
-      ],
-      "id": "211ed9b6-0374-422e-952e-493c9cc00cde",
-      "name": "If"
     },
     {
       "parameters": {
@@ -306,45 +244,41 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1760,
-        -110
+        660,
+        225
       ],
-      "id": "99413120-f939-4793-b5c5-bb6972cfaf7f",
+      "id": "03bd1ed7-285c-4b1d-979c-54d428b36564",
       "name": "WaitBeforeNextBatch",
       "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
     },
     {
       "parameters": {
-        "jsCode": "// Create a custom SQL function to get ideas without MVP features\nconst createFunctionSQL = `\nCREATE OR REPLACE FUNCTION get_ideas_without_mvp_features(limit_count integer DEFAULT 5)\nRETURNS SETOF ideas\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  RETURN QUERY\n  SELECT i.*\n  FROM ideas i\n  WHERE i.id NOT IN (\n    SELECT ar.idea_id\n    FROM analysis_results ar\n    WHERE ar.analysis_type_id = 3\n    AND ar.idea_id IS NOT NULL\n  )\n  AND i.status = 'published'\n  ORDER BY i.generated_at DESC\n  LIMIT limit_count;\nEND;\n$$;\n`;\n\nreturn { json: { sql: createFunctionSQL } };"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -500,
-        180
-      ],
-      "id": "8358a790-974a-4c30-a620-1ce41a84d25a",
-      "name": "CreateSQLFunction"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/sql",
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {\"query\": $('CreateSQLFunction').item.json.sql} }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_generation"
+            }
+          ]
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -280,
-        180
+        -1100,
+        400
       ],
-      "id": "51382485-7607-476f-90c9-b19d20a4336f",
-      "name": "ExecuteSQLFunction",
+      "id": "53fcf620-a5a0-4f22-b167-5fde070beaac",
+      "name": "GetIdeasWithoutMVPFeatures",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -353,6 +287,7 @@
       }
     }
   ],
+  "pinData": {},
   "connections": {
     "Structured Output Parser": {
       "ai_outputParser": [
@@ -399,22 +334,11 @@
         ]
       ]
     },
-    "GetIdeasWithoutMVPFeatures": {
-      "main": [
-        [
-          {
-            "node": "IdeaBatch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Schedule Trigger": {
       "main": [
         [
           {
-            "node": "CreateSQLFunction",
+            "node": "GetIdeasWithoutMVPFeatures",
             "type": "main",
             "index": 0
           }
@@ -487,24 +411,6 @@
       "main": [
         [
           {
-            "node": "If",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "IdeaBatch",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Wait",
             "type": "main",
             "index": 0
@@ -523,22 +429,11 @@
         ]
       ]
     },
-    "CreateSQLFunction": {
+    "GetIdeasWithoutMVPFeatures": {
       "main": [
         [
           {
-            "node": "ExecuteSQLFunction",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "ExecuteSQLFunction": {
-      "main": [
-        [
-          {
-            "node": "GetIdeasWithoutMVPFeatures",
+            "node": "IdeaBatch",
             "type": "main",
             "index": 0
           }
@@ -550,17 +445,29 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1",
+  "versionId": "01201f14-451a-4cc3-bcde-fac30e2ffd8b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
   },
-  "id": "MVPFeaturesWorkflow",
+  "id": "wnlSgpOaLcYonkZC",
   "tags": [
     {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    },
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
       "name": "production"
     },
     {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
       "name": "ossideas"
     }
   ]

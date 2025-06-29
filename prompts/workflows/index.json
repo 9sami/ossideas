@@ -112,6 +112,27 @@
         "description": "Coordinates the generation of MVP features for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/mvp-features-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-action-items": {
+      "name": "Idea Engine - Action Items Generator",
+      "description": "Generates next steps and action items for business ideas",
+      "agents": [
+        {
+          "id": "action-items-agent",
+          "name": "Action Items Agent",
+          "description": "Creates practical next steps for implementing business ideas",
+          "workflowPath": "prompts/workflows/idea-engine/action-items-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/ActionItemsAgent/system_prompt.md",
+          "inputSchema": "prompts/ActionItemsAgent/input_required.json",
+          "outputSchema": "prompts/ActionItemsAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "action-items-orchestrator",
+        "name": "Action Items Orchestrator",
+        "description": "Coordinates the generation of action items for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/action-items-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }
