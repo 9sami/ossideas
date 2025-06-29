@@ -1,4 +1,4 @@
-# Analysis Types in OSSIdeas
+# ANALYSIS TYPES IN OSSIDEAS
 
 ## Overview
 

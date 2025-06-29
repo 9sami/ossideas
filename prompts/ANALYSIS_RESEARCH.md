@@ -1,4 +1,4 @@
-# Analysis Research: OSSIdeas Platform
+# ANALYSIS RESEARCH: OSSIDEAS PLATFORM
 
 ## Introduction
 
