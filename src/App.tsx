@@ -18,6 +18,7 @@ import AuthCallback from './components/AuthCallback';
 import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
 import SubmitRepositoryForm from './components/SubmitRepositoryForm';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import { useAuth } from './hooks/useAuth';
 import blackCircleBadge from './assets/black_circle_360x360.png';
 
@@ -117,6 +118,7 @@ const AppContent: React.FC = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route
               path="/categories"
               element={
