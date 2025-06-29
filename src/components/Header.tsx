@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, User, LogIn, Crown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User as UserType } from '../types/auth';
 import { supabase } from '../lib/supabase';
+import fullLogo from '../assets/full-logo.png';
 
 interface UserSubscription {
   id: string;
@@ -150,10 +150,12 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => navigate('/')}
                 className="flex items-center space-x-1 sm:space-x-2 text-lg sm:text-2xl font-bold text-gray-900 hover:text-orange-500 transition-colors">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-xs sm:text-sm">OS</span>
-                </div>
-                <span>OSSIdeas</span>
+                <img
+                  src={fullLogo}
+                  alt="OSSIdeas Logo"
+                  className="h-8 sm:h-10 w-auto object-contain"
+                  style={{ maxWidth: '120px' }}
+                />
               </button>
             </div>
 

@@ -9,7 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import IdeaCard from './IdeaCard';
 import FilterPanel from './FilterPanel';
 import { IdeaData, FilterOptions } from '../types';
-import { useIdeas, IdeaFilters, convertIdeaToIdeaData } from '../hooks/useIdeas';
+import {
+  useIdeas,
+  IdeaFilters,
+  convertIdeaToIdeaData,
+} from '../hooks/useIdeas';
 import { useSubmissions } from '../hooks/useSubmissions';
 import { Zap } from 'lucide-react';
 import FullScreenLoader from './FullScreenLoader';
@@ -59,26 +63,29 @@ const MainContent: React.FC<MainContentProps> = ({
   }, [ideas]);
 
   // Convert FilterOptions to IdeaFilters format
-  const convertToIdeaFilters = useCallback((filterOptions: FilterOptions, searchTerm: string): IdeaFilters => {
-    return {
-      min_score: filterOptions.opportunityScore[0],
-      max_score: filterOptions.opportunityScore[1],
-      is_premium: null, // We don't filter by premium status in the UI currently
-      status: [], // We don't filter by status in the UI currently
-      search_query: searchTerm,
-      idea_categories: filterOptions.categories,
-      idea_industries: filterOptions.industries,
-      license_names: filterOptions.license,
-    };
-  }, []);
+  const convertToIdeaFilters = useCallback(
+    (filterOptions: FilterOptions, searchTerm: string): IdeaFilters => {
+      return {
+        min_score: filterOptions.opportunityScore[0],
+        max_score: filterOptions.opportunityScore[1],
+        is_premium: null, // We don't filter by premium status in the UI currently
+        status: [], // We don't filter by status in the UI currently
+        search_query: searchTerm,
+        idea_categories: filterOptions.categories,
+        idea_industries: filterOptions.industries,
+        license_names: filterOptions.license,
+      };
+    },
+    [],
+  );
 
   // Apply filters when they change - use a ref to prevent infinite loops
   const lastAppliedFiltersRef = useRef<string>('');
-  
+
   useEffect(() => {
     const ideaFilters = convertToIdeaFilters(filters, searchQuery);
     const filtersString = JSON.stringify(ideaFilters);
-    
+
     // Only apply if filters actually changed
     if (filtersString !== lastAppliedFiltersRef.current) {
       lastAppliedFiltersRef.current = filtersString;
@@ -120,7 +127,7 @@ const MainContent: React.FC<MainContentProps> = ({
         return scoreB - scoreA;
       })
       .slice(0, 4)
-      .map(idea => idea.id);
+      .map((idea) => idea.id);
   }, [ideas]);
 
   // Filter ideas for different sections
@@ -129,8 +136,8 @@ const MainContent: React.FC<MainContentProps> = ({
     return [...convertedIdeas]
       .sort((a, b) => {
         // Get the original idea data to access overall_teardown_score
-        const ideaA = ideas.find(idea => idea.id === a.id);
-        const ideaB = ideas.find(idea => idea.id === b.id);
+        const ideaA = ideas.find((idea) => idea.id === a.id);
+        const ideaB = ideas.find((idea) => idea.id === b.id);
         const scoreA = ideaA?.overall_teardown_score || 0;
         const scoreB = ideaB?.overall_teardown_score || 0;
         return scoreB - scoreA;
@@ -139,11 +146,15 @@ const MainContent: React.FC<MainContentProps> = ({
   }, [convertedIdeas, ideas]);
 
   const communityPicks = useMemo(() => {
-    let filtered = convertedIdeas.filter((idea) => idea.communityPick);
-    
+    const filtered = convertedIdeas.filter((idea) => idea.communityPick);
+
     // Sort by repository stars (highest first) and take top 4
     return filtered
-      .sort((a, b) => (b.repositoryStargazersCount || 0) - (a.repositoryStargazersCount || 0))
+      .sort(
+        (a, b) =>
+          (b.repositoryStargazersCount || 0) -
+          (a.repositoryStargazersCount || 0),
+      )
       .slice(0, 4);
   }, [convertedIdeas]);
 
@@ -151,7 +162,9 @@ const MainContent: React.FC<MainContentProps> = ({
   const discoveryIdeas = useMemo(() => {
     return [...convertedIdeas].sort((a, b) => {
       if (!a.generatedAt || !b.generatedAt) return 0;
-      return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime();
+      return (
+        new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+      );
     });
   }, [convertedIdeas]);
 
@@ -216,22 +229,6 @@ const MainContent: React.FC<MainContentProps> = ({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 pt-4">
-        {/* Built with bolt */}
-        <div className="pb-3">
-          <a
-            href="https://bolt.new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:scale-105 hover:shadow-lg">
-            <div className="flex items-center space-x-1 px-5">
-              <Zap className="h-5 w-5 text-orange-100 group-hover:text-white transition-colors" />
-              <span className="text-sm font-bold tracking-wide">
-                BUILT WITH BOLT
-              </span>
-            </div>
-          </a>
-        </div>
-
         {/* Submit Repository Section - Only show if user has no submissions */}
         {submissions.length === 0 && (
           <section className="mb-12">
@@ -301,7 +298,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     idea={{
                       ...idea,
                       // Mark as trending if it's in the top 4 by teardown score
-                      isTrending: topTrendingIdeasIds.includes(idea.id)
+                      isTrending: topTrendingIdeasIds.includes(idea.id),
                     }}
                     onClick={() => handleIdeaSelect(idea)}
                     onRegisterClick={onRegisterClick}
@@ -330,7 +327,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     idea={{
                       ...idea,
                       // Mark as trending if it's in the top 4 by teardown score
-                      isTrending: topTrendingIdeasIds.includes(idea.id)
+                      isTrending: topTrendingIdeasIds.includes(idea.id),
                     }}
                     onClick={() => handleIdeaSelect(idea)}
                     onRegisterClick={onRegisterClick}
@@ -364,7 +361,7 @@ const MainContent: React.FC<MainContentProps> = ({
                           idea={{
                             ...idea,
                             // Mark as trending if it's in the top 4 by teardown score
-                            isTrending: topTrendingIdeasIds.includes(idea.id)
+                            isTrending: topTrendingIdeasIds.includes(idea.id),
                           }}
                           onClick={() => handleIdeaSelect(idea)}
                           onRegisterClick={onRegisterClick}
@@ -378,7 +375,7 @@ const MainContent: React.FC<MainContentProps> = ({
                         idea={{
                           ...idea,
                           // Mark as trending if it's in the top 4 by teardown score
-                          isTrending: topTrendingIdeasIds.includes(idea.id)
+                          isTrending: topTrendingIdeasIds.includes(idea.id),
                         }}
                         onClick={() => handleIdeaSelect(idea)}
                         onRegisterClick={onRegisterClick}
