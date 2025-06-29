@@ -1,0 +1,608 @@
+{
+  "name": "Idea Engine - 3. IdeaAgent - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"repository_id\": {\n      \"type\": \"string\"\n    },\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"overall_teardown_score\": {\n      \"type\": \"number\"\n    },\n    \"overview\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"problem\": {\n          \"type\": \"string\"\n        },\n        \"vision\": {\n          \"type\": \"string\"\n        },\n        \"validation\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"validatedDemand\": {\n              \"type\": \"string\"\n            },\n            \"marketTrend\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    },\n    \"categories\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"industries\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        315
+      ],
+      "id": "5a787a50-ac28-4ff4-b3ff-059c6b9575a1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        315
+      ],
+      "id": "2492705d-42a4-4b68-8704-0a4a5b8067f8",
+      "name": "Google Gemini Chat Model7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.github_repo_id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1160,
+        315
+      ],
+      "id": "36ee2ff8-fa97-4992-bf5d-d05c3b742e70",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -60,
+        470
+      ],
+      "id": "8bb7c69e-1dce-4692-a4e6-ade8da05b55f",
+      "name": "RepoBatch"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "repositories",
+        "filterType": "string",
+        "filterString": "=select=*,ideas(*),analysis_results(*)&id=eq.{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        95
+      ],
+      "id": "d66644aa-94a5-415e-9388-294496a4f92d",
+      "name": "RepoBatchRowResult",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/get_repositories",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"has\":[40,39],\n  \"limit_count\": 1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        470
+      ],
+      "id": "96ac5aea-802b-40d6-9a8b-7f9875c651bc",
+      "name": "GetReposWithoutOpportunity",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        470
+      ],
+      "id": "4812b0a3-e063-449e-be74-5b4087256b95",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{  JSON.stringify($('RepoBatchRowResult').item.json) }}\n\n### List of Opportunities\n{{  $('RepoBatchRowResult').item.json.analysis_results\n\n.map(result => (result.analysis_payload)) }}\n\n\n### Repository Analysis\n{{  $('RepoBatchRowResult').item.json.analysis_results.filter(result => (result.analysis_type_id === 40)).map(result => result.analysis_payload) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# IdeaAgent System Prompt\n\n**ROLE:**\nYou are **IdeaAgent**, an AI strategist whose job is to transform multiple, scored Opportunity Summaries for a single repository into one cohesive, high-impact business \"idea\" record.\n\n**TASK:**\nGiven:\n\n1. Repository metadata (id, name, URL, etc.)\n2. A list of Opportunity Summaries (each with a `totalScore` and JSON fields: `problemStatement`, `productVision`, `marketValidation`, etc.)\n\nProduce exactly one JSON object that matches the `public.ideas` table schema, choosing the single most compelling opportunity and crafting:\n\n* **title**: A crisp, descriptive name for the idea.\n* **overall\\_teardown\\_score**: The score of the chosen opportunity (e.g., `58.00`).\n* **overview** (JSON): A 2–3 sentence narrative summarizing the idea—problem, solution, value.\n* **categories** (JSON array): 2–4 high-level technical/business categories (e.g., `[\"AI Agent\", \"On-Premise\", \"Developer Tools\"]`).\n* **industries** (JSON array): 1–3 target industries (e.g., `[\"Healthcare\", \"Finance\"]`).\n\nThe following fields are handled by the system and should *not* be generated by the agent:\n\n```\nid                → (auto-generated UUID)\nrepository_id     → (passed in)\nlikes_count       → 0\nis_premium        → true\nstatus            → \"pending_generation\"\ngenerated_at      → NOW()\nlast_updated_at   → NOW()\ngenerated_by_ai_model → \"IdeaAgent-o4-mini\"\n```\n\n---\n\n### INPUT FORMAT:\n\n```json\n{\n  \"repository\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"url\": \"<string>\"\n  },\n  \"opportunities\": [\n    {\n      \"opportunityRank\": \"<number>/100\",\n      \"problemStatement\": \"<string>\",\n      \"productVision\": \"<string>\",\n      \"marketValidation\": { /* ... */ },\n      \"strategicScores\": { /* ... */ },\n      \"repositoryMetadata\": { /* ... */ },\n      \"totalScore\": <float>\n    },\n    /* ... multiple opportunities ... */\n  ]\n}\n```\n\n### OUTPUT FORMAT:\n\nReturn *only* the following JSON (no extra envelopes):\n\n```json\n{\n  \"repository_id\": \"<uuid>\",\n  \"title\": \"<string>\",\n  \"overall_teardown_score\": <number>,\n  \"overview\": {\n    \"problem\": \"<string>\",\n    \"vision\": \"<string>\",\n    \"validation\": { /* marketValidation object */ }\n  },\n  \"categories\": [\"<string>\", /* ... up to 4 */],\n  \"industries\": [\"<string>\", /* ... up to 3 */]\n}\n```\n\n### GUIDELINES:\n0. Use the input context to understand the data provided by the user.\n1. **Select the Best Opportunity**\n   – Choose the opportunity with the highest `totalScore`.\n   – If tied, prefer the one with the most compelling `productVision`.\n2. **One Idea, One Narrative**\n   – Fuse `problemStatement`, `productVision`, and `marketValidation` into a single 2–3 sentence **overview** JSON.\n   – Do *not* include raw scores or metadata here—focus on storytelling.\n3. **Category & Industry Tags**\n   – Derive 2–4 concise “categories” describing the tech or use-case.\n   – Derive 1–3 “industries” where this solution fits best.\n4. **Keep It Generic but Specific**\n   – Title should feel like a product name (e.g., “LocalAI Guardian”).\n   – Overview must stand alone without external context.\n5. **JSON Compliance**\n   – Ensure valid JSON types (strings, numbers, arrays, objects).\n   – Do not emit any fields beyond those specified.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1080,
+        100
+      ],
+      "id": "91c5cd09-8cf8-49e4-a861-40b8490b66c9",
+      "name": "IdeaAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "ideas",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $json.output.repository_id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $json.output.title }}"
+            },
+            {
+              "fieldId": "overall_teardown_score",
+              "fieldValue": "={{ $json.output.overall_teardown_score }}"
+            },
+            {
+              "fieldId": "overview",
+              "fieldValue": "={{ $json.output.overview }}"
+            },
+            {
+              "fieldId": "categories",
+              "fieldValue": "={{ $json.output.categories }}"
+            },
+            {
+              "fieldId": "industries",
+              "fieldValue": "={{ $json.output.industries }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        -80
+      ],
+      "id": "89141b9b-eb20-40b9-a563-6fd7032bf00a",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with IdeaAgent - https://n8n.devkind.net/workflow/yS9o2RfsIiXHHmB8"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        145
+      ],
+      "id": "d0c6e8f7-bbba-42ae-920d-2c8dbe9d198b",
+      "name": "Supabase1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        820,
+        95
+      ],
+      "id": "9804a809-0cd8-4590-9bd1-c6692b32cb6b",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6b72279-cb04-4bdc-b7a5-8323edd005a1",
+              "leftValue": "={{ $json.ideas }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "lengthEquals",
+                "rightType": "number"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        580,
+        220
+      ],
+      "id": "1b2a9391-5157-4144-b377-4539c2b85350",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nreturn $(\"RepoBatchRowResult\").first().json.analysis_results.filter(result => result.idea_id === null).map(result => ({...result, idea_id: $input.first().json.id}))"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        -80
+      ],
+      "id": "2d373313-17e0-41cb-bd23-a680b8ccfac7",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1920,
+        -80
+      ],
+      "id": "b16f2e35-e069-4c89-96d3-ef49efea7e1a",
+      "name": "IdeaUpdateBatch"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_results",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('IdeaUpdateBatch').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $json.idea_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2140,
+        145
+      ],
+      "id": "a04a5729-6e76-494e-87f2-1896f1f76dac",
+      "name": "UpdateAnalysisResultWithIdeaId",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst hasOpportunity = $input.first().json.analysis_results.filter(result => result.analysis_type_id === 39).length > 0;\nif(hasOpportunity){\n  return $input.first().json\n}\nreturn []"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        100
+      ],
+      "id": "8a25fe73-92be-4170-8595-96bed880579a",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        -300
+      ],
+      "id": "260eed56-7b87-455d-8b5b-ebfbe54223c8",
+      "name": "Wait1",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "IdeaAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IdeaAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "IdeaAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RepoBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "RepoBatchRowResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RepoBatchRowResult": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetReposWithoutOpportunity": {
+      "main": [
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GetReposWithoutOpportunity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaAgent": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "IdeaAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "IdeaUpdateBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaUpdateBatch": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "UpdateAnalysisResultWithIdeaId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateAnalysisResultWithIdeaId": {
+      "main": [
+        [
+          {
+            "node": "IdeaUpdateBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3a45710e-06f5-4830-b254-07032a6d4ca6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "yS9o2RfsIiXHHmB8",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    }
+  ]
+}
