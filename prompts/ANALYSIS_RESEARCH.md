@@ -144,6 +144,7 @@ Status:  [x] - done
     "futureFeatures": ["string"]
   }
   ```
+Status:  [x] - done
 
 ### 4. Next Steps / Action Items (10% Importance)
 
