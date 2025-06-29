@@ -61,6 +61,7 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
   - `20250629015516_add_repository_id_to_analysis_results.sql`
   - `20250629023025_create_errors_table.sql`
   - `20250629062437_add_skipped_fields_to_repositories.sql`
+  - `20250629092849_create_get_repositories_function.sql`
 
 ### Key Tables
 - **`profiles`** - User profile data (extends Supabase auth.users)
@@ -69,6 +70,19 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
 - **`analysis_results`** - Detailed analysis components for ideas
 - **`subscriptions`** - Stripe subscription data
 - **`user_saved_ideas`** - User's bookmarked ideas
+
+### Database Functions
+- **`get_repositories(has, has_not, limit_count)`** - Advanced repository filtering function
+  - **Purpose**: Filters repositories based on presence/absence of analysis results
+  - **Parameters**:
+    - `has` (int[]): Analysis type IDs that repositories MUST have
+    - `has_not` (int[]): Analysis type IDs that repositories MUST NOT have  
+    - `limit_count` (integer): Optional limit on number of results
+  - **Use Cases**:
+    - Find repositories with no analysis results: `SELECT * FROM get_repositories()`
+    - Find repositories with specific analysis types: `SELECT * FROM get_repositories(ARRAY[1,2])`
+    - Find repositories without certain analysis types: `SELECT * FROM get_repositories(NULL, ARRAY[3,4])`
+    - Complex filtering with limits: `SELECT * FROM get_repositories(ARRAY[1], ARRAY[2], 10)`
 
 ### Foreign Key Relationships
 - All user-related tables reference `profiles(id)`
@@ -89,6 +103,7 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
 - **Indexes**: Add indexes for frequently queried columns
 - **Migrations**: Use descriptive names that reflect the actual changes
 - **Comments**: Document complex database structures and constraints
+- **Functions**: Use PL/pgSQL functions for complex filtering and business logic
 
 ### UI/UX Standards
 - **Responsive Design**: Mobile-first approach with Tailwind breakpoints
@@ -101,6 +116,7 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
 - **Memoization**: Use `useMemo` and `useCallback` for expensive operations
 - **Code Splitting**: Lazy load routes and components when beneficial
 - **Image Optimization**: Use appropriate formats and sizes
+- **Database Functions**: Use server-side functions for complex queries
 
 ## Authentication & Authorization
 
@@ -180,6 +196,7 @@ After completing tasks involving:
 - **New UI patterns** → Update design standards
 - **Authentication changes** → Update security measures
 - **Database schema changes** → Update schema guidelines
+- **Database functions** → Update database functions documentation
 
 ### Learning Prompts
 
@@ -196,6 +213,7 @@ When finishing any development task, ask:
 - **Database Testing**: Ensure migrations run without errors
 - **Integration Testing**: Test Stripe webhooks and Supabase functions
 - **Performance Testing**: Monitor loading times and responsiveness
+- **Function Testing**: Verify database functions return expected results
 
 ### Code Review Checklist
 - [ ] TypeScript types are properly defined
@@ -206,6 +224,7 @@ When finishing any development task, ask:
 - [ ] Database migrations have descriptive names
 - [ ] Custom hooks are properly memoized
 - [ ] Security best practices are followed
+- [ ] Database functions are documented and tested
 
 ## Deployment Process
 
@@ -228,6 +247,7 @@ When finishing any development task, ask:
 - **Migration Conflicts**: Use descriptive names and check for dependencies
 - **RLS Policy Errors**: Verify user authentication and policy conditions
 - **Performance Issues**: Add appropriate indexes and optimize queries
+- **Function Errors**: Check parameter types and return value expectations
 
 ### Authentication Issues
 - **OAuth Callback Errors**: Check redirect URLs and environment variables
