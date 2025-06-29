@@ -1,7 +1,14 @@
 import React from 'react';
 import { HelpCircle, MessageCircle, FileText, Mail, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HelpSupport: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handlePrivacyPolicyClick = () => {
+    navigate('/privacy');
+  };
+
   const faqs = [
     {
       question: 'How do I save an idea?',
@@ -140,8 +147,8 @@ const HelpSupport: React.FC = () => {
               </div>
             </a>
             <a
-              href="#"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              onClick={handlePrivacyPolicyClick}
+              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <FileText className="h-5 w-5 text-gray-600" />
               <div>
                 <h3 className="font-medium text-gray-900">Privacy Policy</h3>

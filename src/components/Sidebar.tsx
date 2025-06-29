@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   CreditCard,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -74,6 +75,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
       path: '/settings',
       onClick: () => navigate('/settings'),
     },
+    {
+      id: 'privacy',
+      icon: Shield,
+      label: 'Privacy Policy',
+      path: '/privacy',
+      onClick: () => navigate('/privacy'),
+    },
   ];
 
   // Handle click outside to close sidebar when open
@@ -122,10 +130,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
     const rect = buttonElement.getBoundingClientRect();
     const sidebarWidth = 64; // 16 * 4 = 64px (w-16)
     const tooltipGap = 8; // 8px gap between sidebar and tooltip
-    
+
     return {
       left: sidebarWidth + tooltipGap, // Position to the right of the sidebar
-      top: rect.top + (rect.height / 2), // Center vertically with the button
+      top: rect.top + rect.height / 2, // Center vertically with the button
     };
   };
 
@@ -179,7 +187,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
                     }`}
                     onMouseEnter={(e) => {
                       if (!isOpen) {
-                        const tooltip = e.currentTarget.querySelector('.tooltip') as HTMLElement;
+                        const tooltip = e.currentTarget.querySelector(
+                          '.tooltip',
+                        ) as HTMLElement;
                         if (tooltip) {
                           const position = getTooltipPosition(e.currentTarget);
                           tooltip.style.left = `${position.left}px`;

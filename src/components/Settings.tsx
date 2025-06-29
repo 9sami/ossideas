@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Bell, Shield, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, ExternalLink } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import SignInRequired from './SignInRequired';
 import AuthModal from './AuthModal';
+import { useNavigate } from 'react-router-dom';
 
 const Settings: React.FC = () => {
   const { authState } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleSignInClick = () => {
     setAuthModalOpen(true);
@@ -14,6 +16,10 @@ const Settings: React.FC = () => {
 
   const handleGoBack = () => {
     window.history.back();
+  };
+
+  const handlePrivacyPolicyClick = () => {
+    navigate('/privacy');
   };
 
   // Show sign-in prompt if user is not authenticated
@@ -27,7 +33,7 @@ const Settings: React.FC = () => {
           onSignInClick={handleSignInClick}
           onGoBack={handleGoBack}
         />
-        
+
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
@@ -133,28 +139,32 @@ const Settings: React.FC = () => {
           </div> */}
 
           {/* Privacy Settings */}
-          {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center space-x-2 mb-4">
               <Shield className="h-5 w-5 text-gray-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Privacy</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Privacy & Legal
+              </h2>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
-                    Profile Visibility
+                    Privacy Policy
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Control who can see your profile and activity
+                    Learn how we collect, use, and protect your data
                   </p>
                 </div>
-                <select className="text-sm border border-gray-300 rounded-md px-3 py-1">
-                  <option>Public</option>
-                  <option>Private</option>
-                </select>
+                <button
+                  onClick={handlePrivacyPolicyClick}
+                  className="flex items-center space-x-1 text-sm text-orange-600 hover:text-orange-700">
+                  <span>View</span>
+                  <ExternalLink className="h-3 w-3" />
+                </button>
               </div>
             </div>
-          </div> */}
+          </div>
 
           {/* Theme Settings */}
           {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
