@@ -12,6 +12,12 @@
       "maxLength": 100,
       "description": "Crisp, descriptive business idea name"
     },
+    "tagline": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 150,
+      "description": "One-sentence value proposition that captures the essence of the idea"
+    },
     "overall_teardown_score": {
       "type": "number",
       "minimum": 0,
@@ -64,6 +70,6 @@
       "description": "Target industries"
     }
   },
-  "required": ["repository_id", "title", "overall_teardown_score", "overview", "categories", "industries"],
+  "required": ["repository_id", "title", "tagline", "overall_teardown_score", "overview", "categories", "industries"],
   "additionalProperties": false
 }

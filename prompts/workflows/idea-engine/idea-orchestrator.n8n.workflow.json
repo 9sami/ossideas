@@ -1,19 +1,19 @@
 {
-  "name": "Idea Engine - 3. IdeaAgent - OSSIDEAS",
+  "name": "Idea Engine - 3. Idea Orchestrator - OSSIDEAS",
   "nodes": [
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"repository_id\": {\n      \"type\": \"string\"\n    },\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"overall_teardown_score\": {\n      \"type\": \"number\"\n    },\n    \"overview\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"problem\": {\n          \"type\": \"string\"\n        },\n        \"vision\": {\n          \"type\": \"string\"\n        },\n        \"validation\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"validatedDemand\": {\n              \"type\": \"string\"\n            },\n            \"marketTrend\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    },\n    \"categories\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"industries\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}\n"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"repository_id\": {\n      \"type\": \"string\"\n    },\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"tagline\": {\n      \"type\": \"string\"\n    },\n    \"branding_notes\": {\n      \"type\": \"string\"\n    },\n    \"overall_teardown_score\": {\n      \"type\": \"number\"\n    },\n    \"overview\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"problem\": {\n          \"type\": \"string\"\n        },\n        \"vision\": {\n          \"type\": \"string\"\n        },\n        \"validation\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"validatedDemand\": {\n              \"type\": \"string\"\n            },\n            \"marketTrend\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    },\n    \"categories\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"industries\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}\n"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
         1280,
-        315
+        110
       ],
-      "id": "5a787a50-ac28-4ff4-b3ff-059c6b9575a1",
-      "name": "Structured Output Parser"
+      "id": "420456bf-2b05-41f0-a8fd-3435cd2290d5",
+      "name": "Structured Output Parser1"
     },
     {
       "parameters": {
@@ -24,10 +24,10 @@
       "typeVersion": 1,
       "position": [
         1040,
-        315
+        120
       ],
-      "id": "2492705d-42a4-4b68-8704-0a4a5b8067f8",
-      "name": "Google Gemini Chat Model7",
+      "id": "f3409270-eb63-4de8-876d-a33b2a0a44ab",
+      "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
           "id": "NhWYxdG7RtFxT59p",
@@ -45,10 +45,10 @@
       "typeVersion": 1.3,
       "position": [
         1160,
-        315
+        110
       ],
-      "id": "36ee2ff8-fa97-4992-bf5d-d05c3b742e70",
-      "name": "Simple Memory"
+      "id": "946cbb40-b9bf-4dae-9bf6-569ced77baaf",
+      "name": "Simple Memory1"
     },
     {
       "parameters": {
@@ -60,10 +60,10 @@
       "typeVersion": 3,
       "position": [
         -60,
-        470
+        365
       ],
-      "id": "8bb7c69e-1dce-4692-a4e6-ade8da05b55f",
-      "name": "RepoBatch"
+      "id": "7049c099-2a27-4a50-90f5-29e15c627092",
+      "name": "RepoBatch1"
     },
     {
       "parameters": {
@@ -76,10 +76,10 @@
       "typeVersion": 1,
       "position": [
         160,
-        95
+        -110
       ],
-      "id": "d66644aa-94a5-415e-9388-294496a4f92d",
-      "name": "RepoBatchRowResult",
+      "id": "ecc16951-dec7-414e-a71a-074790e3f957",
+      "name": "RepoBatchRowResult1",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -95,17 +95,17 @@
         "nodeCredentialType": "supabaseApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"has\":[40,39],\n  \"limit_count\": 1\n}",
+        "jsonBody": "{\n  \"has\":[40],\n  \"limit_count\": 2\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         -280,
-        470
+        365
       ],
-      "id": "96ac5aea-802b-40d6-9a8b-7f9875c651bc",
-      "name": "GetReposWithoutOpportunity",
+      "id": "1b5f78eb-44bc-47f7-8b87-bce730a556cf",
+      "name": "GetReposWithoutOpportunity1",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -127,28 +127,28 @@
       "typeVersion": 1.2,
       "position": [
         -500,
-        470
+        365
       ],
-      "id": "4812b0a3-e063-449e-be74-5b4087256b95",
-      "name": "Schedule Trigger"
+      "id": "0d99348e-abb9-4cf3-a1fd-151fe103c06f",
+      "name": "Schedule Trigger1"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=## Input Context\n\n{{  JSON.stringify($('RepoBatchRowResult').item.json) }}\n\n### List of Opportunities\n{{  $('RepoBatchRowResult').item.json.analysis_results\n\n.map(result => (result.analysis_payload)) }}\n\n\n### Repository Analysis\n{{  $('RepoBatchRowResult').item.json.analysis_results.filter(result => (result.analysis_type_id === 40)).map(result => result.analysis_payload) }}",
+        "text": "=## Input Context\n\n{{  JSON.stringify($('RepoBatchRowResult1').item.json) }}\n\n### List of Opportunities\n{{  $('RepoBatchRowResult1').item.json.analysis_results\n\n.map(result => (result.analysis_payload)) }}\n\n\n### Repository Analysis\n{{  $('RepoBatchRowResult1').item.json.analysis_results.filter(result => (result.analysis_type_id === 40)).map(result => result.analysis_payload) }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "=# IdeaAgent System Prompt\n\n**ROLE:**\nYou are **IdeaAgent**, an AI strategist whose job is to transform multiple, scored Opportunity Summaries for a single repository into one cohesive, high-impact business \"idea\" record.\n\n**TASK:**\nGiven:\n\n1. Repository metadata (id, name, URL, etc.)\n2. A list of Opportunity Summaries (each with a `totalScore` and JSON fields: `problemStatement`, `productVision`, `marketValidation`, etc.)\n\nProduce exactly one JSON object that matches the `public.ideas` table schema, choosing the single most compelling opportunity and crafting:\n\n* **title**: A crisp, descriptive name for the idea.\n* **overall\\_teardown\\_score**: The score of the chosen opportunity (e.g., `58.00`).\n* **overview** (JSON): A 2–3 sentence narrative summarizing the idea—problem, solution, value.\n* **categories** (JSON array): 2–4 high-level technical/business categories (e.g., `[\"AI Agent\", \"On-Premise\", \"Developer Tools\"]`).\n* **industries** (JSON array): 1–3 target industries (e.g., `[\"Healthcare\", \"Finance\"]`).\n\nThe following fields are handled by the system and should *not* be generated by the agent:\n\n```\nid                → (auto-generated UUID)\nrepository_id     → (passed in)\nlikes_count       → 0\nis_premium        → true\nstatus            → \"pending_generation\"\ngenerated_at      → NOW()\nlast_updated_at   → NOW()\ngenerated_by_ai_model → \"IdeaAgent-o4-mini\"\n```\n\n---\n\n### INPUT FORMAT:\n\n```json\n{\n  \"repository\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"url\": \"<string>\"\n  },\n  \"opportunities\": [\n    {\n      \"opportunityRank\": \"<number>/100\",\n      \"problemStatement\": \"<string>\",\n      \"productVision\": \"<string>\",\n      \"marketValidation\": { /* ... */ },\n      \"strategicScores\": { /* ... */ },\n      \"repositoryMetadata\": { /* ... */ },\n      \"totalScore\": <float>\n    },\n    /* ... multiple opportunities ... */\n  ]\n}\n```\n\n### OUTPUT FORMAT:\n\nReturn *only* the following JSON (no extra envelopes):\n\n```json\n{\n  \"repository_id\": \"<uuid>\",\n  \"title\": \"<string>\",\n  \"overall_teardown_score\": <number>,\n  \"overview\": {\n    \"problem\": \"<string>\",\n    \"vision\": \"<string>\",\n    \"validation\": { /* marketValidation object */ }\n  },\n  \"categories\": [\"<string>\", /* ... up to 4 */],\n  \"industries\": [\"<string>\", /* ... up to 3 */]\n}\n```\n\n### GUIDELINES:\n0. Use the input context to understand the data provided by the user.\n1. **Select the Best Opportunity**\n   – Choose the opportunity with the highest `totalScore`.\n   – If tied, prefer the one with the most compelling `productVision`.\n2. **One Idea, One Narrative**\n   – Fuse `problemStatement`, `productVision`, and `marketValidation` into a single 2–3 sentence **overview** JSON.\n   – Do *not* include raw scores or metadata here—focus on storytelling.\n3. **Category & Industry Tags**\n   – Derive 2–4 concise “categories” describing the tech or use-case.\n   – Derive 1–3 “industries” where this solution fits best.\n4. **Keep It Generic but Specific**\n   – Title should feel like a product name (e.g., “LocalAI Guardian”).\n   – Overview must stand alone without external context.\n5. **JSON Compliance**\n   – Ensure valid JSON types (strings, numbers, arrays, objects).\n   – Do not emit any fields beyond those specified.\n"
+          "systemMessage": "=# IdeaAgent System Prompt\n\n**ROLE:**\nYou are **IdeaAgent**, an AI strategist whose job is to transform multiple, scored Opportunity Summaries for a single repository into one cohesive, high-impact business \"idea\" record.\n\n**TASK:**\nGiven:\n\n1. Repository metadata (id, name, URL, etc.)\n2. A list of Opportunity Summaries (each with a `totalScore` and JSON fields: `problemStatement`, `productVision`, `marketValidation`, etc.)\n\nProduce exactly one JSON object that matches the `public.ideas` table schema, choosing the single most compelling opportunity and crafting:\n\n* **title**: A crisp, descriptive name for the idea.\n* **tagline**: A concise, one-sentence value proposition that captures the essence of the idea.\n* **branding_notes**: Valule proposition based branding notes captures the essence of the idea.\n* **overall\\_teardown\\_score**: The score of the chosen opportunity (e.g., `58.00`).\n* **overview** (JSON): A 2–3 sentence narrative summarizing the idea—problem, solution, value.\n* **categories** (JSON array): 2–4 high-level technical/business categories (e.g., `[\"AI Agent\", \"On-Premise\", \"Developer Tools\"]`).\n* **industries** (JSON array): 1–3 target industries (e.g., `[\"Healthcare\", \"Finance\"]`).\n\nThe following fields are handled by the system and should *not* be generated by the agent:\n\n```\nid                → (auto-generated UUID)\nrepository_id     → (passed in)\nlikes_count       → 0\nis_premium        → true\nstatus            → \"pending_generation\"\ngenerated_at      → NOW()\nlast_updated_at   → NOW()\ngenerated_by_ai_model → \"IdeaAgent-o4-mini\"\n```\n\n---\n\n### INPUT FORMAT:\n\n```json\n{\n  \"repository\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"url\": \"<string>\"\n  },\n  \"opportunities\": [\n    {\n      \"opportunityRank\": \"<number>/100\",\n      \"problemStatement\": \"<string>\",\n      \"productVision\": \"<string>\",\n      \"marketValidation\": { /* ... */ },\n      \"strategicScores\": { /* ... */ },\n      \"repositoryMetadata\": { /* ... */ },\n      \"totalScore\": <float>\n    },\n    /* ... multiple opportunities ... */\n  ]\n}\n```\n\n### OUTPUT FORMAT:\n\nReturn *only* the following JSON (no extra envelopes):\n\n```json\n{\n  \"repository_id\": \"<uuid>\",\n  \"title\": \"<string>\",\n  \"tagline\": \"<string>\",\n  \"branding_notes\": \"<string>\",\n  \"overall_teardown_score\": <number>,\n  \"overview\": {\n    \"problem\": \"<string>\",\n    \"vision\": \"<string>\",\n    \"validation\": { /* marketValidation object */ }\n  },\n  \"categories\": [\"<string>\", /* ... up to 4 */],\n  \"industries\": [\"<string>\", /* ... up to 3 */]\n}\n```\n\n### GUIDELINES:\n0. Use the input context to understand the data provided by the user.\n1. **Select the Best Opportunity**\n   – Choose the opportunity with the highest `totalScore`.\n   – If tied, prefer the one with the most compelling `productVision`.\n2. **Create Title and Tagline**\n   – **Title**: Create a memorable, product-like name (e.g., \"LocalAI Guardian\").\n   – **Tagline**: Craft a single-sentence value proposition that clearly communicates the core benefit.\n3. **One Idea, One Narrative**\n   – Fuse `problemStatement`, `productVision`, and `marketValidation` into a single 2–3 sentence **overview** JSON.\n   – Do *not* include raw scores or metadata here—focus on storytelling.\n4. **Category & Industry Tags**\n   – Derive 2–4 concise `categories` describing the tech or use-case.\n   – Derive 1–3 `industries` where this solution fits best.\n5. **Keep It Generic but Specific**\n   – Title should feel like a product name (e.g., \"LocalAI Guardian\").\n   – Tagline should be concise and compelling (e.g., \"Secure your AI models with enterprise-grade protection\").\n   – Overview must stand alone without external context.\n6. **JSON Compliance**\n   – Ensure valid JSON types (strings, numbers, arrays, objects).\n   – Do not emit any fields beyond those specified.\n"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.9,
       "position": [
-        1080,
-        100
+        1040,
+        -280
       ],
-      "id": "91c5cd09-8cf8-49e4-a861-40b8490b66c9",
-      "name": "IdeaAgent",
+      "id": "4507b085-18bf-4e96-b5ce-d062c1966969",
+      "name": "IdeaAgent1",
       "alwaysOutputData": true,
       "onError": "continueErrorOutput"
     },
@@ -171,7 +171,7 @@
             },
             {
               "fieldId": "overview",
-              "fieldValue": "={{ $json.output.overview }}"
+              "fieldValue": "={{ Object.assign($json.output.overview, {\"tagline\": $json.output.tagline}) }}"
             },
             {
               "fieldId": "categories",
@@ -187,11 +187,11 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1480,
-        -80
+        1640,
+        -380
       ],
-      "id": "89141b9b-eb20-40b9-a563-6fd7032bf00a",
-      "name": "Supabase",
+      "id": "6dceaceb-c598-4fda-a083-c78a9d3ab600",
+      "name": "Supabase2",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -219,10 +219,10 @@
       "typeVersion": 1,
       "position": [
         1480,
-        145
+        -20
       ],
-      "id": "d0c6e8f7-bbba-42ae-920d-2c8dbe9d198b",
-      "name": "Supabase1",
+      "id": "7a9e0d15-1e5a-459b-be2a-d0a7f41fec76",
+      "name": "Supabase3",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -238,10 +238,10 @@
       "typeVersion": 1.1,
       "position": [
         820,
-        95
+        -110
       ],
-      "id": "9804a809-0cd8-4590-9bd1-c6692b32cb6b",
-      "name": "Wait",
+      "id": "4fd1d239-0fde-4e6c-a0db-9d2ad177e0d4",
+      "name": "Wait2",
       "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
     },
     {
@@ -257,10 +257,10 @@
             {
               "id": "a6b72279-cb04-4bdc-b7a5-8323edd005a1",
               "leftValue": "={{ $json.ideas }}",
-              "rightValue": 0,
+              "rightValue": 2,
               "operator": {
                 "type": "array",
-                "operation": "lengthEquals",
+                "operation": "lengthLt",
                 "rightType": "number"
               }
             }
@@ -272,24 +272,24 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        580,
-        220
+        600,
+        -110
       ],
-      "id": "1b2a9391-5157-4144-b377-4539c2b85350",
-      "name": "If"
+      "id": "211ed9b6-0374-422e-952e-493c9cc00cde",
+      "name": "If1"
     },
     {
       "parameters": {
-        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nreturn $(\"RepoBatchRowResult\").first().json.analysis_results.filter(result => result.idea_id === null).map(result => ({...result, idea_id: $input.first().json.id}))"
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nreturn $(\"RepoBatchRowResult1\").first().json.analysis_results.filter(result => result.idea_id === null).map(result => ({...result, idea_id: $input.first().json.id}))"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1700,
-        -80
+        1760,
+        -380
       ],
-      "id": "2d373313-17e0-41cb-bd23-a680b8ccfac7",
-      "name": "Code"
+      "id": "8358a790-974a-4c30-a620-1ce41a84d25a",
+      "name": "Code2"
     },
     {
       "parameters": {
@@ -298,11 +298,11 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1920,
-        -80
+        2000,
+        -100
       ],
-      "id": "b16f2e35-e069-4c89-96d3-ef49efea7e1a",
-      "name": "IdeaUpdateBatch"
+      "id": "51382485-7607-476f-90c9-b19d20a4336f",
+      "name": "IdeaUpdateBatch1"
     },
     {
       "parameters": {
@@ -313,7 +313,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $('IdeaUpdateBatch').item.json.id }}"
+              "keyValue": "={{ $('IdeaUpdateBatch1').item.json.id }}"
             }
           ]
         },
@@ -329,11 +329,11 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        2140,
-        145
+        2320,
+        -60
       ],
-      "id": "a04a5729-6e76-494e-87f2-1896f1f76dac",
-      "name": "UpdateAnalysisResultWithIdeaId",
+      "id": "3b9f092d-3d00-4af5-b634-1fc48cddce15",
+      "name": "UpdateAnalysisResultWithIdeaId1",
       "credentials": {
         "supabaseApi": {
           "id": "h6glGddJTttd41ys",
@@ -349,10 +349,10 @@
       "typeVersion": 2,
       "position": [
         380,
-        100
+        -110
       ],
-      "id": "8a25fe73-92be-4170-8595-96bed880579a",
-      "name": "Code1"
+      "id": "6c0cacb1-936b-4f0d-8357-7173dd7b19aa",
+      "name": "Code3"
     },
     {
       "parameters": {
@@ -361,219 +361,219 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        620,
-        -300
+        2320,
+        -360
       ],
-      "id": "260eed56-7b87-455d-8b5b-ebfbe54223c8",
-      "name": "Wait1",
+      "id": "99413120-f939-4793-b5c5-bb6972cfaf7f",
+      "name": "Wait3",
       "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
     }
   ],
   "pinData": {},
   "connections": {
-    "Structured Output Parser": {
+    "Structured Output Parser1": {
       "ai_outputParser": [
         [
           {
-            "node": "IdeaAgent",
+            "node": "IdeaAgent1",
             "type": "ai_outputParser",
             "index": 0
           }
         ]
       ]
     },
-    "Google Gemini Chat Model7": {
+    "Google Gemini Chat Model": {
       "ai_languageModel": [
         [
           {
-            "node": "IdeaAgent",
+            "node": "IdeaAgent1",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Simple Memory": {
+    "Simple Memory1": {
       "ai_memory": [
         [
           {
-            "node": "IdeaAgent",
+            "node": "IdeaAgent1",
             "type": "ai_memory",
             "index": 0
           }
         ]
       ]
     },
-    "RepoBatch": {
+    "RepoBatch1": {
       "main": [
         [],
         [
           {
-            "node": "RepoBatchRowResult",
+            "node": "RepoBatchRowResult1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RepoBatchRowResult": {
+    "RepoBatchRowResult1": {
       "main": [
         [
           {
-            "node": "Code1",
+            "node": "Code3",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GetReposWithoutOpportunity": {
+    "GetReposWithoutOpportunity1": {
       "main": [
         [
           {
-            "node": "RepoBatch",
+            "node": "RepoBatch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Schedule Trigger": {
+    "Schedule Trigger1": {
       "main": [
         [
           {
-            "node": "GetReposWithoutOpportunity",
+            "node": "GetReposWithoutOpportunity1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IdeaAgent": {
+    "IdeaAgent1": {
       "main": [
         [
           {
-            "node": "Supabase",
+            "node": "Supabase2",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Supabase1",
+            "node": "Supabase3",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supabase": {
+    "Supabase2": {
       "main": [
         [
           {
-            "node": "Code",
+            "node": "Code2",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supabase1": {
+    "Supabase3": {
       "main": [
         [
           {
-            "node": "RepoBatch",
+            "node": "RepoBatch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait": {
+    "Wait2": {
       "main": [
         [
           {
-            "node": "IdeaAgent",
+            "node": "IdeaAgent1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "If": {
+    "If1": {
       "main": [
         [
           {
-            "node": "Wait",
+            "node": "Wait2",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "RepoBatch",
+            "node": "RepoBatch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Code": {
+    "Code2": {
       "main": [
         [
           {
-            "node": "IdeaUpdateBatch",
+            "node": "IdeaUpdateBatch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IdeaUpdateBatch": {
+    "IdeaUpdateBatch1": {
       "main": [
         [
           {
-            "node": "Wait1",
+            "node": "Wait3",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "UpdateAnalysisResultWithIdeaId",
+            "node": "UpdateAnalysisResultWithIdeaId1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "UpdateAnalysisResultWithIdeaId": {
+    "UpdateAnalysisResultWithIdeaId1": {
       "main": [
         [
           {
-            "node": "IdeaUpdateBatch",
+            "node": "IdeaUpdateBatch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Code1": {
+    "Code3": {
       "main": [
         [
           {
-            "node": "If",
+            "node": "If1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait1": {
+    "Wait3": {
       "main": [
         [
           {
-            "node": "RepoBatch",
+            "node": "RepoBatch1",
             "type": "main",
             "index": 0
           }
@@ -585,7 +585,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3a45710e-06f5-4830-b254-07032a6d4ca6",
+  "versionId": "3290be29-c5d8-4051-828e-ed1eede87bfc",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"

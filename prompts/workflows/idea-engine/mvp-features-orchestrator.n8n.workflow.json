@@ -1,0 +1,474 @@
+{
+  "name": "Idea Engine - 4. MVP Features Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"features\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Short, descriptive name of the feature\"\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Concise description of what the feature does\"\n          },\n          \"priority\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Priority level of the feature\"\n          },\n          \"userValue\": {\n            \"type\": \"string\",\n            \"description\": \"Clear explanation of the value this provides to users\"\n          }\n        }\n      }\n    },\n    \"mvpScope\": {\n      \"type\": \"string\",\n      \"description\": \"A 2-3 sentence description of the overall MVP scope and focus\"\n    },\n    \"futureFeatures\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Features for post-MVP development\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        320
+      ],
+      "id": "516198d5-36f1-4d84-9c04-c09cb5b24659",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        0,
+        320
+      ],
+      "id": "ff98ae4d-0d51-4460-9605-8219c7e37b8f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "J3nBTM1ke9qYpCas",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        120,
+        320
+      ],
+      "id": "4f0f0639-3bca-4b86-83db-124bcf77b044",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -880,
+        400
+      ],
+      "id": "d57086f9-194e-4d95-b79f-1aa006d16778",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1320,
+        400
+      ],
+      "id": "e7c6ab26-bc72-4744-8b89-b964d2f0aeca",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('GetIdeaDetails').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# MVPFeaturesAgent System Prompt\n\n## ROLE:\nYou are **MVPFeaturesAgent**, an AI product strategist specialized in identifying the minimal viable set of features needed to validate a business idea with real users.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n\nProduce a structured JSON output that identifies 3-5 core features for an MVP (Minimum Viable Product) that:\n- Directly addresses the core problem identified in the idea\n- Provides clear user value with minimal development effort\n- Can be built quickly to validate market demand\n- Prioritizes features based on importance to the core value proposition\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"features\": [\n    {\n      \"name\": \"Feature Name\",\n      \"description\": \"Concise description of what the feature does\",\n      \"priority\": \"high|medium|low\",\n      \"userValue\": \"Clear explanation of the value this provides to users\"\n    }\n  ],\n  \"mvpScope\": \"A 2-3 sentence description of the overall MVP scope and focus\",\n  \"futureFeatures\": [\n    \"Feature idea for post-MVP development\",\n    \"Another feature for future consideration\"\n  ]\n}\n```\n\n## GUIDELINES:\n\n1. **Focus on Core Value**: Identify only features that directly address the core problem statement.\n\n2. **User-Centric**: Each feature should provide clear, tangible value to the end user.\n\n3. **Minimal Complexity**: Prioritize features that can be built quickly with reasonable effort.\n\n4. **Measurable**: Features should enable measuring user engagement and product-market fit.\n\n5. **Prioritization**: Label each feature as high, medium, or low priority based on:\n   - How essential it is to the core value proposition\n   - Technical feasibility given the repository's technology\n   - Potential for user feedback and validation\n\n6. **Future Roadmap**: Identify 2-3 features that should be considered for post-MVP development.\n\n7. **Technical Feasibility**: Consider the repository's technology stack and complexity when suggesting features.\n\n8. **Market Validation**: Align features with the market validation insights provided.\n\n9. **Avoid Feature Creep**: Be ruthless about keeping the MVP minimal - include only what's absolutely necessary.\n\n10. **Clear Scope Definition**: The mvpScope should clearly define what the MVP will and won't do.\n\nRemember: A good MVP is not a smaller version of your final product. It's the simplest thing you can build to start the learning process and validate core hypotheses about your business idea."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        32,
+        100
+      ],
+      "id": "a4d1323d-55b1-4633-b949-db255cb4f6a6",
+      "name": "MVPFeaturesAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "3"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('GetIdeaDetails').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=MVP Core Features for {{ $('FormatInputData').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.mvpScope }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "280b4e23-cb11-45eb-be0b-4bacba1e3c3f",
+      "name": "StoreMVPFeaturesAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with MVPFeaturesAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "mvp-features-agent - https://n8n.devkind.net/workflow/wnlSgpOaLcYonkZC"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        440,
+        200
+      ],
+      "id": "d9530caf-1827-47fd-bc23-318f1091de09",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -220,
+        100
+      ],
+      "id": "8338fb71-d44a-40a4-bd27-22ab52ad7516",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ideas",
+        "filterType": "string",
+        "filterString": "=select=*,repository:repositories(*),analysis_results(*)&id=eq.{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        100
+      ],
+      "id": "949d43b0-b799-4f62-b345-f304bf10bf21",
+      "name": "GetIdeaDetails",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by MVPFeaturesAgent\nconst idea = $input.first().json;\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\nreturn {\n  json: {\n    repository: {\n      id: idea.repository.id,\n      name: idea.repository.name,\n      full_name: idea.repository.full_name,\n      description: idea.repository.description,\n      html_url: idea.repository.html_url,\n      stargazers_count: idea.repository.stargazers_count,\n      forks_count: idea.repository.forks_count,\n      topics: idea.repository.topics,\n      license_name: idea.repository.license_name,\n      languages: idea.repository.languages\n    },\n    idea: {\n      id: idea.id,\n      title: idea.title,\n      tagline: tagline,\n      overview: idea.overview\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        100
+      ],
+      "id": "e96535e4-8c20-4661-853b-29e1b889881f",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        225
+      ],
+      "id": "03bd1ed7-285c-4b1d-979c-54d428b36564",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_generation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1100,
+        400
+      ],
+      "id": "53fcf620-a5a0-4f22-b167-5fde070beaac",
+      "name": "GetIdeasWithoutMVPFeatures",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeaDetails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GetIdeasWithoutMVPFeatures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MVPFeaturesAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreMVPFeaturesAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreMVPFeaturesAnalysis": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeaDetails": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutMVPFeatures": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "01201f14-451a-4cc3-bcde-fac30e2ffd8b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "wnlSgpOaLcYonkZC",
+  "tags": [
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    },
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    }
+  ]
+}

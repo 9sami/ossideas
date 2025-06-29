@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PrivacyPolicy: React.FC = () => {
@@ -20,9 +20,14 @@ const PrivacyPolicy: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Privacy Policy
-          </h1>
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Shield className="h-6 w-6 text-orange-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Privacy Policy
+            </h1>
+          </div>
           <p className="text-gray-600">Last updated: January 15, 2025</p>
         </div>
 
@@ -390,7 +395,7 @@ const PrivacyPolicy: React.FC = () => {
               </ul>
               <p className="text-gray-700 mt-4">
                 To exercise these rights, please contact us at
-                privacy@ossideas.com.
+                privacy@ossideas.ai.
               </p>
             </section>
 
@@ -413,7 +418,7 @@ const PrivacyPolicy: React.FC = () => {
               </ul>
               <p className="text-gray-700 mt-4">
                 To exercise these rights, please contact us at
-                privacy@ossideas.com. We will respond to your request within 30
+                privacy@ossideas.ai. We will respond to your request within 30
                 days.
               </p>
             </section>

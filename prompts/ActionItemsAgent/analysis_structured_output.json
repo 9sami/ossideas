@@ -1,0 +1,85 @@
+{
+  "type": "object",
+  "properties": {
+    "actionItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200,
+            "description": "Specific action to take"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Priority level of the task"
+          },
+          "timeframe": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "description": "Estimated time to complete"
+          },
+          "resources": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200,
+            "description": "Required resources or skills"
+          }
+        },
+        "required": ["task", "priority", "timeframe", "resources"],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 5,
+      "description": "Prioritized action items with estimated effort"
+    },
+    "immediateNextSteps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 200
+      },
+      "minItems": 2,
+      "maxItems": 3,
+      "description": "Actions that should be taken immediately"
+    },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 100,
+            "description": "Milestone name"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 300,
+            "description": "What this milestone represents"
+          },
+          "targetDate": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "description": "Estimated target date or timeframe"
+          }
+        },
+        "required": ["name", "description", "targetDate"],
+        "additionalProperties": false
+      },
+      "minItems": 2,
+      "maxItems": 3,
+      "description": "Key milestones that mark significant progress points"
+    }
+  },
+  "required": ["actionItems", "immediateNextSteps", "milestones"],
+  "additionalProperties": false
+}
