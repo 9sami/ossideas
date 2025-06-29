@@ -1,0 +1,567 @@
+{
+  "name": "Idea Engine - 4. MVP Features Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"features\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Short, descriptive name of the feature\"\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Concise description of what the feature does\"\n          },\n          \"priority\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Priority level of the feature\"\n          },\n          \"userValue\": {\n            \"type\": \"string\",\n            \"description\": \"Clear explanation of the value this provides to users\"\n          }\n        }\n      }\n    },\n    \"mvpScope\": {\n      \"type\": \"string\",\n      \"description\": \"A 2-3 sentence description of the overall MVP scope and focus\"\n    },\n    \"futureFeatures\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Features for post-MVP development\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        110
+      ],
+      "id": "420456bf-2b05-41f0-a8fd-3435cd2290d5",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        120
+      ],
+      "id": "f3409270-eb63-4de8-876d-a33b2a0a44ab",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1160,
+        110
+      ],
+      "id": "946cbb40-b9bf-4dae-9bf6-569ced77baaf",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -60,
+        365
+      ],
+      "id": "7049c099-2a27-4a50-90f5-29e15c627092",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/get_ideas_without_mvp_features",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"limit_count\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        365
+      ],
+      "id": "1b5f78eb-44bc-47f7-8b87-bce730a556cf",
+      "name": "GetIdeasWithoutMVPFeatures",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        365
+      ],
+      "id": "0d99348e-abb9-4cf3-a1fd-151fe103c06f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('GetIdeaDetails').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# MVPFeaturesAgent System Prompt\n\n## ROLE:\nYou are **MVPFeaturesAgent**, an AI product strategist specialized in identifying the minimal viable set of features needed to validate a business idea with real users.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n\nProduce a structured JSON output that identifies 3-5 core features for an MVP (Minimum Viable Product) that:\n- Directly addresses the core problem identified in the idea\n- Provides clear user value with minimal development effort\n- Can be built quickly to validate market demand\n- Prioritizes features based on importance to the core value proposition\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"features\": [\n    {\n      \"name\": \"Feature Name\",\n      \"description\": \"Concise description of what the feature does\",\n      \"priority\": \"high|medium|low\",\n      \"userValue\": \"Clear explanation of the value this provides to users\"\n    }\n  ],\n  \"mvpScope\": \"A 2-3 sentence description of the overall MVP scope and focus\",\n  \"futureFeatures\": [\n    \"Feature idea for post-MVP development\",\n    \"Another feature for future consideration\"\n  ]\n}\n```\n\n## GUIDELINES:\n\n1. **Focus on Core Value**: Identify only features that directly address the core problem statement.\n\n2. **User-Centric**: Each feature should provide clear, tangible value to the end user.\n\n3. **Minimal Complexity**: Prioritize features that can be built quickly with reasonable effort.\n\n4. **Measurable**: Features should enable measuring user engagement and product-market fit.\n\n5. **Prioritization**: Label each feature as high, medium, or low priority based on:\n   - How essential it is to the core value proposition\n   - Technical feasibility given the repository's technology\n   - Potential for user feedback and validation\n\n6. **Future Roadmap**: Identify 2-3 features that should be considered for post-MVP development.\n\n7. **Technical Feasibility**: Consider the repository's technology stack and complexity when suggesting features.\n\n8. **Market Validation**: Align features with the market validation insights provided.\n\n9. **Avoid Feature Creep**: Be ruthless about keeping the MVP minimal - include only what's absolutely necessary.\n\n10. **Clear Scope Definition**: The mvpScope should clearly define what the MVP will and won't do.\n\nRemember: A good MVP is not a smaller version of your final product. It's the simplest thing you can build to start the learning process and validate core hypotheses about your business idea."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1040,
+        -110
+      ],
+      "id": "4507b085-18bf-4e96-b5ce-d062c1966969",
+      "name": "MVPFeaturesAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "3"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('GetIdeaDetails').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('GetIdeaDetails').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=MVP Core Features for {{ $('GetIdeaDetails').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.mvpScope }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        -110
+      ],
+      "id": "6dceaceb-c598-4fda-a083-c78a9d3ab600",
+      "name": "StoreMVPFeaturesAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with MVPFeaturesAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "mvp-features-agent"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        110
+      ],
+      "id": "7a9e0d15-1e5a-459b-be2a-d0a7f41fec76",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        820,
+        -110
+      ],
+      "id": "4fd1d239-0fde-4e6c-a0db-9d2ad177e0d4",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ideas",
+        "filterType": "string",
+        "filterString": "=select=*,repository:repositories(*),overview&id=eq.{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        365
+      ],
+      "id": "ecc16951-dec7-414e-a71a-074790e3f957",
+      "name": "GetIdeaDetails",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by MVPFeaturesAgent\nconst idea = $input.first().json[0];\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\nreturn {\n  json: {\n    repository: {\n      id: idea.repository.id,\n      name: idea.repository.name,\n      full_name: idea.repository.full_name,\n      description: idea.repository.description,\n      html_url: idea.repository.html_url,\n      stargazers_count: idea.repository.stargazers_count,\n      forks_count: idea.repository.forks_count,\n      topics: idea.repository.topics,\n      license_name: idea.repository.license_name,\n      languages: idea.repository.languages\n    },\n    idea: {\n      id: idea.id,\n      title: idea.title,\n      tagline: tagline,\n      overview: idea.overview\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        365
+      ],
+      "id": "6c0cacb1-936b-4f0d-8357-7173dd7b19aa",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6b72279-cb04-4bdc-b7a5-8323edd005a1",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        365
+      ],
+      "id": "211ed9b6-0374-422e-952e-493c9cc00cde",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        -110
+      ],
+      "id": "99413120-f939-4793-b5c5-bb6972cfaf7f",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create a custom SQL function to get ideas without MVP features\nconst createFunctionSQL = `\nCREATE OR REPLACE FUNCTION get_ideas_without_mvp_features(limit_count integer DEFAULT 5)\nRETURNS SETOF ideas\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  RETURN QUERY\n  SELECT i.*\n  FROM ideas i\n  WHERE i.id NOT IN (\n    SELECT ar.idea_id\n    FROM analysis_results ar\n    WHERE ar.analysis_type_id = 3\n    AND ar.idea_id IS NOT NULL\n  )\n  AND i.status = 'published'\n  ORDER BY i.generated_at DESC\n  LIMIT limit_count;\nEND;\n$$;\n`;\n\nreturn { json: { sql: createFunctionSQL } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        180
+      ],
+      "id": "8358a790-974a-4c30-a620-1ce41a84d25a",
+      "name": "CreateSQLFunction"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/sql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\"query\": $('CreateSQLFunction').item.json.sql} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        180
+      ],
+      "id": "51382485-7607-476f-90c9-b19d20a4336f",
+      "name": "ExecuteSQLFunction",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeaDetails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutMVPFeatures": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "CreateSQLFunction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MVPFeaturesAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreMVPFeaturesAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreMVPFeaturesAnalysis": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "MVPFeaturesAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeaDetails": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateSQLFunction": {
+      "main": [
+        [
+          {
+            "node": "ExecuteSQLFunction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExecuteSQLFunction": {
+      "main": [
+        [
+          {
+            "node": "GetIdeasWithoutMVPFeatures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "MVPFeaturesWorkflow",
+  "tags": [
+    {
+      "name": "production"
+    },
+    {
+      "name": "ossideas"
+    }
+  ]
+}

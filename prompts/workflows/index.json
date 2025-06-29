@@ -91,6 +91,27 @@
         "description": "Coordinates the execution of the idea generation workflow",
         "workflowPath": "prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-mvp-features": {
+      "name": "Idea Engine - MVP Features Generator",
+      "description": "Generates core MVP features for business ideas",
+      "agents": [
+        {
+          "id": "mvp-features-agent",
+          "name": "MVP Features Agent",
+          "description": "Identifies the minimal viable set of features needed to validate a business idea",
+          "workflowPath": "prompts/workflows/idea-engine/mvp-features-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/MVPFeaturesAgent/system_prompt.md",
+          "inputSchema": "prompts/MVPFeaturesAgent/input_required.json",
+          "outputSchema": "prompts/MVPFeaturesAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "mvp-features-orchestrator",
+        "name": "MVP Features Orchestrator",
+        "description": "Coordinates the generation of MVP features for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/mvp-features-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }
