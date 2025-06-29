@@ -1,0 +1,751 @@
+{
+  "name": "Repository Engine - 1. Repository Evaluation - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemma-3-4b-it",
+        "options": {
+          "maxOutputTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -440
+      ],
+      "id": "5c3e350b-8f50-4eb8-a97a-0045ac5d0348",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($input) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the “OSS Product Opportunity Scorer.\nInput JSON has:\n\n{ \"author\",\"title\",\"repository\",\"url\",\"description\",\n  \"starsCount\",\"forks\",\"openIssues\",\"recencyNorm\",\"issueNorm\",\n  \"demandRaw\",\"licenseId\" }\nDo:\n1. Rate 1–10: licenseRaw, uiuxRaw, integrationRaw,\n   valueAddRaw, competitionRaw, monetizationRaw, complexityRaw.\n2. Weights: license=10, uiux=8, demand=10, integration=7,\n   valueAdd=8, competition=6 (invert→10−competitionRaw),\n   monetization=9, complexity=5 (invert→10−complexityRaw).\n3. Compute each weighted=weight*(raw/10), sum→totalScore (0–100).\n4. Respond ONLY with valid JSON\n```\n{ \"scores\":{…}, \"weighted\":{…}, \"totalScore\":<number> }\n```\n\nRules:\n- DONOT OUTPUT ANYTHING ELSE BUT JSON\n- DONOT WRITE ANY OTHER COMMENTS JUST PURE VALID JSON",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        2380,
+        0
+      ],
+      "id": "4401a16a-2e4a-4cdf-b638-3ec7179d6f66",
+      "name": "AI Agent1",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('demandRaw1').item.json.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2460,
+        220
+      ],
+      "id": "a7990b5c-ac7b-40bf-bddc-83494b273ea7",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n// parse owner (it’s a JSON‐string in your payload)\nconst $repoData = $('RepoData').first().json;\nlet ownerObj;\nconsole.log(\"dscds\",$repoData)\ntry {\n  ownerObj = JSON.parse($repoData.owner);\n} catch {\n  ownerObj = { login: null };\n}\n\nlet licenseObj;\ntry {\n  licenseObj = JSON.parse($repoData.license);\n} catch {\n  licenseObj = null;\n}\n\nreturn {\n  json: {\n    id:           $repoData.id,\n    author:       ownerObj.login,\n    title:        $repoData.name,\n    repository:   $repoData.full_name,\n    url:          $repoData.html_url,\n    description:  $repoData.description,\n    starsCount:   $repoData.stargazers_count,\n    forks:        $repoData.forks_count,\n    subscribers:  $repoData.subscribers_count || 0,\n    openIssues:   $repoData.open_issues_count,\n    created_at:   $repoData.created_at,\n    lastPush:     $repoData.pushed_at,\n    starsToday:   $repoData.starsToday || 0,    // if you compute this upstream\n    licenseId:    licenseObj?.spdx_id || 'UNKNOWN'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        0
+      ],
+      "id": "d5b7f5fb-a3a6-4ac1-b633-b955498df37c",
+      "name": "normalizeObjects1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const now      = new Date();\nconst pushed   = new Date($json.lastPush);\nconst daysAgo  = (now - pushed)/(1000*60*60*24);\nconst recencyNorm = Math.max(0,(365-daysAgo)/365);\n\nconst issueRatio = $json.openIssues/($json.starsCount+1);\nconst issueNorm  = 1 - Math.min(issueRatio,1);\n\nreturn { json: { ...$json, recencyNorm, issueNorm } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        0
+      ],
+      "id": "5c336bbd-8200-4f5c-b868-93b2dd84b1a4",
+      "name": "computeNorms1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const starsNorm      = Math.min($json.starsToday,500)/500;\nconst subsNorm       = Math.min($json.subscribers,10000)/10000;\nconst forksNorm      = Math.min($json.forks,10000)/10000;\nconst raw            = (starsNorm*0.5 + subsNorm*0.3 + forksNorm*0.2)*10;\nreturn { json: { ...$json, demandRaw: Number(raw.toFixed(1)) } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "id": "3170c05a-4f70-42d6-9b18-b8626d3e931e",
+      "name": "demandRaw1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const base = $('normalizeObjects1').item.json\nconst ai   = $('AI Agent1').item.json.output;\nreturn {\n  json: {\n    ...base,\n    scores:   ai.scores,\n    weighted: ai.weighted,\n    totalScore: ai.totalScore\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        0
+      ],
+      "id": "2f46ea57-45fe-457c-ac09-5cb7b15fb575",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"scores\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"licenseRaw\":      { \"type\": \"number\", \"description\": \"Raw 1–10 license permissiveness\" },\n        \"uiuxRaw\":         { \"type\": \"number\", \"description\": \"Raw 1–10 UI/UX polish score\" },\n        \"demandRaw\":       { \"type\": \"number\", \"description\": \"Raw 1–10 demand signal from GitHub metrics\" },\n        \"integrationRaw\":  { \"type\": \"number\", \"description\": \"Raw 1–10 integration ease\" },\n        \"valueAddRaw\":     { \"type\": \"number\", \"description\": \"Raw 1–10 value-add opportunity\" },\n        \"competitionRaw\":  { \"type\": \"number\", \"description\": \"Raw 1–10 competition crowding\" },\n        \"monetizationRaw\": { \"type\": \"number\", \"description\": \"Raw 1–10 monetization likelihood\" },\n        \"complexityRaw\":   { \"type\": \"number\", \"description\": \"Raw 1–10 complexity (invert for ease)\" }\n      },\n      \"required\": [\"licenseRaw\",\"uiuxRaw\",\"demandRaw\",\"integrationRaw\",\"valueAddRaw\",\"competitionRaw\",\"monetizationRaw\",\"complexityRaw\"]\n    },\n    \"weighted\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"license\":      { \"type\": \"number\", \"description\": \"Weighted license score (0–10)\" },\n        \"uiux\":         { \"type\": \"number\", \"description\": \"Weighted UI/UX score (0–8)\" },\n        \"demand\":       { \"type\": \"number\", \"description\": \"Weighted demand score (0–10)\" },\n        \"integration\":  { \"type\": \"number\", \"description\": \"Weighted integration score (0–7)\" },\n        \"valueAdd\":     { \"type\": \"number\", \"description\": \"Weighted value-add score (0–8)\" },\n        \"competition\":  { \"type\": \"number\", \"description\": \"Weighted competition score (0–6)\" },\n        \"monetization\": { \"type\": \"number\", \"description\": \"Weighted monetization score (0–9)\" },\n        \"complexity\":   { \"type\": \"number\", \"description\": \"Weighted complexity score (0–5)\" }\n      },\n      \"required\": [\"license\",\"uiux\",\"demand\",\"integration\",\"valueAdd\",\"competition\",\"monetization\",\"complexity\"]\n    },\n    \"totalScore\": {\n      \"type\": \"number\",\n      \"description\": \"Sum of weighted scores (0–100)\"\n    }\n  },\n  \"required\": [\"scores\",\"weighted\",\"totalScore\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2580,
+        220
+      ],
+      "id": "83a8b3d6-799c-4af4-b138-338ee4e67cfd",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"id\": \"{{$json[\"id\"]}}\",\n  \"author\": \"{{$json[\"author\"]}}\",\n  \"title\": \"{{$json[\"title\"]}}\",\n  \"repository\": \"{{$json[\"repository\"]}}\",\n  \"url\": \"{{$json[\"url\"]}}\",\n  \"description\": \"{{$json[\"description\"]}}\",\n  \"starsCount\": \"{{$json[\"starsCount\"]}}\",\n  \"forks\": \"{{$json[\"forks\"]}}\",\n  \"subscribers\": \"{{$json[\"subscribers\"]}}\",\n  \"openIssues\": \"{{$json[\"openIssues\"]}}\",\n  \"created_at\": \"{{$json[\"created_at\"]}}\",\n  \"lastPush\": \"{{$json[\"lastPush\"]}}\",\n  \"starsToday\": \"{{$json[\"starsToday\"]}}\",\n  \"licenseId\": \"{{$json[\"licenseId\"]}}\",\n  \"recencyNorm\": \"{{$json[\"recencyNorm\"]}}\",\n  \"issueNorm\": \"{{$json[\"issueNorm\"]}}\",\n  \"demandRaw\": \"{{$json[\"demandRaw\"]}}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1900,
+        0
+      ],
+      "id": "a86af03d-610e-4a4c-936f-a348ecfc13cb",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -200
+      ],
+      "id": "57f98492-77e3-4fda-8cf4-474d036e6c8f",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "40"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={\n  \"totalScore\": {{ $json.totalScore }},\n  \"weighted\":{{ JSON.stringify($json.weighted) }},\n  \"scores\": {{  JSON.stringify($json.scores) }}\n}\n"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=Repository Analysis for {{ $json.repository }}"
+            },
+            {
+              "fieldId": "overall_score",
+              "fieldValue": "= {{ $json.totalScore }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        0
+      ],
+      "id": "fa0950ad-f501-4c72-885a-1797a5a5ddc1",
+      "name": "Supabase2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "ee9b0753-71ee-4c69-a472-3e0fef8e0f3e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2340,
+        220
+      ],
+      "id": "b17d2dd0-ca37-4ab1-adea-8f7d2c5421ac",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "pxfHkGeZznosLnrl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Reply in structured format only\n\n# Input Context\n\nName: {{ $json.full_name }}\nDescription: {{ $json.description }}\nForkCount: {{ $json.forks_count }}\nStargazersCount: {{ $json.stargazers_count }}\nWatchersCount: {{ $json.watchers_count }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are given a GitHub repository. Analyze it and output **exactly** one JSON object with two fields:\n\n```json\n{\n  \"skip_note\": < { \"type\": <string>, \"message\": <string> } | null >,  // Details when skipped, or null if included\n  \"is_skipped\": <boolean>                                        // true if skipped, false otherwise\n}\n````\n\n**Skip Note Types**\n\n* `framework_starter` — Basic framework boilerplate (e.g., Laravel, React)\n* `generic_template` — Generic CRUD/admin panel or SaaS UI kit\n* `no_unique_logic` — Lacks domain-specific logic or standalone utility\n\nFeel free to invent additional types if needed for clarity.\n\n**Rules**\n\n1. **AI-focused repos (always include):** If the repository relates to any AI/ML domain, **include** it:\n\n   * Artificial Intelligence, Machine Learning, Deep Learning, LLMs\n   * Model training, fine-tuning, inference\n   * Dataset tools (collection, processing, labeling)\n   * AI agent frameworks or tools\n   * AI infrastructure (vector DBs, orchestration, prompt engineering)\n\n   → `\"is_skipped\": false`, `\"skip_note\": null`.\n\n2. **Standalone, productizable value (include):** If the repo provides clear, reusable utility beyond AI, **include** it:\n\n   * SDKs, APIs, UI components, CLI tools, data scrapers, integrations\n   * Domain-specific libraries, linters, formatters, analysis tools\n   * DevOps modules (Terraform, Ansible, Helm), monitoring, logging, security\n   * Code or doc generators, REPL kits, CI/CD workflows\n   * GraphQL/API tooling, event-driven frameworks, mobile SDKs, serverless runtimes\n   * Data pipelines/ETL connectors, blockchain tools, DX enhancers, design systems\n\n   → `\"is_skipped\": false`, `\"skip_note\": null`.\n\n3. **Generic boilerplate (skip only these):** Skip truly generic starters with no unique logic:\n\n   * Basic framework starters (Laravel, React, Next.js, Angular, NestJS, Express)\n   * Generic CRUD/admin panels, portfolio templates, CMS templates, SaaS UI kits\n   * Any project lacking domain-specific logic or clear standalone utility\n\n   → `\"is_skipped\": true`, `\"skip_note\"`: an object with `type` and `message`, e.g.:\n\n```json\n{\n  \"skip_note\": { \"type\": \"framework_starter\", \"message\": \"React boilerplate\" },\n  \"is_skipped\": true\n}\n```\n\n**Output Examples**\n\n* **Included repo:**\n\n```json\n{ \"skip_note\": null, \"is_skipped\": false }\n```\n\n* **Skipped repo:**\n\n```json\n{\n  \"skip_note\": { \"type\": \"generic_template\", \"message\": \"Generic CRUD admin panel\" },\n  \"is_skipped\": true\n}\n```\n\n**Do not** output anything else—no extra text, just the JSON.\n\n# Input Context\n\n{{ JSON.stringify($json) }}\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        552,
+        -100
+      ],
+      "id": "26cf09b3-0e14-4703-992d-c3bb0959ec34",
+      "name": "AI Agent",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "repository",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "value": "={{ $json.owner }}",
+          "mode": "url"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $json.name }}",
+          "mode": "url"
+        }
+      },
+      "type": "n8n-nodes-base.githubTool",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        120
+      ],
+      "id": "6b379fe2-a612-48b8-a540-30f5c2507601",
+      "name": "GitHub",
+      "webhookId": "9959eb53-9c5a-4529-b98b-eddab8ec4463",
+      "credentials": {
+        "githubApi": {
+          "id": "R5ge389XfrNPKsqH",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $now.toUTC().toISO() }}",
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        580,
+        120
+      ],
+      "id": "3d18c0d8-78c4-4341-acc3-9230e24c92b0",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        460,
+        120
+      ],
+      "id": "d6860d75-de92-4b71-92c1-55a2621fab77",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "J3nBTM1ke9qYpCas",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"skip_note\": {\n      \"oneOf\": [\n        {\n          \"type\": \"null\"\n        },\n        {\n          \"type\": \"object\",\n          \"properties\": {\n            \"type\": {\n              \"type\": \"string\",\n              \"enum\": [\n                \"framework_starter\",\n                \"generic_template\",\n                \"no_unique_logic\"\n              ]\n            },\n            \"message\": {\n              \"type\": \"string\"\n            }\n          },\n          \"required\": [\"type\", \"message\"],\n          \"additionalProperties\": false\n        }\n      ]\n    },\n    \"is_skipped\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"required\": [\"skip_note\", \"is_skipped\"],\n  \"additionalProperties\": false\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        820,
+        120
+      ],
+      "id": "d88ff354-8243-4767-af38-bc8ebb711722",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/get_repositories",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"limit_count\": 1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        20,
+        -100
+      ],
+      "id": "cbd60dca-ee9f-4dee-906e-e9503aec034e",
+      "name": "RepoData",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b57d31f9-66d4-407e-a661-d01a549c3e7b",
+              "leftValue": "={{ $json.output.is_skipped }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1020,
+        -100
+      ],
+      "id": "d0b832cf-7305-41bf-863a-e3dae2531024",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "repositories",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('RepoData').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "is_skipped",
+              "fieldValue": "={{ $json.output.is_skipped }}"
+            },
+            {
+              "fieldId": "skip_note",
+              "fieldValue": "={{ $json.output.skip_note }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        -200
+      ],
+      "id": "63058de1-43af-4ceb-ad1c-6dc6ff14c609",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -100
+      ],
+      "id": "a91f70ce-13bc-4d23-89f9-f872accbeaaa",
+      "name": "Wait",
+      "webhookId": "851a243c-88c5-47a6-92ec-4275a39da0b3"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2120,
+        0
+      ],
+      "id": "080c452a-6ebc-4d7d-93f3-b929986df5a5",
+      "name": "Wait1",
+      "webhookId": "8fd76ee1-4ec6-4605-a697-6d2ecf047f60"
+    },
+    {
+      "parameters": {
+        "content": "### RepositoryFilterAgent\n\nResponsible for filtering out unnecessary repos."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -300
+      ],
+      "typeVersion": 1,
+      "id": "9c29c701-2fac-46fd-a374-c29980af93c0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "### RepositoryRankAgent\n\nResponsible for ranking repositories"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2360,
+        -200
+      ],
+      "typeVersion": 1,
+      "id": "a3d93d2d-c558-433b-b952-dfa393368653",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalizeObjects1": {
+      "main": [
+        [
+          {
+            "node": "computeNorms1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "computeNorms1": {
+      "main": [
+        [
+          {
+            "node": "demandRaw1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "demandRaw1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "RepoData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RepoData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RepoData": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "normalizeObjects1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a8ca0b0f-7626-4b69-9a1c-e7a280f61f39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "rURDYyXyylL5Uswl",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    }
+  ]
+}

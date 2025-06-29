@@ -1,0 +1,782 @@
+{
+  "name": "Idea Engine - 2. Opportunity Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"repoId\": \"<relevant_repo_id>\",\n  \"tunerRuns\": [\n    {\n      \"runIndex\": 1,\n      \"max_tokens\": 600,\n      \"temperature\": 0.7,\n      \"top_k\": 50,\n      \"top_p\": 0.9,\n      \"harm_category\": \"HARASSMENT\",\n      \"block_threshold\": \"BLOCK_LOW_AND_ABOVE\",\n      \"rationale\": \"Balanced creativity & controlled safety\"\n    },\n    {\n      \"runIndex\": 2,\n      \"max_tokens\": 300,\n      \"temperature\": 0.2,\n      \"top_k\": 20,\n      \"top_p\": 0.5,\n      \"harm_category\": \"HATE_SPEECH\",\n      \"block_threshold\": \"BLOCK_MEDIUM_AND_ABOVE\",\n      \"rationale\": \"High precision, minimal randomness\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        695
+      ],
+      "id": "78961aff-b58f-4748-a01f-8906705b858f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        820,
+        695
+      ],
+      "id": "f343f283-f08b-4c98-b061-6b5b34afdf01",
+      "name": "Google Gemini Chat Model7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('RepoBatchRowResult').item.json.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        940,
+        695
+      ],
+      "id": "8d6233bf-3c66-4417-be46-2a1a38ff056d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{  JSON.stringify($('RepoBatchRowResult').item.json) }}\n\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# OSSIdeas TunerAgent System Prompt\n\n\n\nYou are **TunerAgent** for OSSIdeas.\n\nFor each incoming repository record (with fields:\n\n- `id`, `author`, `title`, `repository`, `url`, `description`,\n\n- `starsCount`, `forks`, `subscribers`, `openIssues`,\n\n- `created_at`, `lastPush`, `starsToday`, `licenseId`,\n\n- `scores`, `weighted`, `totalScore`, `createdAt`\n\n), you must produce **N** distinct “run” configurations for our OpenAI prompt pipeline.\n\n\n\n# Task Instructions\n\nRead the repo’s totalScore and weighted metrics.\n\nGenerate exactly N runs (where N is provided alongside the record).\n\nFor each run, specify:\n\nrunIndex (1…N)\n\nmax_tokens (integer, e.g., 200–1000)\n\ntemperature (float between 0.0–1.0)\n\ntop_k (integer, e.g., 1–100)\n\ntop_p (float between 0.0–1.0)\n\nharm_category (one of HARASSMENT, HATE_SPEECH, SEXUALLY_EXPLICIT, DANGEROUS_CONTENT)\n\nblock_threshold (one of BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH, BLOCK_NONE)\n\nrationale (≤20 words explaining why this config is useful)\n\n# Guidelines\n\nInclude a high-creativity run (higher temperature, looser top_k/top_p).\n\nInclude a high-precision run (lower temperature, tighter top_k/top_p).\n\nInclude a strict-safety run (BLOCK_LOW_AND_ABOVE for all categories).\n\nInclude a no-blocking run (BLOCK_NONE).\n\nOptionally, skew one run toward higher max_tokens and slight randomness based on totalScore.\n\n\n\nOutput Format\n\nReturn only this JSON structure:\n\n\n{\n\n\"repoId\": <id>,\n\n\"tunerRuns\": [\n\n{\n\n\"runIndex\": 1,\n\n\"max_tokens\": 600,\n\n\"temperature\": 0.7,\n\n\"top_k\": 50,\n\n\"top_p\": 0.9,\n\n\"harm_category\": \"HARASSMENT\",\n\n\"block_threshold\": \"BLOCK_LOW_AND_ABOVE\",\n\n\"rationale\": \"Balanced creativity & controlled safety\"\n\n},\n\n{\n\n\"runIndex\": 2,\n\n\"max_tokens\": 300,\n\n\"temperature\": 0.2,\n\n\"top_k\": 20,\n\n\"top_p\": 0.5,\n\n\"harm_category\": \"HATE_SPEECH\",\n\n\"block_threshold\": \"BLOCK_MEDIUM_AND_ABOVE\",\n\n\"rationale\": \"High precision, minimal randomness\"\n\n},\n\n… up to N runs …\n\n]\n\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        852,
+        475
+      ],
+      "id": "e044aaf9-f73f-49ef-87f8-e36ceada7c8f",
+      "name": "TunerAgent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": "={{ $('TunerRuns').item.json.temperature }}",
+          "topK": "={{ $('TunerRuns').item.json.top_k }}",
+          "topP": "={{ $('TunerRuns').item.json.top_p }}",
+          "safetySettings": {
+            "values": [
+              {
+                "category": "={{ 'HARM_CATEGORY_'+$('TunerRuns').item.json.harm_category }}",
+                "threshold": "={{ $('TunerRuns').item.json.block_threshold }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        220
+      ],
+      "id": "699cb30c-20fc-4f5b-a8d5-c0733e21e136",
+      "name": "Google Gemini Chat Model8",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZLOq7xYmLcaJXZYu",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.repoId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1820,
+        220
+      ],
+      "id": "f9aa9fe1-eafa-45e7-ba5b-1e5fe4590d26",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1480,
+        475
+      ],
+      "id": "83382790-65ea-45e7-b4b0-82b54e8cd545",
+      "name": "TunerRuns"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# Rationale For This Run\n{{ $('TunerRuns').item.json.rationale }}\n\n# Input Context\n\n{{ JSON.stringify( $('RepoBatch').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=## Enhanced Opportunity Summary Generation Prompt\n\n### ROLE:\n\nYou are the Agile Architect, an AI-powered analyst specializing in transforming technical repository insights into concise, actionable opportunity summaries.\n\n### TASK:\n\nGenerate a structured, strict Opportunity Summary in JSON format based solely on provided repository data and strategic scores. Use Tavily Search to enrich your insights with real-time validation.\n\n### INPUT DATA STRUCTURE:\n\n```json\n{\n  \"id\": int,\n  \"author\": string,\n  \"title\": string,\n  \"repository\": string,\n  \"url\": string,\n  \"description\": string,\n  \"starsCount\": int,\n  \"forks\": int,\n  \"subscribers\": int,\n  \"openIssues\": int,\n  \"created_at\": string,\n  \"lastPush\": string,\n  \"starsToday\": int,\n  \"licenseId\": string,\n  \"scores\": {\n    \"licenseRaw\": float,\n    \"uiuxRaw\": float,\n    \"demandRaw\": float,\n    \"integrationRaw\": float,\n    \"valueAddRaw\": float,\n    \"competitionRaw\": float,\n    \"monetizationRaw\": float,\n    \"complexityRaw\": float\n  },\n  \"weighted\": {\n    \"license\": float,\n    \"uiux\": float,\n    \"demand\": float,\n    \"integration\": float,\n    \"valueAdd\": float,\n    \"competition\": float,\n    \"monetization\": float,\n    \"complexity\": float\n  },\n  \"totalScore\": float\n}\n```\n\n### GUIDELINES:\n\n* **Strict Structure:** Output must start with `{ \"opportunitySummary\":` and match the schema exactly—no extra keys or envelopes.\n* **Persona Focus:** Identify a clear user persona suffering the pain.\n* **Urgency & Impact:** Emphasize why solving this pain is urgent and impactful.\n* **Validated Pain:** Use starsCount and forks as direct proof of demand.\n* **Differentiation:** Highlight how this solution uniquely addresses the pain.\n* **Feasibility:** Leverage repository activity (e.g., recent pushes) to underscore technical viability.\n* **Monetization Angle:** Frame productVision around clear business or monetizable features.\n* **Tavily Enrichment:** Incorporate up-to-date market trends or competitive insights via Tavily queries. \n* **Source Mentions:** Only mention credible sources such as a known business journal or so, DONOT USE TAVILY MENTION. \n* **Structured Output:** Use structure output tool, if any error occurs, read it and fix it. Ensure that structured output is successful.\n\n### EXAMPLE TAVILY SEARCH QUERIES:\n\n* \"developer complaints about high AI API costs site\\:reddit.com\"\n* \"AI agent market growth 2025-2030 CAGR\"\n* \"enterprise use cases for on-prem AI agents\"\n* \"pricing models for AI-driven SaaS platforms\"\n\n\n\n### OUTPUT FORMAT:\n\nReturn ONLY this JSON structure with **no additional wrappers**:\n\n```json\n{\n  \"opportunitySummary\": {\n    \"opportunityRank\": \"<totalScore>/100\",\n    \"problemStatement\": \"...\",\n    \"\n    \"productVision\": \"...\",\n    \"marketValidation\": {\n      \"validatedDemand\": \"<starsCount> stars, <forks> forks\",\n      \"marketTrend\": \"...\"\n    },\n    \"strategicScores\": {\n      \"licenseSuitability\": \"<weighted.license>/10\",\n      \"uiUxPotential\": \"<weighted.uiux>/10\",\n      \"marketDemand\": \"<weighted.demand>/10\",\n      \"integrationEase\": \"<weighted.integration>/10\",\n      \"valueAddition\": \"<weighted.valueAdd>/10\",\n      \"competitionIntensity\": \"<weighted.competition>/10\",\n      \"monetizationPotential\": \"<weighted.monetization>/10\",\n      \"complexityLevel\": \"<weighted.complexity>/10\"\n    },\n    \"repositoryMetadata\": {\n      \"url\": \"<url>\",\n      \"license\": \"<licenseId>\",\n      \"lastActivity\": \"<lastPush>\",\n      \"openIssues\": \"<openIssues>\",\n      \"createdDate\": \"<created_at>\"\n    }\n  }\n}\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1792,
+        0
+      ],
+      "id": "c8b82201-13bd-4c7e-a8d0-e194634b1bed",
+      "name": "TunedOpportunityAgent",
+      "notesInFlow": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nreturn $input.all().at(0).json.output.tunerRuns.map(run => {\n    return {\n      ...run, // Spread existing properties of the run\n      repoId: $input.all().at(0).json.output.repoId // Add the repoId\n    };\n  });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        475
+      ],
+      "id": "f72c2132-64ca-4d92-86ff-f473c00d6667",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Tavily Search is an AI-powered search engine designed to quickly retrieve real-time and highly relevant information from diverse sources on the internet. It helps analysts enrich their insights by providing up-to-date external validation, market trends, competitor analysis, and user-driven discussions, ensuring that strategic recommendations are always backed by current, actionable data.",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "tavilyApi",
+        "sendBody": true,
+        "parametersBody": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1940,
+        220
+      ],
+      "id": "3e47fa95-442f-4a1f-b9ee-a005be70b295",
+      "name": "Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "FvSqRRWfK0b7s1yz",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"opportunitySummary\": {\n    \"opportunityRank\": \"<totalScore>/100\",\n    \"repositoryMetadata\": {\n      \"openIssues\": \"<openIssues>\",\n      \"lastActivity\": \"<lastPush>\",\n      \"url\": \"<url>\",\n      \"createdDate\": \"<created_at>\",\n      \"license\": \"<licenseId>\"\n    },\n    \"problemStatement\": \"<concise user pain statement>\",\n    \"marketValidation\": {\n      \"validatedDemand\": \"<starsCount> stars, <forks> forks\",\n      \"marketTrend\": \"<key market trend or growth insight>\"\n    },\n    \"strategicScores\": {\n      \"monetizationPotential\": \"<weighted.monetization>/10\",\n      \"integrationEase\": \"<weighted.integration>/10\",\n      \"valueAddition\": \"<weighted.valueAdd>/10\",\n      \"licenseSuitability\": \"<weighted.license>/10\",\n      \"complexityLevel\": \"<weighted.complexity>/10\",\n      \"uiUxPotential\": \"<weighted.uiux>/10\",\n      \"competitionIntensity\": \"<weighted.competition>/10\",\n      \"marketDemand\": \"<weighted.demand>/10\"\n    },\n    \"productVision\": \"<monetizable product/business framing>\"\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2060,
+        220
+      ],
+      "id": "2cb14eda-ce7a-4e72-bc81-f3f3733d523f",
+      "name": "Structured Output"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "overall_score",
+              "fieldValue": "={{ parseFloat($('TunedOpportunityAgent').item.json.output.opportunitySummary.opportunityRank?.split('/')[0] || null) }}"
+            },
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "39"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($('TunedOpportunityAgent').item.json.output) }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ 'Opportunity Anaylsis ' + $json.full_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        0
+      ],
+      "id": "68a8c95a-7ae6-456e-a186-36e7be577968",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "repositories",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "html_url",
+              "keyValue": "={{ $json.output.opportunitySummary.repositoryMetadata.url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2260,
+        0
+      ],
+      "id": "8e3b0080-a703-4387-90d6-93b8f2857fc8",
+      "name": "Supabase1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "error_payload",
+              "fieldValue": "={{ Object.assign($('TunedOpportunityAgent'), $('TunerRuns')) }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "failed at https://n8n.devkind.net/workflow/GscltCFzVWzhCPAS"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2260,
+        250
+      ],
+      "id": "63c0953d-6e4f-4e45-b824-4d7795f6f8b6",
+      "name": "Supabase2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2700,
+        275
+      ],
+      "id": "98be4083-0630-4847-a20e-cc2c263c941e",
+      "name": "Wait",
+      "webhookId": "224a926d-4ee7-4bf6-ade5-25e5bf9d76db",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -60,
+        775
+      ],
+      "id": "a57ac1db-3f3d-401f-97fb-29eae32828a9",
+      "name": "RepoBatch"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1870,
+        400
+      ],
+      "id": "f44abea1-4839-406c-bef8-2c1d5e8e7832",
+      "name": "Wait1",
+      "webhookId": "a1092227-df6b-42ae-85b8-e9ed976cc785"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "repositories",
+        "filterType": "string",
+        "filterString": "=select=*,analysis_results(*)&id=eq.{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        475
+      ],
+      "id": "b4cee312-7f29-4630-bbef-7e94df7555b6",
+      "name": "RepoBatchRowResult",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/rpc/get_repositories",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"has\":[40],\n  \"has_not\":[39]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        775
+      ],
+      "id": "677092f0-76e4-4efe-b16b-da72f7cf71fb",
+      "name": "GetReposWithoutOpportunity",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        775
+      ],
+      "id": "149af09d-8241-4e73-96d6-cbffd241dbf1",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17958e36-1f21-40eb-9c57-dfcb77bf5f6b",
+              "leftValue": "={{ $json.analysis_results }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              }
+            },
+            {
+              "id": "2fdc9760-2f90-4cff-8bbc-999ae4c9784d",
+              "leftValue": "={{ $json.analysis_results[0].analysis_type_id }}",
+              "rightValue": 40,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        380,
+        475
+      ],
+      "id": "d99931da-3c57-45b8-b449-ee126e67b773",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        600,
+        475
+      ],
+      "id": "2eb60927-02be-4078-a9be-e527485c6296",
+      "name": "Wait2",
+      "webhookId": "f9498168-c1dd-4b79-908c-594240935197"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "TunerAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TunerAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "TunerAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TunerAgent": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TunedOpportunityAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "TunedOpportunityAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TunerRuns": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TunedOpportunityAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TunedOpportunityAgent": {
+      "main": [
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "TunerRuns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "TunedOpportunityAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "TunedOpportunityAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "TunerRuns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RepoBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "RepoBatchRowResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RepoBatchRowResult": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetReposWithoutOpportunity": {
+      "main": [
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GetReposWithoutOpportunity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RepoBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "TunerAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase2": {
+      "main": [
+        [
+          {
+            "node": "TunerRuns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4c313b8-6252-44c0-a0bf-19f30b0928ed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "GscltCFzVWzhCPAS",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    }
+  ]
+}
