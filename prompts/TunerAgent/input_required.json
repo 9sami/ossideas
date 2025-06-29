@@ -1,0 +1,82 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Repository UUID"
+    },
+    "author": {
+      "type": "string",
+      "description": "Repository author"
+    },
+    "title": {
+      "type": "string",
+      "description": "Repository title"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Full repository name"
+    },
+    "url": {
+      "type": "string",
+      "description": "Repository URL"
+    },
+    "description": {
+      "type": "string",
+      "description": "Repository description"
+    },
+    "starsCount": {
+      "type": "number",
+      "description": "Number of stars"
+    },
+    "forks": {
+      "type": "number",
+      "description": "Number of forks"
+    },
+    "subscribers": {
+      "type": "number",
+      "description": "Number of subscribers"
+    },
+    "openIssues": {
+      "type": "number",
+      "description": "Number of open issues"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "Repository creation date"
+    },
+    "lastPush": {
+      "type": "string",
+      "description": "Last push date"
+    },
+    "starsToday": {
+      "type": "number",
+      "description": "Stars gained today"
+    },
+    "licenseId": {
+      "type": "string",
+      "description": "License identifier"
+    },
+    "scores": {
+      "type": "object",
+      "description": "Raw scoring data"
+    },
+    "weighted": {
+      "type": "object",
+      "description": "Weighted scoring data"
+    },
+    "totalScore": {
+      "type": "number",
+      "description": "Total opportunity score"
+    },
+    "createdAt": {
+      "type": "string",
+      "description": "Record creation timestamp"
+    },
+    "N": {
+      "type": "number",
+      "description": "Number of configurations to generate"
+    }
+  },
+  "required": ["id", "totalScore", "N"]
+}

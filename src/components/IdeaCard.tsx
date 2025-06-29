@@ -7,10 +7,10 @@ import { useAuth } from '../hooks/useAuth';
 interface IdeaCardProps {
   idea: IdeaData;
   onClick: () => void;
-  onLoginRequired?: () => void;
+  onRegisterClick?: () => void;
 }
 
-const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onLoginRequired }) => {
+const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onRegisterClick }) => {
   const { isIdeaSaved, toggleSaveIdea } = useSavedIdeas();
   const { authState } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -20,8 +20,8 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onLoginRequired }) =
     e.stopPropagation();
     
     if (!authState.user) {
-      if (onLoginRequired) {
-        onLoginRequired();
+      if (onRegisterClick) {
+        onRegisterClick();
       }
       return;
     }

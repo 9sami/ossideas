@@ -1,0 +1,98 @@
+{
+  "type": "object",
+  "properties": {
+    "repository": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Repository ID"
+        },
+        "author": {
+          "type": "string",
+          "description": "Repository author"
+        },
+        "title": {
+          "type": "string",
+          "description": "Repository title"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Full repository name"
+        },
+        "url": {
+          "type": "string",
+          "description": "Repository URL"
+        },
+        "description": {
+          "type": "string",
+          "description": "Repository description"
+        },
+        "starsCount": {
+          "type": "integer",
+          "description": "Number of stars"
+        },
+        "forks": {
+          "type": "integer",
+          "description": "Number of forks"
+        },
+        "subscribers": {
+          "type": "integer",
+          "description": "Number of subscribers"
+        },
+        "openIssues": {
+          "type": "integer",
+          "description": "Number of open issues"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation date"
+        },
+        "lastPush": {
+          "type": "string",
+          "description": "Last push date"
+        },
+        "starsToday": {
+          "type": "integer",
+          "description": "Stars gained today"
+        },
+        "licenseId": {
+          "type": "string",
+          "description": "License identifier"
+        },
+        "scores": {
+          "type": "object",
+          "description": "Raw scoring data"
+        },
+        "weighted": {
+          "type": "object",
+          "description": "Weighted scoring data"
+        },
+        "totalScore": {
+          "type": "number",
+          "description": "Total opportunity score"
+        }
+      },
+      "required": ["id", "starsCount", "forks", "totalScore"]
+    },
+    "tuningParameters": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "description": "AI temperature setting"
+        },
+        "top_p": {
+          "type": "number",
+          "description": "Top-p sampling parameter"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Maximum tokens to generate"
+        }
+      },
+      "required": ["temperature", "top_p", "max_tokens"]
+    }
+  },
+  "required": ["repository", "tuningParameters"]
+}
