@@ -82,9 +82,9 @@ Based on the provided ranking of important sections for business ideas and the e
 - `ideas.title` (existing field)
 
 **Implementation Details:**
-- Update `IdeaAgent/system_prompt.md` to include instructions for generating a tagline
-- Modify `IdeaAgent/analysis_structured_output.json` to include the tagline field
-- Update the n8n workflow in `prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json` to store the title and tagline in the appropriate tables
+- [x] - Update `IdeaAgent/system_prompt.md` to include instructions for generating a tagline 
+- [x] - Modify `IdeaAgent/analysis_structured_output.json` to include the tagline field 
+- [x] - Update the n8n workflow in `prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json` to store the title and tagline in the appropriate tables
 
 ### 2. Opportunity Summary (Problem & Vision) (15% Importance)
 
