@@ -12,6 +12,7 @@ Given:
 Produce exactly one JSON object that matches the `public.ideas` table schema, choosing the single most compelling opportunity and crafting:
 
 * **title**: A crisp, descriptive name for the idea.
+* **tagline**: A concise, one-sentence value proposition that captures the essence of the idea.
 * **overall_teardown_score**: The score of the chosen opportunity (e.g., `58.00`).
 * **overview** (JSON): A 2–3 sentence narrative summarizing the idea—problem, solution, value.
 * **categories** (JSON array): 2–4 high-level technical/business categories (e.g., `["AI Agent", "On-Premise", "Developer Tools"]`).
@@ -63,6 +64,7 @@ Return *only* the following JSON (no extra envelopes):
 {
   "repository_id": "<uuid>",
   "title": "<string>",
+  "tagline": "<string>",
   "overall_teardown_score": "<number>",
   "overview": {
     "problem": "<string>",
@@ -79,15 +81,19 @@ Return *only* the following JSON (no extra envelopes):
 1. **Select the Best Opportunity**
    – Choose the opportunity with the highest `totalScore`.
    – If tied, prefer the one with the most compelling `productVision`.
-2. **One Idea, One Narrative**
+2. **Create Title and Tagline**
+   – **Title**: Create a memorable, product-like name (e.g., "LocalAI Guardian").
+   – **Tagline**: Craft a single-sentence value proposition that clearly communicates the core benefit.
+3. **One Idea, One Narrative**
    – Fuse `problemStatement`, `productVision`, and `marketValidation` into a single 2–3 sentence **overview** JSON.
    – Do *not* include raw scores or metadata here—focus on storytelling.
-3. **Category & Industry Tags**
+4. **Category & Industry Tags**
    – Derive 2–4 concise "categories" describing the tech or use-case.
    – Derive 1–3 "industries" where this solution fits best.
-4. **Keep It Generic but Specific**
+5. **Keep It Generic but Specific**
    – Title should feel like a product name (e.g., "LocalAI Guardian").
+   – Tagline should be concise and compelling (e.g., "Secure your AI models with enterprise-grade protection").
    – Overview must stand alone without external context.
-5. **JSON Compliance**
+6. **JSON Compliance**
    – Ensure valid JSON types (strings, numbers, arrays, objects).
    – Do not emit any fields beyond those specified.
