@@ -19,6 +19,7 @@ import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
 import SubmitRepositoryForm from './components/SubmitRepositoryForm';
 import { useAuth } from './hooks/useAuth';
+import blackCircleBadge from './assets/black_circle_360x360.png';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -57,11 +58,6 @@ const AppContent: React.FC = () => {
     setAuthModalOpen(true);
   };
 
-  const handleRegisterClick = () => {
-    setAuthModalMode('register');
-    setAuthModalOpen(true);
-  };
-
   const handleLogout = async () => {
     await logout();
   };
@@ -97,11 +93,7 @@ const AppContent: React.FC = () => {
               path="/"
               element={
                 <MainContent
-                  searchQuery={searchQuery}
                   filterOpen={filterOpen}
-                  onIdeaSelect={() => {}}
-                  isLoggedIn={isLoggedIn}
-                  onRegisterClick={handleRegisterClick}
                   onFilterToggle={handleFilterToggle}
                 />
               }
@@ -156,6 +148,27 @@ const AppContent: React.FC = () => {
         onClose={handleCloseAuthModal}
         initialMode={authModalMode}
       />
+
+      {/* Bolt.new Badge - fixed bottom right */}
+      <a
+        href="https://bolt.new/"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Powered by Bolt.new"
+        className="fixed z-50 bottom-4 right-4 md:bottom-6 md:right-6"
+        style={{ lineHeight: 0 }}>
+        <img
+          src={blackCircleBadge}
+          alt="Powered by Bolt.new"
+          className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full shadow-lg border border-black/10 bg-white/90 hover:scale-105 transition-transform duration-200"
+          style={{
+            maxWidth: '24vw',
+            maxHeight: '24vw',
+            minWidth: '48px',
+            minHeight: '48px',
+          }}
+        />
+      </a>
     </div>
   );
 };
