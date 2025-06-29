@@ -1,0 +1,31 @@
+{
+  "name": "Idea Engine - 2b. Tuned Opportunity Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.placeholder",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ],
+      "id": "placeholder-node",
+      "name": "Tuned Opportunity Agent Placeholder"
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "placeholder",
+  "meta": {
+    "instanceId": "placeholder"
+  },
+  "id": "placeholder",
+  "tags": [
+    {
+      "name": "ossideas"
+    }
+  ]
+}
