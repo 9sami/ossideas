@@ -113,6 +113,7 @@ Based on the provided ranking of important sections for business ideas and the e
   ```
 - `ideas.overview` (JSON, existing field)
 
+Status:  [x] - done
 ### 3. MVP Core Features (15% Importance)
 
 **Key Data Points Required:**
