@@ -1,14 +1,25 @@
 {
   "workflows": {
-    "repository-engine": {
-      "name": "Repository Engine",
-      "description": "Fetches and evaluates GitHub repositories for business potential",
+    "repository-engine-fetch": {
+      "name": "Repository Engine - Fetch Trending Repos",
+      "description": "Fetches trending repositories from GitHub",
+      "agents": [],
+      "orchestrator": {
+        "id": "fetch-trending-repos",
+        "name": "Fetch Trending Repos",
+        "description": "Fetches trending repositories from GitHub",
+        "workflowPath": "prompts/workflows/repository-engine/fetch-trending-repos.n8n.workflow.json"
+      }
+    },
+    "repository-engine-evaluation": {
+      "name": "Repository Engine - Repository Evaluation",
+      "description": "Evaluates repositories for business potential",
       "agents": [
         {
           "id": "repository-filter-agent",
           "name": "Repository Filter Agent",
           "description": "Filters out repositories that don't have business potential",
-          "workflowPath": "prompts/workflows/repository-engine/repository-filter-agent.n8n.workflow.json",
+          "workflowPath": "prompts/workflows/repository-engine/repository-evaluation.n8n.workflow.json",
           "promptPath": "prompts/RepositoryFilterAgent/system_prompt.md",
           "inputSchema": "prompts/RepositoryFilterAgent/input_required.json",
           "outputSchema": "prompts/RepositoryFilterAgent/analysis_structured_output.json"
@@ -17,17 +28,17 @@
           "id": "repository-rank-agent",
           "name": "Repository Rank Agent",
           "description": "Scores repositories for business opportunity potential",
-          "workflowPath": "prompts/workflows/repository-engine/repository-rank-agent.n8n.workflow.json",
+          "workflowPath": "prompts/workflows/repository-engine/repository-evaluation.n8n.workflow.json",
           "promptPath": "prompts/RepositoryRankAgent/system_prompt.md",
           "inputSchema": "prompts/RepositoryRankAgent/input_required.json",
           "outputSchema": "prompts/RepositoryRankAgent/analysis_structured_output.json"
         }
       ],
       "orchestrator": {
-        "id": "fetch-trending-repos",
-        "name": "Fetch Trending Repos",
-        "description": "Fetches trending repositories from GitHub",
-        "workflowPath": "prompts/workflows/repository-engine/fetch-trending-repos.n8n.workflow.json"
+        "id": "repository-evaluation",
+        "name": "Repository Evaluation",
+        "description": "Coordinates the evaluation of repositories",
+        "workflowPath": "prompts/workflows/repository-engine/repository-evaluation.n8n.workflow.json"
       }
     },
     "idea-engine-opportunity": {
@@ -38,7 +49,7 @@
           "id": "tuner-agent",
           "name": "Tuner Agent",
           "description": "Generates parameter configurations for opportunity generation",
-          "workflowPath": "prompts/workflows/idea-engine/tuner-agent.n8n.workflow.json",
+          "workflowPath": "prompts/workflows/idea-engine/opportunity-orchestrator.n8n.workflow.json",
           "promptPath": "prompts/TunerAgent/system_prompt.md",
           "inputSchema": "prompts/TunerAgent/input_required.json",
           "outputSchema": "prompts/TunerAgent/analysis_structured_output.json"
@@ -47,7 +58,7 @@
           "id": "tuned-opportunity-agent",
           "name": "Tuned Opportunity Agent",
           "description": "Generates opportunity summaries with market validation",
-          "workflowPath": "prompts/workflows/idea-engine/opportunity-generator.n8n.workflow.json",
+          "workflowPath": "prompts/workflows/idea-engine/opportunity-orchestrator.n8n.workflow.json",
           "promptPath": "prompts/TunedOpportunityAgent/system_prompt.md",
           "inputSchema": "prompts/TunedOpportunityAgent/input_required.json",
           "outputSchema": "prompts/TunedOpportunityAgent/analysis_structured_output.json"
@@ -68,7 +79,7 @@
           "id": "idea-agent",
           "name": "Idea Agent",
           "description": "Synthesizes opportunities into a cohesive business idea",
-          "workflowPath": "prompts/workflows/idea-engine/idea-agent.n8n.workflow.json",
+          "workflowPath": "prompts/workflows/idea-engine/idea-orchestrator.n8n.workflow.json",
           "promptPath": "prompts/IdeaAgent/system_prompt.md",
           "inputSchema": "prompts/IdeaAgent/input_required.json",
           "outputSchema": "prompts/IdeaAgent/analysis_structured_output.json"
