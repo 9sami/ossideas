@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "author": {
+      "type": "string",
+      "description": "Repository owner/author"
+    },
+    "title": {
+      "type": "string",
+      "description": "Repository name/title"
+    },
+    "repository": {
+      "type": "string", 
+      "description": "Full repository name (owner/repo)"
+    },
+    "url": {
+      "type": "string",
+      "description": "Repository URL"
+    },
+    "description": {
+      "type": "string",
+      "description": "Repository description"
+    },
+    "starsCount": {
+      "type": "number",
+      "description": "Number of GitHub stars"
+    },
+    "forks": {
+      "type": "number",
+      "description": "Number of forks"
+    },
+    "openIssues": {
+      "type": "number",
+      "description": "Number of open issues"
+    },
+    "recencyNorm": {
+      "type": "number",
+      "description": "Normalized recency score"
+    },
+    "issueNorm": {
+      "type": "number", 
+      "description": "Normalized issue activity score"
+    },
+    "demandRaw": {
+      "type": "number",
+      "description": "Raw demand score"
+    },
+    "licenseId": {
+      "type": "string",
+      "description": "License identifier"
+    }
+  },
+  "required": ["author", "title", "repository", "url", "description", "starsCount", "forks", "openIssues", "recencyNorm", "issueNorm", "demandRaw", "licenseId"]
+}

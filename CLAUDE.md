@@ -28,6 +28,36 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
 - **Netlify** for frontend hosting
 - **Supabase** for backend infrastructure
 
+## AI Agent Prompts and Workflow
+
+### Prompt Management System
+All AI agent prompts are organized in the `prompts/` directory with the following structure:
+
+```
+prompts/
+├── MAIN_WORKFLOW.md          # Complete workflow overview
+├── RepositoryFilterAgent/    # Filters unnecessary repositories
+├── RepositoryRankAgent/      # Scores business opportunity potential
+├── TunerAgent/              # Generates AI parameter configurations
+├── TunedOpportunityAgent/   # Creates opportunity summaries
+└── IdeaAgent/               # Synthesizes final business ideas
+```
+
+Each agent folder contains:
+- `info.md` - Model recommendations and performance characteristics
+- `system_prompt.md` - The agent's system prompt
+- `input_required.json` - Expected input schema
+- `analysis_structured_output.json` - Expected output schema
+
+### Workflow Orchestration
+The AI pipeline is orchestrated by n8n and processes repositories through five sequential agents. See `prompts/MAIN_WORKFLOW.md` for detailed flow documentation.
+
+### Frontend Component Considerations
+Frontend components must dynamically render analysis results based on:
+- `analysis_type_id` - Determines which component to render
+- `analysis_payload` - Contains structured JSON data for display
+- Components should handle varied output structures from different analysis types
+
 ## Key React Hooks Used
 
 ### Custom Hooks
@@ -155,6 +185,57 @@ OSSIdeas is a comprehensive platform for discovering startup opportunities based
 - **Browser DevTools**: Client-side debugging and network inspection
 - **Database Queries**: Use Supabase dashboard for data inspection
 
+## Documentation Maintenance
+
+### Critical Update Requirements
+
+**MANDATORY**: This documentation MUST be updated whenever:
+
+1. **AI Agent Prompts Change**
+   - Any modification to system prompts in the `prompts/` directory
+   - New agents added to the workflow
+   - Changes to agent input/output schemas
+   - Updates to model recommendations or parameters
+
+2. **Database Schema Evolution**
+   - New tables, columns, or constraints added
+   - Migration naming conventions change
+   - New database functions created
+   - RLS policies modified
+
+3. **Frontend Architecture Changes**
+   - New custom hooks created
+   - Component organization patterns change
+   - New analysis types requiring frontend components
+   - Technology stack updates
+
+4. **Workflow Modifications**
+   - Changes to the n8n orchestration flow
+   - New processing stages added
+   - Error handling procedures updated
+   - Performance optimization strategies
+
+### Update Trigger Rule
+
+After completing ANY development task, ask: **"Does this change require updating CLAUDE.md?"**
+
+If the answer involves:
+- New patterns or conventions
+- Changed architectural decisions
+- New tools or technologies
+- Modified workflows or processes
+- Lessons learned that should be documented
+
+Then CLAUDE.md MUST be updated to reflect these changes.
+
+### Missing Column Detection
+
+When considering prompt input or output changes, ALWAYS:
+1. Check existing database schema for required columns
+2. Identify any missing columns needed for new functionality
+3. Create appropriate migrations before implementing prompt changes
+4. Update documentation to reflect schema changes
+
 ## Continuous Learning & Self-Correction
 
 ### AI Development Guidelines
@@ -197,6 +278,7 @@ After completing tasks involving:
 - **Authentication changes** → Update security measures
 - **Database schema changes** → Update schema guidelines
 - **Database functions** → Update database functions documentation
+- **AI agent modifications** → Update prompt management section
 
 ### Learning Prompts
 

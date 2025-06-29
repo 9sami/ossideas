@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "properties": {
+    "repository": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Repository UUID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Repository name"
+        },
+        "url": {
+          "type": "string",
+          "description": "Repository URL"
+        }
+      },
+      "required": ["id", "name", "url"],
+      "additionalProperties": false
+    },
+    "opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "opportunityRank": {
+            "type": "string",
+            "description": "Opportunity rank score"
+          },
+          "problemStatement": {
+            "type": "string",
+            "description": "Problem being solved"
+          },
+          "productVision": {
+            "type": "string",
+            "description": "Product vision and solution"
+          },
+          "marketValidation": {
+            "type": "object",
+            "description": "Market validation data"
+          },
+          "strategicScores": {
+            "type": "object",
+            "description": "Strategic scoring breakdown"
+          },
+          "repositoryMetadata": {
+            "type": "object",
+            "description": "Repository metadata"
+          },
+          "totalScore": {
+            "type": "number",
+            "description": "Total opportunity score"
+          }
+        },
+        "required": ["problemStatement", "productVision", "marketValidation", "totalScore"],
+        "additionalProperties": true
+      },
+      "minItems": 1,
+      "description": "Array of opportunity summaries"
+    }
+  },
+  "required": ["repository", "opportunities"],
+  "additionalProperties": false
+}

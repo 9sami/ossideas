@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Repository UUID"
+    },
+    "github_repo_id": {
+      "type": "integer",
+      "description": "GitHub's internal repository ID"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Repository owner username"
+    },
+    "name": {
+      "type": "string", 
+      "description": "Repository name"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Full repository name (owner/name)"
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Repository description"
+    },
+    "html_url": {
+      "type": "string",
+      "description": "GitHub repository URL"
+    },
+    "stargazers_count": {
+      "type": "integer",
+      "description": "Number of stars"
+    },
+    "forks_count": {
+      "type": "integer", 
+      "description": "Number of forks"
+    },
+    "topics": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "string"
+      },
+      "description": "Repository topics/tags"
+    },
+    "license_name": {
+      "type": ["string", "null"],
+      "description": "License name"
+    },
+    "readme_content": {
+      "type": ["string", "null"],
+      "description": "Repository README content"
+    },
+    "languages": {
+      "type": ["object", "null"],
+      "description": "Programming languages used"
+    }
+  },
+  "required": ["id", "github_repo_id", "owner", "name", "full_name", "html_url", "stargazers_count", "forks_count"]
+}

@@ -1,0 +1,566 @@
+{
+  "name": "Repository Engine - 0. Fetch Trending Repositories - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "box",
+              "cssSelector": "div.Box",
+              "returnValue": "html"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "29768c80-4f81-4c88-8e28-5d0d0a4ca41c",
+      "name": "Extract Box",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        440,
+        -665
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "url": "https://github.com/trending",
+        "options": {}
+      },
+      "id": "2ec02f8c-f156-4335-ae7d-2db2c14a5139",
+      "name": "Request to Github Trend",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        220,
+        -665
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "repositories",
+        "options": {}
+      },
+      "id": "d2ae6895-2c30-4a18-9f94-8e1995b6f169",
+      "name": "Turn to a list",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        880,
+        -665
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0e76646-60d7-44a6-af77-33f27fb465cb",
+              "name": "author",
+              "type": "string",
+              "value": "={{ $json.repository.split('/')[0].trim() }}"
+            },
+            {
+              "id": "a2bd790a-784e-4d72-9a4e-92be22edea8f",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $json.repository.split('/')[1].trim() }}"
+            },
+            {
+              "id": "22f1518a-7081-4417-ab9d-88f26a7b5cfe",
+              "name": "repository",
+              "type": "string",
+              "value": "={{ $json.repository }}"
+            },
+            {
+              "id": "baff9a9f-020a-4968-bb80-a4a91a94144a",
+              "name": "url",
+              "type": "string",
+              "value": "=https://github.com/{{ $json.repository.replaceAll(' ','') }}"
+            },
+            {
+              "id": "f5c48a02-b55d-4167-a823-53ac1d851ee5",
+              "name": "created_at",
+              "type": "string",
+              "value": "={{$now}}"
+            },
+            {
+              "id": "27a44ce9-4b5b-44b2-94d9-eb5b2ae81dcd",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $json.description }}"
+            },
+            {
+              "id": "e02714cc-b2c0-420d-9fd3-40ff94f1da1d",
+              "name": "starsCount",
+              "value": "={{ $json.starsCount }}",
+              "type": "string"
+            },
+            {
+              "id": "092c6c17-88da-425c-83fd-cb3bdb3acd31",
+              "name": "forks",
+              "value": "={{ $json.forks }}",
+              "type": "string"
+            },
+            {
+              "id": "6df4589d-1d0f-4a42-b8d9-094a29c33616",
+              "name": "starsToday",
+              "value": "={{$json.starsToday.match(/\\d[\\d,]*/)[0].replace(/,/g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "84de7aab-14eb-4228-93bb-a4151208d205",
+              "name": "languageColor",
+              "value": "={{ $json.languageColor.style.split(':')[1].trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "0cc18183-4e20-409a-be6c-caa424fa1792",
+      "name": "Set Result Variables",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1320,
+        -665
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "repositories",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "repository",
+              "cssSelector": "a.Link"
+            },
+            {
+              "key": "language",
+              "cssSelector": "span.d-inline-block"
+            },
+            {
+              "key": "description",
+              "cssSelector": "p"
+            },
+            {
+              "key": "starsCount",
+              "cssSelector": "a[href$=\"/stargazers\"]"
+            },
+            {
+              "key": "forks",
+              "cssSelector": "a[href$=\"/forks\"]"
+            },
+            {
+              "key": "sponsorLink",
+              "cssSelector": "a.Button[aria-label^=\"Sponsor\"]"
+            },
+            {
+              "key": "starsToday",
+              "cssSelector": "span.float-sm-right"
+            },
+            {
+              "key": "languageColor",
+              "cssSelector": "span.repo-language-color",
+              "returnValue": "attribute"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "43d5e06b-7ccf-4839-8a35-34b38e0b2b96",
+      "name": "Extract repository data",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        1100,
+        -665
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "box",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "repositories",
+              "cssSelector": "article.Box-row",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "id": "3c93963e-f8f0-4e09-af09-deb2dc6aba04",
+      "name": "Extract all repositories",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        660,
+        -665
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -665
+      ],
+      "id": "f079633d-57ad-4250-b69c-b684910ea0e4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $json.author }}/{{ $json.title }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        -740
+      ],
+      "id": "127604bf-7998-47d3-bdc0-895294967407",
+      "name": "HTTP Request",
+      "credentials": {
+        "githubApi": {
+          "id": "R5ge389XfrNPKsqH",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        -665
+      ],
+      "id": "b6ff79d5-3e6a-418a-9ff9-2bdf1a855f4d",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2420,
+        -665
+      ],
+      "id": "1ec58469-c383-4fe2-9fd0-02f1fc71fd83",
+      "name": "Wait",
+      "webhookId": "6cbbff5f-ef3c-424b-8f39-16c44833f359"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.languages_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        -740
+      ],
+      "id": "61ad0f13-1e1b-4ab4-8f4f-62ab40d967b0",
+      "name": "HTTP Request1",
+      "credentials": {
+        "githubApi": {
+          "id": "R5ge389XfrNPKsqH",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "repositories",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "github_repo_id",
+              "fieldValue": "={{ $('HTTP Request').item.json.id }}"
+            },
+            {
+              "fieldId": "owner",
+              "fieldValue": "={{ $('HTTP Request').item.json.owner.url }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $('HTTP Request').item.json.name }}"
+            },
+            {
+              "fieldId": "full_name",
+              "fieldValue": "={{ $('HTTP Request').item.json.full_name }}"
+            },
+            {
+              "fieldId": "description",
+              "fieldValue": "={{ $('HTTP Request').item.json.description }}"
+            },
+            {
+              "fieldId": "html_url",
+              "fieldValue": "={{ $('HTTP Request').item.json.html_url }}"
+            },
+            {
+              "fieldId": "stargazers_count",
+              "fieldValue": "={{ $('HTTP Request').item.json.stargazers_count }}"
+            },
+            {
+              "fieldId": "forks_count",
+              "fieldValue": "={{ $('HTTP Request').item.json.forks_count }}"
+            },
+            {
+              "fieldId": "watchers_count",
+              "fieldValue": "={{ $('HTTP Request').item.json.watchers_count }}"
+            },
+            {
+              "fieldId": "open_issues_count",
+              "fieldValue": "={{ $('HTTP Request').item.json.open_issues }}"
+            },
+            {
+              "fieldId": "license_key",
+              "fieldValue": "={{ $('HTTP Request').item.json.license.key }}"
+            },
+            {
+              "fieldId": "license_name",
+              "fieldValue": "={{ $('HTTP Request').item.json.license.key }}"
+            },
+            {
+              "fieldId": "last_commit_at",
+              "fieldValue": "={{ $('HTTP Request').item.json.updated_at }}"
+            },
+            {
+              "fieldId": "created_at_github",
+              "fieldValue": "={{ $('HTTP Request').item.json.created_at }}"
+            },
+            {
+              "fieldId": "updated_at_github",
+              "fieldValue": "={{ $('HTTP Request').item.json.updated_at }}"
+            },
+            {
+              "fieldId": "is_archived",
+              "fieldValue": "={{ $('HTTP Request').item.json.archived }}"
+            },
+            {
+              "fieldId": "topics",
+              "fieldValue": "={{ $('HTTP Request').item.json.topics }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        -740
+      ],
+      "id": "fa403777-f1ab-4b34-9447-0c4322f66404",
+      "name": "Supabase2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract Box": {
+      "main": [
+        [
+          {
+            "node": "Extract all repositories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Turn to a list": {
+      "main": [
+        [
+          {
+            "node": "Extract repository data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract repository data": {
+      "main": [
+        [
+          {
+            "node": "Set Result Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request to Github Trend": {
+      "main": [
+        [
+          {
+            "node": "Extract Box",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract all repositories": {
+      "main": [
+        [
+          {
+            "node": "Turn to a list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Result Variables": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Request to Github Trend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "10697caf-b5af-4b87-9b5c-66b2fccc0891",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "jdJIy4z6Pq7PhKod",
+  "tags": [
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    },
+    {
+      "createdAt": "2025-06-29T01:10:40.153Z",
+      "updatedAt": "2025-06-29T01:10:40.153Z",
+      "id": "9MF8UYfYtpfo8gyu",
+      "name": "DONE"
+    },
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    }
+  ]
+}
