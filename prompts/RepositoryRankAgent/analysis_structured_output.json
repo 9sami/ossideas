@@ -1,0 +1,117 @@
+{
+  "type": "object",
+  "properties": {
+    "scores": {
+      "type": "object",
+      "properties": {
+        "licenseRaw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "License suitability score (1-10)"
+        },
+        "uiuxRaw": {
+          "type": "number", 
+          "minimum": 1,
+          "maximum": 10,
+          "description": "UI/UX potential score (1-10)"
+        },
+        "integrationRaw": {
+          "type": "number",
+          "minimum": 1, 
+          "maximum": 10,
+          "description": "Integration ease score (1-10)"
+        },
+        "valueAddRaw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Value addition potential score (1-10)"
+        },
+        "competitionRaw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Competition intensity score (1-10)"
+        },
+        "monetizationRaw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Monetization potential score (1-10)"
+        },
+        "complexityRaw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Implementation complexity score (1-10)"
+        }
+      },
+      "required": ["licenseRaw", "uiuxRaw", "integrationRaw", "valueAddRaw", "competitionRaw", "monetizationRaw", "complexityRaw"],
+      "additionalProperties": false
+    },
+    "weighted": {
+      "type": "object",
+      "properties": {
+        "license": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Weighted license score"
+        },
+        "uiux": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "description": "Weighted UI/UX score"
+        },
+        "demand": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Weighted demand score"
+        },
+        "integration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 7,
+          "description": "Weighted integration score"
+        },
+        "valueAdd": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "description": "Weighted value addition score"
+        },
+        "competition": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6,
+          "description": "Weighted competition score (inverted)"
+        },
+        "monetization": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9,
+          "description": "Weighted monetization score"
+        },
+        "complexity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Weighted complexity score (inverted)"
+        }
+      },
+      "required": ["license", "uiux", "demand", "integration", "valueAdd", "competition", "monetization", "complexity"],
+      "additionalProperties": false
+    },
+    "totalScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Total weighted opportunity score"
+    }
+  },
+  "required": ["scores", "weighted", "totalScore"],
+  "additionalProperties": false
+}
