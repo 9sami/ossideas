@@ -27,6 +27,7 @@ import AuthModal from './AuthModal';
 import MonetizationStrategyCard from './MonetizationStrategyCard';
 import TechStackCard from './TechStackCard';
 import MetricsCard from './MetricsCard';
+import RiskAnalysisCard from './RiskAnalysisCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -120,6 +121,15 @@ const IdeaDetail: React.FC = () => {
     
     return idea.analysisResults.find(
       analysis => analysis.analysis_type_id === 8
+    );
+  }, [idea?.analysisResults]);
+
+  // Find risk analysis
+  const riskAnalysis = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 9
     );
   }, [idea?.analysisResults]);
 
@@ -341,6 +351,13 @@ const IdeaDetail: React.FC = () => {
       {metrics && (
         <div className="max-w-4xl mx-auto px-6 py-4">
           <MetricsCard analysis={metrics} />
+        </div>
+      )}
+
+      {/* Risk Analysis Section */}
+      {riskAnalysis && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <RiskAnalysisCard analysis={riskAnalysis} />
         </div>
       )}
 
