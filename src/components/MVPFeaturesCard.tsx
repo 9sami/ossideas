@@ -1,30 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
-
-interface Feature {
-  name: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  userValue: string;
-}
-
-interface MVPFeaturesData {
-  features: Feature[];
-  mvpScope: string;
-  futureFeatures: string[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | MVPFeaturesData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
+import { AnalysisResult, MVPFeaturesData } from './RepositoryAnalysis';
 
 interface MVPFeaturesCardProps {
   analysis: AnalysisResult;

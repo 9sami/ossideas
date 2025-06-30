@@ -23,6 +23,7 @@ export interface Idea {
     stargazers_count: number;
     forks_count: number;
     watchers_count: number;
+    open_issues_count: number;
     topics: string[] | null;
     license_name: string | null;
     readme_content: string | null;
@@ -38,8 +39,10 @@ export interface Idea {
     overall_score: number | null;
     analysis_payload: Record<string, unknown>;
     analysis_type?: {
+      id: number;
       name: string;
       slug: string;
+      description: string | null;
     };
   }>;
 }
@@ -89,6 +92,7 @@ export const useIdeas = () => {
           stargazers_count,
           forks_count,
           watchers_count,
+          open_issues_count,
           topics,
           license_name,
           readme_content,
@@ -104,8 +108,10 @@ export const useIdeas = () => {
           overall_score,
           analysis_payload,
           analysis_type:analysis_types(
+            id,
             name,
-            slug
+            slug,
+            description
           )
         )
       `,
@@ -484,5 +490,7 @@ export const convertIdeaToIdeaData = (idea: Idea): IdeaData => {
     isFromDatabase: true, // These ideas come from the ideas table
     generatedAt: idea.generated_at,
     repositoryStargazersCount: idea.repository?.stargazers_count || 0,
+    repository: idea.repository,
+    analysisResults: idea.analysis_results,
   };
 };

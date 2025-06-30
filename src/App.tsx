@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
-import IdeaDetail from './components/IdeaDetail';
 import RepositoryDetail from './components/RepositoryDetail';
 import UserProfile from './components/UserProfile';
 import SavedIdeas from './components/SavedIdeas';
@@ -21,6 +25,9 @@ import SubmitRepositoryForm from './components/SubmitRepositoryForm';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { useAuth } from './hooks/useAuth';
 import GoogleTag from './components/GoogleAnalytics';
+import LandingPage from './components/LandingPage';
+import boltBadge from './assets/black_circle_360x360.png';
+import IdeaDetail from './components/IdeaDetail';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -95,8 +102,10 @@ const AppContent: React.FC = () => {
         {/* Main content with constant left margin for closed sidebar width */}
         <main className="flex-1 ml-16">
           <Routes>
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/" element={<Navigate to="/landing" replace />} />
             <Route
-              path="/"
+              path="/ideas"
               element={
                 <MainContent
                   filterOpen={filterOpen}
@@ -105,8 +114,9 @@ const AppContent: React.FC = () => {
                 />
               }
             />
-            <Route path="/ideas/:id" element={<IdeaDetail />} />
             <Route path="/repositories/:id" element={<RepositoryDetail />} />
+            <Route path="/ideas/:id" element={<IdeaDetail />} />
+            <Route path="/:owner/:repo" element={<IdeaDetail />} />
             <Route
               path="/profile"
               element={
@@ -156,6 +166,18 @@ const AppContent: React.FC = () => {
         onClose={handleCloseAuthModal}
         initialMode={authModalMode}
       />
+      {/* Bolt.new Badge */}
+      <a
+        href="https://bolt.new/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 right-4 z-50 transition-transform hover:scale-105">
+        <img
+          src={boltBadge}
+          alt="Powered by Bolt.new"
+          className="w-20 h-20 md:w-24 md:h-24"
+        />
+      </a>
     </div>
   );
 };

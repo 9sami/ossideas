@@ -1,36 +1,6 @@
 import React, { useState } from 'react';
 import { Code, ChevronDown, ChevronUp, Workflow } from 'lucide-react';
-
-interface CoreComponent {
-  name: string;
-  purpose: string;
-  alternatives: string[];
-}
-
-interface WorkflowStep {
-  name: string;
-  description: string;
-}
-
-interface TechStackData {
-  coreComponents: CoreComponent[];
-  workflow: {
-    steps: WorkflowStep[];
-  };
-  implementationComplexity: 'low' | 'medium' | 'high';
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | TechStackData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
+import { AnalysisResult, TechStackData } from './RepositoryAnalysis';
 
 interface TechStackCardProps {
   analysis: AnalysisResult;

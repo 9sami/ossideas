@@ -1,30 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, BarChart2, Users, RefreshCw, DollarSign } from 'lucide-react';
-
-interface Metric {
-  name: string;
-  target: string;
-  importance: 'high' | 'medium' | 'low';
-}
-
-interface MetricsData {
-  acquisitionMetrics: Metric[];
-  activationMetrics: Metric[];
-  retentionMetrics: Metric[];
-  revenueMetrics: Metric[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | MetricsData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
+import { AnalysisResult, MetricsData, Metric } from './RepositoryAnalysis';
 
 interface MetricsCardProps {
   analysis: AnalysisResult;

@@ -1,30 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, AlertCircle, ShieldAlert, Lightbulb } from 'lucide-react';
-
-interface Risk {
-  description: string;
-  impact: 'high' | 'medium' | 'low';
-  probability: 'high' | 'medium' | 'low';
-  mitigation: string;
-}
-
-interface RiskAnalysisData {
-  risks: Risk[];
-  criticalRisks: string[];
-  contingencyPlans: string[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | RiskAnalysisData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
+import { AnalysisResult, RiskAnalysisData } from './RepositoryAnalysis';
 
 interface RiskAnalysisCardProps {
   analysis: AnalysisResult;

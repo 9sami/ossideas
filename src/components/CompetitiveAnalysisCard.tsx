@@ -1,36 +1,6 @@
 import React, { useState } from 'react';
 import { Target, ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-
-interface Competitor {
-  name: string;
-  strengths: string[];
-  weaknesses: string[];
-  marketShare: string;
-}
-
-interface IndirectCompetitor {
-  name: string;
-  description: string;
-  threat: 'high' | 'medium' | 'low';
-}
-
-interface CompetitiveAnalysisData {
-  directCompetitors: Competitor[];
-  indirectCompetitors: IndirectCompetitor[];
-  competitiveAdvantage: string;
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | CompetitiveAnalysisData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
+import { AnalysisResult, CompetitiveAnalysisData } from './RepositoryAnalysis';
 
 interface CompetitiveAnalysisCardProps {
   analysis: AnalysisResult;
