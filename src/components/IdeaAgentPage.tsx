@@ -6,13 +6,18 @@ import {
   BarChart2, 
   FileText, 
   Zap, 
-  Clock, 
   Rocket, 
   ArrowRight, 
   Database, 
   DollarSign, 
   Users, 
-  Lightbulb
+  Lightbulb,
+  Search,
+  FileCheck,
+  BarChart,
+  PieChart,
+  TrendingUp,
+  Layers
 } from 'lucide-react';
 
 const IdeaAgentPage: React.FC = () => {
@@ -274,6 +279,194 @@ const IdeaAgentPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Comprehensive Insights Section */}
+      <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
+              <Search className="h-4 w-4 mr-2" />
+              In-Depth Analysis
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Comprehensive Research & Insights
+            </h2>
+            <p className="text-gray-600 max-w-3xl mx-auto">
+              Our AI doesn't just scratch the surface. It dives deep into every aspect of your idea to provide thorough, actionable intelligence.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-blue-100 rounded-lg mt-1">
+                  <Search className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Deep Repository Analysis</h3>
+                  <p className="text-gray-600 mb-4">
+                    We analyze every aspect of the repository - from code structure to documentation quality, commit history, and community engagement.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Code quality assessment</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Contributor analysis</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Documentation completeness</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-green-100 rounded-lg mt-1">
+                  <FileCheck className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Reports</h3>
+                  <p className="text-gray-600 mb-4">
+                    Receive comprehensive reports covering every aspect of your startup idea, from technical feasibility to market potential.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">•</span>
+                      <span>SWOT analysis</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">•</span>
+                      <span>Competitive landscape</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">•</span>
+                      <span>Risk assessment</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-purple-100 rounded-lg mt-1">
+                  <BarChart className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Market Intelligence</h3>
+                  <p className="text-gray-600 mb-4">
+                    Access up-to-date market data and trends to validate your idea against real-world demand and competition.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-purple-500 mr-2">•</span>
+                      <span>Market size estimates</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-500 mr-2">•</span>
+                      <span>Competitor analysis</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-500 mr-2">•</span>
+                      <span>Industry growth projections</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-red-100 rounded-lg mt-1">
+                  <PieChart className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Visualization</h3>
+                  <p className="text-gray-600 mb-4">
+                    Complex data presented in easy-to-understand visual formats to help you make informed decisions quickly.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-red-500 mr-2">•</span>
+                      <span>Interactive charts and graphs</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-red-500 mr-2">•</span>
+                      <span>Comparative analysis visuals</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-red-500 mr-2">•</span>
+                      <span>Trend forecasting models</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-yellow-100 rounded-lg mt-1">
+                  <TrendingUp className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Growth Forecasting</h3>
+                  <p className="text-gray-600 mb-4">
+                    Predictive analytics to estimate user acquisition, revenue potential, and growth trajectories.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-yellow-500 mr-2">•</span>
+                      <span>User growth projections</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-500 mr-2">•</span>
+                      <span>Revenue forecasting</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-500 mr-2">•</span>
+                      <span>Scaling milestones</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-indigo-100 rounded-lg mt-1">
+                  <Layers className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Comprehensive Data</h3>
+                  <p className="text-gray-600 mb-4">
+                    Access to a wealth of data sources to ensure your startup decisions are backed by solid evidence.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-indigo-500 mr-2">•</span>
+                      <span>Industry benchmarks</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-indigo-500 mr-2">•</span>
+                      <span>Success case studies</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-indigo-500 mr-2">•</span>
+                      <span>Failure analysis patterns</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Why Idea Agent Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-purple-100">
         <div className="max-w-5xl mx-auto">
@@ -397,60 +590,6 @@ const IdeaAgentPage: React.FC = () => {
               <p className="text-sm text-gray-600">
                 Prototyping clients' proofs of concept and accelerating development cycles.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline Section */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Launch Timeline
-            </h2>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              We're working hard to bring Idea Agent to you. Here's our roadmap.
-            </p>
-          </div>
-          
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-purple-200"></div>
-            
-            <div className="space-y-12">
-              <div className="relative">
-                <div className="absolute left-1/2 transform -translate-x-1/2 -mt-2 w-6 h-6 rounded-full border-4 border-purple-200 bg-purple-500"></div>
-                <div className="ml-auto mr-auto w-full md:w-1/2 md:pr-8 md:text-right">
-                  <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
-                    <h3 className="font-semibold text-gray-900">Q3 2024</h3>
-                    <p className="text-gray-600">Expected Launch</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <div className="absolute left-1/2 transform -translate-x-1/2 -mt-2 w-6 h-6 rounded-full border-4 border-purple-200 bg-purple-400"></div>
-                <div className="ml-auto mr-auto w-full md:w-1/2 md:pl-8 md:ml-auto">
-                  <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
-                    <h3 className="font-semibold text-gray-900">August 2024</h3>
-                    <p className="text-gray-600">Beta Opens</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <div className="absolute left-1/2 transform -translate-x-1/2 -mt-2 w-6 h-6 rounded-full border-4 border-purple-200 bg-purple-300"></div>
-                <div className="ml-auto mr-auto w-full md:w-1/2 md:pr-8 md:text-right">
-                  <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
-                    <h3 className="font-semibold text-gray-900">Now</h3>
-                    <p className="text-gray-600">Waitlist Open</p>
-                    <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      First 500 get priority access
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
