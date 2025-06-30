@@ -10,7 +10,11 @@ interface IdeaCardProps {
   onRegisterClick?: () => void;
 }
 
-const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onRegisterClick }) => {
+const IdeaCard: React.FC<IdeaCardProps> = ({
+  idea,
+  onClick,
+  onRegisterClick,
+}) => {
   const { isIdeaSaved, toggleSaveIdea } = useSavedIdeas();
   const { authState } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -18,7 +22,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onRegisterClick }) =
 
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!authState.user) {
       if (onRegisterClick) {
         onRegisterClick();
@@ -46,7 +50,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onRegisterClick }) =
   return (
     <div
       onClick={onClick}
-      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300 cursor-pointer h-[380px] flex flex-col">
+      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300 cursor-pointer flex flex-col">
       {/* Card Header with Gradient Background */}
       <div className="h-32 bg-gradient-to-br from-orange-100 via-orange-50 to-gray-50 relative overflow-hidden flex-shrink-0">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
@@ -134,9 +138,13 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick, onRegisterClick }) =
 
         {/* License */}
         <div className="flex items-center justify-between text-sm flex-shrink-0">
-          <span className="text-gray-500 truncate">License: {idea.license}</span>
+          <span className="text-gray-500 truncate">
+            License: {idea.license}
+          </span>
           <div className="flex items-center text-orange-500 group-hover:text-orange-600 transition-colors">
-            <span className="text-xs font-medium text-nowrap">View Details</span>
+            <span className="text-xs font-medium text-nowrap">
+              View Details
+            </span>
             <svg
               className="h-3 w-3 ml-1 group-hover:translate-x-0.5 transition-transform"
               fill="none"

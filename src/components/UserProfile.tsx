@@ -154,36 +154,41 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Profile Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 mb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center space-x-4 sm:space-x-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold flex-shrink-0">
                 {getInitials(user.fullName, user.email)}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   {user.fullName || 'User'}
                 </h1>
-                <p className="text-gray-600">{user.email}</p>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  {user.email}
+                </p>
                 <p className="text-sm text-gray-500">
                   Member since {new Date(user.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="grid grid-cols-3 gap-6 mb-4">
+            <div className="w-full sm:w-auto">
+              <div className="grid grid-cols-3 gap-4 mb-4 sm:mb-0 sm:gap-6">
                 {stats.map((stat) => {
                   const Icon = stat.icon;
                   return (
                     <div key={stat.label} className="text-center">
-                      <Icon className={`h-6 w-6 mx-auto mb-2 ${stat.color}`} />
-                      <div className={`text-2xl font-bold ${stat.color}`}>
+                      <Icon
+                        className={`h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-1 sm:mb-2 ${stat.color}`}
+                      />
+                      <div
+                        className={`text-xl sm:text-2xl font-bold ${stat.color}`}>
                         {stat.value}
                       </div>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs sm:text-sm text-gray-600">
                         {stat.label}
                       </span>
                     </div>
@@ -191,7 +196,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 })}
               </div>
             </div>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+            <button className="w-full sm:w-auto flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
               <Settings className="h-4 w-4" />
               <span>Edit Profile</span>
             </button>
@@ -201,7 +206,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-8">
+            <nav className="flex space-x-2 sm:space-x-8 px-4 sm:px-8 overflow-x-auto">
               {[
                 { id: 'saved', label: 'Saved Ideas', icon: Heart },
                 { id: 'preferences', label: 'Preferences', icon: Settings },
@@ -280,8 +285,56 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       )}
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Cards for mobile, Table for desktop */}
+                    <div className="block sm:hidden">
+                      {currentIdeas.map((idea) => (
+                        <div
+                          key={idea.id}
+                          className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => handleIdeaClick(idea)}>
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-medium text-gray-900 hover:text-orange-600 transition-colors flex-1 pr-2">
+                              {idea.title}
+                            </h3>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getScoreColor(
+                                idea.opportunityScore,
+                              )}`}>
+                              <Star className="h-3 w-3 mr-1" />
+                              {idea.opportunityScore}/10
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                            {idea.tagline}
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-3">
+                            {idea.categories.slice(0, 3).map((category) => (
+                              <span
+                                key={category}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {category}
+                              </span>
+                            ))}
+                            {idea.categories.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                +{idea.categories.length - 3}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1.5" />
+                              Saved: {formatDate(new Date().toISOString())}
+                            </div>
+                            <span className="text-gray-600 truncate">
+                              {idea.ossProject}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="overflow-x-auto hidden sm:block">
                       <table className="w-full">
                         <thead>
                           <tr className="border-b border-gray-200">
@@ -378,19 +431,19 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="mt-6 flex items-center justify-between">
+                      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="text-sm text-gray-700">
                           Showing {startIndex + 1} to{' '}
                           {Math.min(endIndex, filteredIdeas.length)} of{' '}
                           {filteredIdeas.length} results
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
                           <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <ChevronLeft className="h-4 w-4" />
-                            Previous
+                            <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Previous</span>
                           </button>
 
                           <div className="flex items-center space-x-1">
@@ -409,7 +462,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                   return (
                                     <span
                                       key={page}
-                                      className="px-2 text-gray-500">
+                                      className="px-1 sm:px-2 text-gray-500">
                                       ...
                                     </span>
                                   );
@@ -436,8 +489,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
                             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Next
-                            <ChevronRight className="h-4 w-4 ml-1" />
+                            <span className="hidden sm:inline">Next</span>
+                            <ChevronRight className="h-4 w-4 sm:ml-1" />
                           </button>
                         </div>
                       </div>
@@ -453,7 +506,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       Start exploring and save ideas that interest you!
                     </p>
                     <button
-                      onClick={() => navigate('/')}
+                      onClick={() => navigate('/ideas')}
                       className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
                       Explore Ideas
                     </button>
@@ -469,7 +522,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Preferred Categories
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {[
                       'AI/ML',
                       'DevTools',
@@ -558,7 +611,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   ].map((activity, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg gap-2">
                       <div>
                         <span className="text-sm text-gray-600">
                           {activity.action}
@@ -567,7 +620,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                           {activity.title}
                         </h4>
                       </div>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 flex-shrink-0">
                         {activity.time}
                       </span>
                     </div>
