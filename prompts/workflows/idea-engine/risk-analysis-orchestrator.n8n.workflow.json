@@ -1,0 +1,544 @@
+{
+  "name": "Idea Engine - 10. Risk Analysis Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"risks\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Clear description of the risk\"\n          },\n          \"impact\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Severity of impact if risk materializes\"\n          },\n          \"probability\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Likelihood of risk occurring\"\n          },\n          \"mitigation\": {\n            \"type\": \"string\",\n            \"description\": \"Specific strategy to mitigate this risk\"\n          }\n        }\n      }\n    },\n    \"criticalRisks\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Most critical risks requiring immediate attention\"\n    },\n    \"contingencyPlans\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Plans for worst-case scenarios\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        -40
+      ],
+      "id": "8ab5b5c5-3e1f-44de-900c-44029152d8d7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -40
+      ],
+      "id": "7543a2c2-47d1-405d-86af-0a755c226afa",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        -40
+      ],
+      "id": "3e6f63be-4b46-437a-850f-c7fbabc8b262",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1900,
+        90
+      ],
+      "id": "9416493e-740c-445e-8a17-8741fc7ebd86",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*, analysis_results(*),repository:repositories(*)"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_risks"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1680,
+        -260
+      ],
+      "id": "9596c29a-ca0d-4f5c-aac2-218d34c50c52",
+      "name": "GetIdeasWithoutRiskAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2120,
+        90
+      ],
+      "id": "96e065e2-4b00-4858-a898-24f730aa6fd4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('FormatInputData').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# RiskAnalysisAgent System Prompt\n\n## ROLE:\nYou are **RiskAnalysisAgent**, an AI risk analyst specialized in identifying potential risks and developing mitigation strategies for business ideas.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n3. Competitive analysis (if available)\n\nProduce a structured JSON output that:\n- Identifies 3-5 critical risks that could potentially kill the business idea\n- Assesses each risk's impact and probability\n- Provides specific mitigation strategies for each risk\n- Highlights the most critical risks that require immediate attention\n- Outlines contingency plans for worst-case scenarios\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  },\n  \"competitiveAnalysis\": {\n    \"directCompetitors\": [\n      {\n        \"name\": \"string\",\n        \"strengths\": [\"string\"],\n        \"weaknesses\": [\"string\"],\n        \"marketShare\": \"string\"\n      }\n    ],\n    \"indirectCompetitors\": [\n      {\n        \"name\": \"string\",\n        \"description\": \"string\",\n        \"threat\": \"high|medium|low\"\n      }\n    ],\n    \"competitiveAdvantage\": \"string\"\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"risks\": [\n    {\n      \"description\": \"Clear description of the risk\",\n      \"impact\": \"high|medium|low\",\n      \"probability\": \"high|medium|low\",\n      \"mitigation\": \"Specific strategy to mitigate this risk\"\n    }\n  ],\n  \"criticalRisks\": [\n    \"Brief description of the most critical risk that requires immediate attention\"\n  ],\n  \"contingencyPlans\": [\n    \"Specific plan for worst-case scenario\"\n  ]\n}\n```\n\n## GUIDELINES:\n\n1. **Comprehensive Risk Assessment**: Consider risks across multiple dimensions:\n   - Market risks (competition, market size, timing)\n   - Technical risks (feasibility, scalability, security)\n   - Operational risks (team, resources, execution)\n   - Financial risks (funding, revenue model, burn rate)\n   - Legal/regulatory risks (compliance, IP, liability)\n\n2. **Specific & Concrete**: Each risk should be specific to the business idea, not generic.\n\n3. **Impact Assessment**: Rate impact based on how severely it would affect the business:\n   - High: Existential threat to the business\n   - Medium: Significant setback but recoverable\n   - Low: Manageable disruption\n\n4. **Probability Assessment**: Rate probability based on likelihood of occurrence:\n   - High: Likely to occur (>50%)\n   - Medium: Possible but not certain (20-50%)\n   - Low: Unlikely but possible (<20%)\n\n5. **Actionable Mitigations**: Each mitigation strategy should be:\n   - Specific and actionable\n   - Realistic given the business context\n   - Effective at reducing either impact or probability\n\n6. **Critical Risk Identification**: Highlight 1-2 risks that combine high impact and high probability.\n\n7. **Contingency Planning**: Develop 2-3 contingency plans for worst-case scenarios that:\n   - Address what to do if key risks materialize\n   - Include pivot options or exit strategies\n   - Preserve core value where possible\n\n8. **Repository Insights**: Use repository data (stars, forks, languages) to inform technical risk assessment.\n\n9. **Competitive Awareness**: Use competitive analysis to identify market positioning risks.\n\n10. **Balanced Perspective**: Present risks honestly without being overly pessimistic or optimistic.\n\nRemember: A good risk analysis doesn't just identify problems but provides a roadmap for navigating uncertainty. The goal is to help the business prepare for challenges, not to discourage pursuit of the idea."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -328,
+        -260
+      ],
+      "id": "61646dab-2fa0-4fcf-8cda-9bc8a27bfbe8",
+      "name": "RiskAnalysisAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "9"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=Risks & Mitigations for {{ $('FormatInputData').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.criticalRisks.join(', ') }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -360
+      ],
+      "id": "00eaecb5-eca4-4858-bfc4-81aa7536bbb0",
+      "name": "StoreRiskAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with RiskAnalysisAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "risk-analysis-agent"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "04674474-e353-4a05-9c31-680748750ba7",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -580,
+        -260
+      ],
+      "id": "10455168-41f6-44b1-8e20-eb33a1ceb32f",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by RiskAnalysisAgent\nconst idea = $('GetIdeasWithoutRiskAnalysis').first().json;\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Get competitive analysis if available\nconst competitiveAnalysis = idea.analysis_results.find(result => \n  result.analysis_type_id === 5\n);\n\nlet competitiveAnalysisData = null;\nif (competitiveAnalysis && competitiveAnalysis.analysis_payload) {\n  try {\n    competitiveAnalysisData = typeof competitiveAnalysis.analysis_payload === 'string'\n      ? JSON.parse(competitiveAnalysis.analysis_payload)\n      : competitiveAnalysis.analysis_payload;\n  } catch (e) {\n    console.log('Error parsing competitive analysis:', e);\n  }\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: idea.repository.id,\n    name: idea.repository.name,\n    full_name: idea.repository.full_name,\n    description: idea.repository.description,\n    html_url: idea.repository.html_url,\n    stargazers_count: idea.repository.stargazers_count,\n    forks_count: idea.repository.forks_count,\n    topics: idea.repository.topics,\n    license_name: idea.repository.license_name,\n    languages: idea.repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  },\n  competitiveAnalysis: competitiveAnalysisData\n};\n\nreturn { json: formattedData };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -260
+      ],
+      "id": "1f580739-9a7b-4fd7-8b22-43c6919bd96b",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        -135
+      ],
+      "id": "64a95bf8-2c0f-46e1-9a04-0f2748083cbb",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_go_to_market"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -360
+      ],
+      "id": "db90b85c-5eba-4d6a-89ab-3d66333b3116",
+      "name": "UpdateIdeaStatus",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Tavily Search is an AI-powered search engine designed to quickly retrieve real-time and highly relevant information from diverse sources on the internet. It helps risk analysts identify potential threats, regulatory issues, and industry-specific risks that might affect a business idea.",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "tavilyApi",
+        "sendBody": true,
+        "parametersBody": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        -360,
+        -160
+      ],
+      "id": "3e47fa95-442f-4a1f-b9ee-a005be70b295",
+      "name": "Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "FvSqRRWfK0b7s1yz",
+          "name": "Tavily account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "RiskAnalysisAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RiskAnalysisAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "RiskAnalysisAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeasWithoutRiskAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutRiskAnalysis": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RiskAnalysisAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreRiskAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreRiskAnalysis": {
+      "main": [
+        [
+          {
+            "node": "UpdateIdeaStatus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "RiskAnalysisAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateIdeaStatus": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "RiskAnalysisAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "06052a78-c82a-4932-8ddd-d0123a36eaf7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "gWcpAa6p1fCefAZW",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    },
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    }
+  ]
+}

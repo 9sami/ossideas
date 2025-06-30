@@ -196,6 +196,69 @@
         "description": "Coordinates the generation of technical stack recommendations for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/tech-stack-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-metrics": {
+      "name": "Idea Engine - Success Metrics Generator",
+      "description": "Defines success metrics and KPIs for business ideas",
+      "agents": [
+        {
+          "id": "metrics-agent",
+          "name": "Metrics Agent",
+          "description": "Creates comprehensive metrics framework across the customer journey",
+          "workflowPath": "prompts/workflows/idea-engine/metrics-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/MetricsAgent/system_prompt.md",
+          "inputSchema": "prompts/MetricsAgent/input_required.json",
+          "outputSchema": "prompts/MetricsAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "metrics-orchestrator",
+        "name": "Metrics Orchestrator",
+        "description": "Coordinates the generation of success metrics for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/metrics-orchestrator.n8n.workflow.json"
+      }
+    },
+    "idea-engine-risk-analysis": {
+      "name": "Idea Engine - Risk Analysis Generator",
+      "description": "Identifies potential risks and mitigation strategies for business ideas",
+      "agents": [
+        {
+          "id": "risk-analysis-agent",
+          "name": "Risk Analysis Agent",
+          "description": "Identifies critical risks and develops mitigation strategies",
+          "workflowPath": "prompts/workflows/idea-engine/risk-analysis-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/RiskAnalysisAgent/system_prompt.md",
+          "inputSchema": "prompts/RiskAnalysisAgent/input_required.json",
+          "outputSchema": "prompts/RiskAnalysisAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "risk-analysis-orchestrator",
+        "name": "Risk Analysis Orchestrator",
+        "description": "Coordinates the generation of risk analysis for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/risk-analysis-orchestrator.n8n.workflow.json"
+      }
+    },
+    "idea-engine-go-to-market": {
+      "name": "Idea Engine - Go-to-Market Plan Generator",
+      "description": "Develops launch strategies and marketing plans for business ideas",
+      "agents": [
+        {
+          "id": "go-to-market-agent",
+          "name": "Go-to-Market Agent",
+          "description": "Creates effective launch channels and marketing tactics",
+          "workflowPath": "prompts/workflows/idea-engine/go-to-market-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/GoToMarketAgent/system_prompt.md",
+          "inputSchema": "prompts/GoToMarketAgent/input_required.json",
+          "outputSchema": "prompts/GoToMarketAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "go-to-market-orchestrator",
+        "name": "Go-to-Market Orchestrator",
+        "description": "Coordinates the generation of go-to-market plans for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/go-to-market-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }

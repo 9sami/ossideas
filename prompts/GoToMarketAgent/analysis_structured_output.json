@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "launchChannels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 200
+      },
+      "minItems": 3,
+      "maxItems": 5,
+      "description": "Specific channels to find first users"
+    },
+    "launchHook": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 300,
+      "description": "Compelling offer or angle to drive urgency"
+    },
+    "targetAudience": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 300,
+      "description": "Precise definition of ideal early adopters"
+    },
+    "marketingTactics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 300
+      },
+      "minItems": 3,
+      "maxItems": 5,
+      "description": "Specific marketing tactics for launch phase"
+    },
+    "timelineToLaunch": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 300,
+      "description": "Realistic timeframe with key milestones"
+    },
+    "successCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 200
+      },
+      "minItems": 3,
+      "maxItems": 5,
+      "description": "Measurable indicators of successful launch"
+    }
+  },
+  "required": ["launchChannels", "launchHook", "targetAudience", "marketingTactics", "timelineToLaunch", "successCriteria"],
+  "additionalProperties": false
+}
