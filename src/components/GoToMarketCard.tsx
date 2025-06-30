@@ -1,26 +1,7 @@
 import React, { useState } from 'react';
 import { Rocket, ChevronDown, ChevronUp, Users, Zap, Calendar, Target, Megaphone } from 'lucide-react';
+import { AnalysisResult, GoToMarketData } from './AnalysisResults';
 
-interface GoToMarketData {
-  launchChannels: string[];
-  launchHook: string;
-  targetAudience: string;
-  marketingTactics: string[];
-  timelineToLaunch: string;
-  successCriteria: string[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | GoToMarketData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
 
 interface GoToMarketCardProps {
   analysis: AnalysisResult;

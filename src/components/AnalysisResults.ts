@@ -83,6 +83,20 @@ export interface RiskAnalysisData {
   contingencyPlans: string[];
 }
 
+interface PricingTier {
+  name: string;
+  price: string;
+  keyFeatures: string[];
+}
+
+export interface MonetizationStrategyData {
+  pricingModel: string;
+  pricingTiers: PricingTier[];
+  valueMetric: string;
+  revenueStreams: string[];
+}
+
+
 // --- Unified AnalysisResult ---
 export type RepositoryAnalysisPayload =
   | CompetitiveAnalysisData
@@ -90,7 +104,37 @@ export type RepositoryAnalysisPayload =
   | MetricsData
   | MVPFeaturesData
   | RiskAnalysisData
+  | ActionItemsData
+  | GoToMarketData
+  | MonetizationStrategyData
   | string;
+
+
+export interface GoToMarketData {
+  launchChannels: string[];
+  launchHook: string;
+  targetAudience: string;
+  marketingTactics: string[];
+  timelineToLaunch: string;
+  successCriteria: string[];
+}
+export interface ActionItemsData {
+  actionItems: ActionItem[];
+  immediateNextSteps: string[];
+  milestones: Milestone[];
+}
+interface ActionItem {
+  task: string;
+  priority: 'high' | 'medium' | 'low';
+  timeframe: string;
+  resources: string;
+}
+
+interface Milestone {
+  name: string;
+  description: string;
+  targetDate: string;
+}
 
 export interface AnalysisResult {
   id: string;
