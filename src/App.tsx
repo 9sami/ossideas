@@ -30,7 +30,7 @@ import IdeaDetail from './components/IdeaDetail';
 import BuildPage from './components/BuildPage';
 import IdeaAgentPage from './components/IdeaAgentPage';
 import CategoriesPage from './components/CategoriesPage';
-
+import ProfileEdit from './components/ProfileEdit';
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +115,7 @@ const AppContent: React.FC = () => {
                 />
               }
             />
+            <Route path="/edit-profile" element={<ProfileEdit />} />
             <Route path="/repositories/:id" element={<RepositoryDetail />} />
             <Route path="/ideas/:id" element={<IdeaDetail />} />
             <Route path="/:owner/:repo" element={<IdeaDetail />} />
