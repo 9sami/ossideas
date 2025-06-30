@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-
-export interface Category {
-  category_name: string;
-  idea_count: number;
-  sample_idea_id: string;
-}
+import { Category } from '../types';
 
 export const useCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -18,9 +13,8 @@ export const useCategories = () => {
 
     try {
       const { data, error: fetchError } = await supabase
-        .from('auto_categories')
-        .select('*')
-        .order('idea_count', { ascending: false });
+        .from('categories')
+        .select('id, name');
 
       if (fetchError) {
         throw fetchError;
@@ -29,7 +23,9 @@ export const useCategories = () => {
       setCategories(data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+      setError(
+        err instanceof Error ? err.message : 'Failed to fetch categories',
+      );
     } finally {
       setLoading(false);
     }
