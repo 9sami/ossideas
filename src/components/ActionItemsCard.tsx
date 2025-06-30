@@ -1,36 +1,9 @@
 import React, { useState } from 'react';
 import { ListChecks, ChevronDown, ChevronUp, Clock, Flag, Calendar } from 'lucide-react';
+import { ActionItemsData, AnalysisResult } from './AnalysisResults';
 
-interface ActionItem {
-  task: string;
-  priority: 'high' | 'medium' | 'low';
-  timeframe: string;
-  resources: string;
-}
 
-interface Milestone {
-  name: string;
-  description: string;
-  targetDate: string;
-}
 
-interface ActionItemsData {
-  actionItems: ActionItem[];
-  immediateNextSteps: string[];
-  milestones: Milestone[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | ActionItemsData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
 
 interface ActionItemsCardProps {
   analysis: AnalysisResult;
