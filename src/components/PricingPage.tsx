@@ -358,7 +358,7 @@ const PricingPage: React.FC = () => {
         features: product.features,
         icon: Zap,
         stripeProduct: product,
-        buttonText: getButtonText(product, userSubscription),
+        buttonText: 'Coming Soon',
         gradient: 'from-blue-500 to-blue-600',
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-600',
@@ -377,7 +377,7 @@ const PricingPage: React.FC = () => {
         icon: Crown,
         popular: product.popular,
         stripeProduct: product,
-        buttonText: 'Contact Sales',
+        buttonText: 'Coming Soon',
         gradient: 'from-orange-500 to-orange-600',
         iconBg: 'bg-orange-100',
         iconColor: 'text-orange-600',
@@ -403,7 +403,7 @@ const PricingPage: React.FC = () => {
       ],
       icon: Building2,
       enterprise: true,
-      buttonText: 'Contact Sales',
+      buttonText: 'Coming Soon',
       gradient: 'from-gray-500 to-gray-600',
       iconBg: 'bg-gray-100',
       iconColor: 'text-gray-600',
@@ -438,34 +438,24 @@ const PricingPage: React.FC = () => {
     }
 
     // Check if this is the current plan (match by price ID for accuracy)
-    if (subscription.stripe_price_id === product.priceId) {
-      if (subscription.cancel_at_period_end) {
+    if (subscription.plan_name === product.name) {
+      if (subscription.status === 'canceled') {
         return 'Reactivate Plan';
       }
       return 'Current Plan';
     }
 
-    // Check if it's an upgrade or downgrade based on price
-    const currentPlanPrice = subscription.amount_cents;
-    const targetPlanPrice = product.price;
-
-    if (targetPlanPrice > currentPlanPrice) {
-      return `Upgrade to ${product.name}`;
-    } else if (targetPlanPrice < currentPlanPrice) {
-      return `Downgrade to ${product.name}`;
-    } else {
-      // Same price, different interval
-      return `Switch to ${product.interval}ly`;
-    }
+    // For simplicity, just return a generic upgrade/downgrade message
+    return `Switch to ${product.name}`;
   }
 
   function isCurrentPlan(plan: PricingPlan): boolean {
-    if (!userSubscription || !plan.stripeProduct) return false;
-    return userSubscription.stripe_price_id === plan.stripeProduct.priceId;
+    if (!userSubscription) return false;
+    return userSubscription.plan_name === plan.name;
   }
 
   const handleSubscribe = async (plan: PricingPlan) => {
-    if (plan.enterprise || plan.id === 'pro-monthly' || plan.id === 'pro-yearly') {
+    if (plan.enterprise || plan.id === 'pro-monthly' || plan.id === 'pro-yearly' || plan.id === 'basic-monthly' || plan.id === 'basic-yearly') {
       // Handle enterprise contact
       window.open(
         'mailto:enterprise@ossideas.com?subject=Enterprise Plan Inquiry',
@@ -507,11 +497,11 @@ const PricingPage: React.FC = () => {
     // If user has an active subscription, handle plan changes
     if (userSubscription && userSubscription.is_active) {
       // If this is the current plan and canceled, handle reactivation
-      if (isCurrentPlan(plan) && userSubscription.cancel_at_period_end) {
+      if (isCurrentPlan(plan) && userSubscription.status === 'canceled') {
         setLoadingPlan(plan.id);
         try {
           const result = await reactivateSubscription(
-            userSubscription.stripe_subscription_id,
+            userSubscription.id,
           );
           if (result.success) {
             setSuccessMessage(
@@ -533,7 +523,7 @@ const PricingPage: React.FC = () => {
       }
 
       // If this is the current plan and not canceled, don't allow action
-      if (isCurrentPlan(plan) && !userSubscription.cancel_at_period_end) {
+      if (isCurrentPlan(plan) && userSubscription.status !== 'canceled') {
         return;
       }
 
@@ -542,10 +532,10 @@ const PricingPage: React.FC = () => {
         setLoadingPlan(plan.id);
         try {
           console.log(
-            `Updating subscription from ${userSubscription.stripe_price_id} to ${plan.stripeProduct.priceId}`,
+            `Updating subscription from ${userSubscription.plan_name} to ${plan.name}`,
           );
           const result = await updateSubscription(
-            userSubscription.stripe_subscription_id,
+            userSubscription.id,
             plan.stripeProduct.priceId,
           );
           if (result.success) {
@@ -645,7 +635,7 @@ const PricingPage: React.FC = () => {
   };
 
   const handleCancelSubscription = async () => {
-    if (!userSubscription || !userSubscription.stripe_subscription_id) {
+    if (!userSubscription) {
       return;
     }
 
@@ -656,7 +646,7 @@ const PricingPage: React.FC = () => {
     ) {
       try {
         const result = await cancelSubscription(
-          userSubscription.stripe_subscription_id,
+          userSubscription.id,
         );
         if (result.success) {
           setSuccessMessage(
@@ -706,19 +696,17 @@ const PricingPage: React.FC = () => {
   };
 
   const getStatusText = (subscription: UserSubscription) => {
-    if (subscription.cancel_at_period_end) {
-      return `Cancels on ${formatDate(subscription.current_period_end)}`;
+    if (subscription.status === 'canceled') {
+      return `Subscription canceled`;
     }
 
     switch (subscription.status) {
       case 'active':
-        return `Renews on ${formatDate(subscription.current_period_end)}`;
+        return `Active subscription`;
       case 'trialing':
-        return `Trial ends on ${formatDate(subscription.current_period_end)}`;
+        return `Trial subscription`;
       case 'past_due':
         return 'Payment past due';
-      case 'canceled':
-        return 'Subscription canceled';
       default:
         return subscription.status;
     }
@@ -930,36 +918,21 @@ const PricingPage: React.FC = () => {
                           : userSubscription.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">
-                      {formatPrice(
-                        userSubscription.amount_cents / 100,
-                        userSubscription.currency,
-                      )}{' '}
-                      per {userSubscription.plan_interval}
-                    </p>
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-1" />
                       {getStatusText(userSubscription)}
                     </div>
-                    {userSubscription.payment_method_brand &&
-                      userSubscription.payment_method_last4 && (
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          {userSubscription.payment_method_brand.toUpperCase()}{' '}
-                          ending in {userSubscription.payment_method_last4}
-                        </div>
-                      )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 space-x-2">
-                  {userSubscription.cancel_at_period_end && (
+                  {userSubscription.status === 'canceled' && (
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
                       <AlertCircle className="h-3 w-3 mr-1" />
                       Ending Soon
                     </div>
                   )}
                   {userSubscription.is_active &&
-                    !userSubscription.cancel_at_period_end && (
+                    userSubscription.status !== 'canceled' && (
                       <button
                         onClick={handleCancelSubscription}
                         disabled={subscriptionManagementLoading}
@@ -1107,11 +1080,11 @@ const PricingPage: React.FC = () => {
                       loadingPlan === plan.id ||
                       subscriptionManagementLoading ||
                       (isCurrentUserPlan &&
-                        !userSubscription?.cancel_at_period_end)
+                        userSubscription?.status !== 'canceled')
                     }
                     className={`w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
                       isCurrentUserPlan &&
-                      !userSubscription?.cancel_at_period_end
+                      userSubscription?.status !== 'canceled'
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                         : plan.popular || isCurrentUserPlan
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`
@@ -1129,7 +1102,7 @@ const PricingPage: React.FC = () => {
                         <span>{plan.buttonText}</span>
                         {!(
                           isCurrentUserPlan &&
-                          !userSubscription?.cancel_at_period_end
+                          userSubscription?.status !== 'canceled'
                         ) && <ArrowRight className="h-4 w-4" />}
                       </>
                     )}
