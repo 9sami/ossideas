@@ -101,7 +101,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
   ];
 
   const handleIdeaClick = (idea: IdeaData) => {
-    navigate(`/ideas/${idea.id}`);
+    // Navigate using repository full name pattern
+    if (idea.repository?.full_name) {
+      navigate(`/${idea.repository.full_name}`);
+    } else if (idea.ossProject && idea.ossProject.includes('/')) {
+      navigate(`/${idea.ossProject}`);
+    } else {
+      console.error('No repository full name available for idea:', idea);
+      navigate('/ideas'); // Fallback to ideas page
+    }
   };
 
   const formatDate = (dateString: string) => {

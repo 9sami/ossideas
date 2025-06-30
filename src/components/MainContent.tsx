@@ -189,8 +189,9 @@ const MainContent: React.FC<MainContentProps> = ({
       // Fallback to ossProject if it has a slash (likely a repo name)
       navigate(`/${idea.ossProject}`);
     } else {
-      // Last resort - use ID-based navigation
-      navigate(`/ideas/${idea.id}`);
+      // If no repository full name is available, use a default fallback
+      console.error('No repository full name available for idea:', idea);
+      navigate('/ideas'); // Redirect to ideas page as fallback
     }
   };
 

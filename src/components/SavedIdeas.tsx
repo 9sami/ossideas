@@ -11,8 +11,15 @@ const SavedIdeas: React.FC = () => {
   const { savedIdeas, loading, error } = useSavedIdeas();
 
   const handleIdeaSelect = (idea: IdeaData) => {
-    // All saved ideas come from the ideas table, so navigate to idea detail
-    navigate(`/ideas/${idea.id}`);
+    // Navigate using repository full name pattern
+    if (idea.repository?.full_name) {
+      navigate(`/${idea.repository.full_name}`);
+    } else if (idea.ossProject && idea.ossProject.includes('/')) {
+      navigate(`/${idea.ossProject}`);
+    } else {
+      console.error('No repository full name available for idea:', idea);
+      navigate('/ideas'); // Fallback to ideas page
+    }
   };
 
   if (loading) {
