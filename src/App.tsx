@@ -5,7 +5,6 @@ import { AuthProvider } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import IdeaDetail from './components/IdeaDetail';
-import RepositoryDetail from './components/RepositoryDetail';
 import UserProfile from './components/UserProfile';
 import SavedIdeas from './components/SavedIdeas';
 import MySubmissions from './components/MySubmissions';
@@ -106,7 +105,7 @@ const AppContent: React.FC = () => {
               }
             />
             <Route path="/ideas/:id" element={<IdeaDetail />} />
-            <Route path="/repositories/:id" element={<RepositoryDetail />} />
+            <Route path="/:owner/:repo" element={<IdeaDetail />} />
             <Route
               path="/profile"
               element={
