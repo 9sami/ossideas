@@ -18,6 +18,7 @@ import {
   DollarSign,
   ListChecks,
   Rocket,
+  Upload,
 } from 'lucide-react';
 import { useIdeaById } from '../hooks/useIdeaById';
 import { useSavedIdeas } from '../hooks/useSavedIdeas';
@@ -93,18 +94,40 @@ const IdeaDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center max-w-md">
-          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
+          <AlertTriangle className="h-16 w-16 text-orange-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Idea Not Found
+            {repositoryFullName 
+              ? `No Idea Found for ${repositoryFullName}`
+              : 'Idea Not Found'}
           </h2>
           <p className="text-gray-600 mb-6 leading-relaxed">
-            {error || 'The idea you are looking for does not exist.'}
+            {repositoryFullName 
+              ? `We haven't generated a business idea for this repository yet. Would you like to submit it for analysis?`
+              : 'The idea you are looking for does not exist or has been removed.'}
           </p>
-          <button
-            onClick={() => navigate('/ideas')}
-            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
-            Back to Ideas
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {repositoryFullName ? (
+              <>
+                <button
+                  onClick={() => navigate('/submit')}
+                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center space-x-2">
+                  <Upload className="h-5 w-5" />
+                  <span>Submit Repository</span>
+                </button>
+                <button
+                  onClick={() => navigate('/ideas')}
+                  className="px-6 py-3 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                  Browse Ideas
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => navigate('/ideas')}
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+                Back to Ideas
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
