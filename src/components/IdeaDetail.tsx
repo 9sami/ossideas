@@ -29,6 +29,9 @@ import TechStackCard from './TechStackCard';
 import MetricsCard from './MetricsCard';
 import RiskAnalysisCard from './RiskAnalysisCard';
 import GoToMarketCard from './GoToMarketCard';
+import MVPFeaturesCard from './MVPFeaturesCard';
+import ActionItemsCard from './ActionItemsCard';
+import CompetitiveAnalysisCard from './CompetitiveAnalysisCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -97,6 +100,33 @@ const IdeaDetail: React.FC = () => {
       lastCommit: 'Updated 2 days ago',
     };
   }, [idea?.competitiveAdvantage, isRepositoryBased, idea]);
+
+  // Find MVP features analysis
+  const mvpFeatures = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 3
+    );
+  }, [idea?.analysisResults]);
+
+  // Find action items analysis
+  const actionItems = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 4
+    );
+  }, [idea?.analysisResults]);
+
+  // Find competitive analysis
+  const competitiveAnalysis = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 5
+    );
+  }, [idea?.analysisResults]);
 
   // Find monetization strategy analysis
   const monetizationStrategy = useMemo(() => {
@@ -340,6 +370,27 @@ const IdeaDetail: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MVP Features Section */}
+      {mvpFeatures && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <MVPFeaturesCard analysis={mvpFeatures} />
+        </div>
+      )}
+
+      {/* Action Items Section */}
+      {actionItems && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <ActionItemsCard analysis={actionItems} />
+        </div>
+      )}
+
+      {/* Competitive Analysis Section */}
+      {competitiveAnalysis && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <CompetitiveAnalysisCard analysis={competitiveAnalysis} />
         </div>
       )}
 
