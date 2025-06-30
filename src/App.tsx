@@ -20,6 +20,7 @@ import ScrollToTop from './components/ScrollToTop';
 import SubmitRepositoryForm from './components/SubmitRepositoryForm';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { useAuth } from './hooks/useAuth';
+import GoogleTag from './components/GoogleAnalytics';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -163,6 +164,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <GoogleTag />
         <ScrollToTop />
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />

@@ -133,6 +133,27 @@
         "description": "Coordinates the generation of action items for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/action-items-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-competitive-analysis": {
+      "name": "Idea Engine - Competitive Analysis Generator",
+      "description": "Analyzes competitive landscape and advantages for business ideas",
+      "agents": [
+        {
+          "id": "competitive-analysis-agent",
+          "name": "Competitive Analysis Agent",
+          "description": "Identifies competitors and articulates unique value propositions",
+          "workflowPath": "prompts/workflows/idea-engine/competitive-analysis-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/CompetitiveAnalysisAgent/system_prompt.md",
+          "inputSchema": "prompts/CompetitiveAnalysisAgent/input_required.json",
+          "outputSchema": "prompts/CompetitiveAnalysisAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "competitive-analysis-orchestrator",
+        "name": "Competitive Analysis Orchestrator",
+        "description": "Coordinates the generation of competitive analysis for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/competitive-analysis-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }
