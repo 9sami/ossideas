@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
       id: 'home',
       icon: Home,
       label: 'Home',
-      path: '/',
+      path: '/ideas',
       onClick: () => navigate('/'),
     },
     {

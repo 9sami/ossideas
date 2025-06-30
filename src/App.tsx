@@ -27,6 +27,7 @@ import { useAuth } from './hooks/useAuth';
 import GoogleTag from './components/GoogleAnalytics';
 import LandingPage from './components/LandingPage';
 import boltBadge from './assets/black_circle_360x360.png';
+import IdeaDetail from './components/IdeaDetail';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -104,7 +105,7 @@ const AppContent: React.FC = () => {
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/" element={<Navigate to="/landing" replace />} />
             <Route
-              path="/ideas/:id"
+              path="/ideas"
               element={
                 <MainContent
                   filterOpen={filterOpen}
@@ -114,6 +115,8 @@ const AppContent: React.FC = () => {
               }
             />
             <Route path="/repositories/:id" element={<RepositoryDetail />} />
+            <Route path="/ideas/:id" element={<IdeaDetail />} />
+            <Route path="/:owner/:repo" element={<IdeaDetail />} />
             <Route
               path="/profile"
               element={

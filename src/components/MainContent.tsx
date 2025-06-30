@@ -130,6 +130,23 @@ const MainContent: React.FC<MainContentProps> = ({
       .map((idea) => idea.id);
   }, [ideas]);
 
+  // Find the top 4 ideas with highest repository star counts to mark as community picks
+  const topCommunityPickIdsWithStars = useMemo(() => {
+    // Sort all ideas by repository star count and get top 4
+    return ideas
+      .filter(idea => idea.repository?.stargazers_count)
+      .sort((a, b) => {
+        const starsA = a.repository?.stargazers_count || 0;
+        const starsB = b.repository?.stargazers_count || 0;
+        return starsB - starsA;
+      })
+      .slice(0, 4)
+      .map(idea => ({
+        id: idea.id,
+        stars: idea.repository?.stargazers_count || 0
+      }));
+  }, [ideas]);
+
   // Filter ideas for different sections
   const trendingIdeas = useMemo(() => {
     // Get top 4 ideas with highest teardown scores for trending
@@ -146,17 +163,18 @@ const MainContent: React.FC<MainContentProps> = ({
   }, [convertedIdeas, ideas]);
 
   const communityPicks = useMemo(() => {
-    const filtered = convertedIdeas.filter((idea) => idea.communityPick);
-
-    // Sort by repository stars (highest first) and take top 4
-    return filtered
-      .sort(
-        (a, b) =>
-          (b.repositoryStargazersCount || 0) -
-          (a.repositoryStargazersCount || 0),
-      )
-      .slice(0, 4);
-  }, [convertedIdeas]);
+    // Get ideas that match the top community pick IDs
+    const communityPickIds = topCommunityPickIdsWithStars.map(item => item.id);
+    
+    return convertedIdeas
+      .filter(idea => communityPickIds.includes(idea.id))
+      .sort((a, b) => {
+        // Sort by repository stars (highest first)
+        const starsA = ideas.find(i => i.id === a.id)?.repository?.stargazers_count || 0;
+        const starsB = ideas.find(i => i.id === b.id)?.repository?.stargazers_count || 0;
+        return starsB - starsA;
+      });
+  }, [convertedIdeas, ideas, topCommunityPickIdsWithStars]);
 
   // Discovery section - all ideas sorted by generated date (newest first)
   const discoveryIdeas = useMemo(() => {
@@ -168,9 +186,18 @@ const MainContent: React.FC<MainContentProps> = ({
     });
   }, [convertedIdeas]);
 
-  // Handle idea selection - navigate to idea detail page
+  // Handle idea selection - navigate to idea detail page using repository full name
   const handleIdeaSelect = (idea: IdeaData) => {
-    navigate(`/ideas/${idea.id}`);
+    if (idea.repository?.full_name) {
+      // Navigate using repository full name pattern (owner/repo)
+      navigate(`/${idea.repository.full_name}`);
+    } else if (idea.ossProject && idea.ossProject.includes('/')) {
+      // Fallback to ossProject if it has a slash (likely a repo name)
+      navigate(`/${idea.ossProject}`);
+    } else {
+      // Last resort - use ID-based navigation
+      navigate(`/ideas/${idea.id}`);
+    }
   };
 
   // Helper function to get section description
@@ -328,6 +355,8 @@ const MainContent: React.FC<MainContentProps> = ({
                       ...idea,
                       // Mark as trending if it's in the top 4 by teardown score
                       isTrending: topTrendingIdeasIds.includes(idea.id),
+                      // Mark as community pick if it's in the top 4 by star count
+                      communityPick: topCommunityPickIdsWithStars.some(item => item.id === idea.id)
                     }}
                     onClick={() => handleIdeaSelect(idea)}
                     onRegisterClick={onRegisterClick}
@@ -354,6 +383,9 @@ const MainContent: React.FC<MainContentProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {discoveryIdeas.map((idea, index) => {
+                  // Check if this idea is in the top community picks by star count
+                  const isCommunityPick = topCommunityPickIdsWithStars.some(item => item.id === idea.id);
+                  
                   if (discoveryIdeas.length === index + 1) {
                     return (
                       <div key={idea.id} ref={lastIdeaElementRef}>
@@ -362,6 +394,8 @@ const MainContent: React.FC<MainContentProps> = ({
                             ...idea,
                             // Mark as trending if it's in the top 4 by teardown score
                             isTrending: topTrendingIdeasIds.includes(idea.id),
+                            // Mark as community pick if it's in the top 4 by star count
+                            communityPick: isCommunityPick
                           }}
                           onClick={() => handleIdeaSelect(idea)}
                           onRegisterClick={onRegisterClick}
@@ -376,6 +410,8 @@ const MainContent: React.FC<MainContentProps> = ({
                           ...idea,
                           // Mark as trending if it's in the top 4 by teardown score
                           isTrending: topTrendingIdeasIds.includes(idea.id),
+                          // Mark as community pick if it's in the top 4 by star count
+                          communityPick: isCommunityPick
                         }}
                         onClick={() => handleIdeaSelect(idea)}
                         onRegisterClick={onRegisterClick}

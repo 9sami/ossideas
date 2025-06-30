@@ -21,6 +21,21 @@ export interface IdeaData {
   generatedAt?: string;
   repositoryStargazersCount?: number;
   industries?: string[];
+  repository?: any;
+  analysisResults?: Array<{
+    id: string;
+    analysis_type_id: number;
+    title: string;
+    summary_description: string | null;
+    overall_score: number | null;
+    analysis_payload: Record<string, unknown>;
+    analysis_type?: {
+      id: number;
+      name: string;
+      slug: string;
+      description: string | null;
+    };
+  }>;
 }
 
 export interface FilterOptions {
