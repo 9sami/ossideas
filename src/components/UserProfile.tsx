@@ -176,8 +176,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center space-x-4 sm:space-x-6">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold flex-shrink-0">
-                {getInitials(user.fullName, user.email)}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold flex-shrink-0 overflow-hidden">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName || user.email}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  getInitials(user.fullName, user.email)
+                )}
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -214,7 +222,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   })}
                 </div>
               </div>
-              <button onClick={() => navigate('/edit-profile')} className="w-full sm:w-auto flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+              <button
+                onClick={() => navigate('/edit-profile')}
+                className="w-full sm:w-auto flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                 <Settings className="h-4 w-4" />
                 <span>Edit Profile</span>
               </button>
