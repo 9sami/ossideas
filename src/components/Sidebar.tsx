@@ -10,6 +10,7 @@ import {
   X,
   CreditCard,
   Hammer,
+  Sparkles,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -65,6 +66,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
       label: 'Build',
       path: '/build',
       onClick: () => navigate('/build'),
+    },
+    {
+      id: 'idea-agent',
+      icon: Sparkles,
+      label: 'Idea Agent',
+      path: '/idea-agent',
+      onClick: () => navigate('/idea-agent'),
     },
     {
       id: 'submit',
