@@ -137,17 +137,6 @@ const AppContent: React.FC = () => {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/build" element={<BuildPage />} />
             <Route path="/idea-agent" element={<IdeaAgentPage />} />
-            <Route
-              path="/categories"
-              element={
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Categories</h1>
-                  <p className="text-gray-600">
-                    Categories page coming soon...
-                  </p>
-                </div>
-              }
-            />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route
               path="/community"
