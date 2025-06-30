@@ -17,6 +17,10 @@ import { User as UserType } from '../types/auth';
 import FullScreenLoader from './FullScreenLoader';
 import { useSavedIdeas } from '../hooks/useSavedIdeas';
 import { useNavigate } from 'react-router-dom';
+import { useUserPreferences } from '../hooks/useUserPreferences';
+import { useUserActivity } from '../hooks/useUserActivity';
+import { useSubmissions } from '../hooks/useSubmissions';
+import { useCategories } from '../hooks/useCategories';
 
 interface UserProfileProps {
   onIdeaSelect: (idea: IdeaData) => void;
@@ -33,17 +37,19 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [activeTab, setActiveTab] = useState<
     'saved' | 'preferences' | 'activity'
   >('saved');
-  const [loading] = useState(false);
   const navigate = useNavigate();
   const { savedIdeas: realSavedIdeas, loading: savedIdeasLoading } =
     useSavedIdeas();
+  const { userCategories, loading: preferencesLoading } = useUserPreferences();
+  const { activities, loading: activityLoading } = useUserActivity();
+  const { submissions, loading: submissionsLoading } = useSubmissions();
+  const { categories: allCategories, loading: categoriesLoading } =
+    useCategories();
 
   // Search and pagination state
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const userCategories = ['AI/ML', 'DevTools', 'SaaS', 'Data Analytics'];
 
   // Filter ideas based on search query
   const filteredIdeas = useMemo(() => {
@@ -82,11 +88,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
     },
     {
       label: 'Categories',
-      value: '4',
+      value: userCategories.length.toString(),
       icon: TrendingUp,
       color: 'text-blue-500',
     },
-    { label: 'Submissions', value: '3', icon: Plus, color: 'text-green-500' },
+    {
+      label: 'Submissions',
+      value: submissions.length.toString(),
+      icon: Plus,
+      color: 'text-green-500',
+    },
   ];
 
   const handleIdeaClick = (idea: IdeaData) => {
@@ -115,7 +126,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
     setSearchQuery('');
   };
 
-  if (loading) {
+  if (
+    savedIdeasLoading ||
+    preferencesLoading ||
+    activityLoading ||
+    submissionsLoading ||
+    categoriesLoading
+  ) {
     return <FullScreenLoader message="Loading profile..." />;
   }
 
@@ -525,26 +542,19 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     Preferred Categories
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {[
-                      'AI/ML',
-                      'DevTools',
-                      'SaaS',
-                      'E-commerce',
-                      'Data Analytics',
-                      'Security',
-                      'Mobile',
-                      'Web Dev',
-                    ].map((category) => (
+                    {allCategories.map((category) => (
                       <label
-                        key={category}
+                        key={category.id}
                         className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                         <input
                           type="checkbox"
-                          defaultChecked={userCategories.includes(category)}
+                          defaultChecked={userCategories.some(
+                            (userCategory) => userCategory.id === category.id,
+                          )}
                           className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 mr-3"
                         />
                         <span className="text-sm font-medium text-gray-700">
-                          {category}
+                          {category.name}
                         </span>
                       </label>
                     ))}
@@ -589,28 +599,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   Recent Activity
                 </h3>
                 <div className="space-y-4">
-                  {[
-                    {
-                      action: 'Saved idea',
-                      title: 'AI-Powered Documentation Generator',
-                      time: '2 hours ago',
-                    },
-                    {
-                      action: 'Viewed idea',
-                      title: 'Real-time Collaboration Platform',
-                      time: '5 hours ago',
-                    },
-                    {
-                      action: 'Saved idea',
-                      title: 'Smart Contract Testing Suite',
-                      time: '1 day ago',
-                    },
-                    {
-                      action: 'Submitted idea',
-                      title: 'GraphQL Schema Validator',
-                      time: '3 days ago',
-                    },
-                  ].map((activity, index) => (
+                  {activities.map((activity, index) => (
                     <div
                       key={index}
                       className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg gap-2">
@@ -619,11 +608,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
                           {activity.action}
                         </span>
                         <h4 className="font-medium text-gray-900">
-                          {activity.title}
+                          {activity.ideas?.title}
                         </h4>
                       </div>
                       <span className="text-sm text-gray-500 flex-shrink-0">
-                        {activity.time}
+                        {new Date(activity.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   ))}

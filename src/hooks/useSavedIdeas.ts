@@ -4,6 +4,12 @@ import { useAuth } from './useAuth';
 import { IdeaData } from '../types';
 import { convertIdeaToIdeaData, Idea } from './useIdeas';
 
+type SavedIdeaRecord = {
+  idea_id: string;
+  notes: string | null;
+  idea: Idea;
+};
+
 export const useSavedIdeas = () => {
   const { authState } = useAuth();
   const { user } = authState;
@@ -24,10 +30,41 @@ export const useSavedIdeas = () => {
     setError(null);
 
     try {
-      // First, get the saved idea records
+      // Fetch saved ideas with a single query using a join
       const { data: savedRecords, error: savedError } = await supabase
         .from('user_saved_ideas')
-        .select('*')
+        .select<string, SavedIdeaRecord>(
+          `
+          idea_id,
+          notes,
+          idea:ideas!inner(
+            *,
+            repository:repositories(
+              id,
+              full_name,
+              description,
+              stargazers_count,
+              forks_count,
+              topics,
+              license_name,
+              readme_content,
+              languages
+            ),
+            analysis_results(
+              id,
+              analysis_type_id,
+              title,
+              summary_description,
+              overall_score,
+              analysis_payload,
+              analysis_type:analysis_types(
+                name,
+                slug
+              )
+            )
+          )
+        `,
+        )
         .eq('user_id', user.id)
         .eq('status', 'saved');
 
@@ -42,54 +79,18 @@ export const useSavedIdeas = () => {
         return;
       }
 
-      // Get the idea IDs
-      const ideaIds = savedRecords.map((record) => record.idea_id);
-
-      // Fetch the complete idea data with repository and analysis information
-      const { data: ideas, error: ideasError } = await supabase
-        .from('ideas')
-        .select(
-          `
-          *,
-          repository:repositories(
-            id,
-            full_name,
-            description,
-            stargazers_count,
-            forks_count,
-            topics,
-            license_name,
-            readme_content,
-            languages
-          ),
-          analysis_results(
-            id,
-            analysis_type_id,
-            title,
-            summary_description,
-            overall_score,
-            analysis_payload,
-            analysis_type:analysis_types(
-              name,
-              slug
-            )
-          )
-        `,
-        )
-        .in('id', ideaIds);
-
-      if (ideasError) {
-        throw ideasError;
-      }
-
-      // Convert the ideas using the same function as useIdeas hook
-      const transformedIdeas: IdeaData[] = (ideas || []).map((idea: Idea) => {
-        const ideaData = convertIdeaToIdeaData(idea);
+      // Transform the data and update state
+      const transformedIdeas: IdeaData[] = savedRecords.map((record) => {
+        // The 'idea' property contains the full idea object
+        const ideaData = convertIdeaToIdeaData(record.idea);
         return {
           ...ideaData,
-          isSaved: true, // Mark as saved since these are from saved ideas
+          notes: record.notes, // Include notes from the saved record
+          isSaved: true,
         };
       });
+
+      const ideaIds = savedRecords.map((record) => record.idea_id);
 
       setSavedIdeas(transformedIdeas);
       setSavedIdeaIds(new Set(ideaIds));

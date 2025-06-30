@@ -29,6 +29,7 @@ import boltBadge from './assets/black_circle_360x360.png';
 import IdeaDetail from './components/IdeaDetail';
 import BuildPage from './components/BuildPage';
 import IdeaAgentPage from './components/IdeaAgentPage';
+import CategoriesPage from './components/CategoriesPage';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -147,6 +148,7 @@ const AppContent: React.FC = () => {
                 </div>
               }
             />
+            <Route path="/categories" element={<CategoriesPage />} />
             <Route
               path="/community"
               element={

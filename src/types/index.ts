@@ -1,3 +1,16 @@
+export interface Repository {
+  id: number;
+  github_url: string;
+  name: string;
+  description: string;
+  stars: number;
+  forks: number;
+  open_issues: number;
+  created_at: string;
+  updated_at: string;
+  languages: { [key: string]: number };
+}
+
 export interface IdeaData {
   id: string;
   title: string;
@@ -21,7 +34,7 @@ export interface IdeaData {
   generatedAt?: string;
   repositoryStargazersCount?: number;
   industries?: string[];
-  repository?: any;
+  repository?: Repository;
   analysisResults?: Array<{
     id: string;
     analysis_type_id: number;
@@ -46,4 +59,9 @@ export interface FilterOptions {
   isNew: boolean;
   isTrending: boolean;
   communityPick: boolean;
+}
+
+export interface Category {
+  id: number;
+  name: string;
 }
