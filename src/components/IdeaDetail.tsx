@@ -85,6 +85,10 @@ const IdeaDetail: React.FC = () => {
     });
   };
 
+  const handleSubmitRepository = () => {
+    navigate('/submit');
+  };
+
   if (loading) {
     return <FullScreenLoader message="Loading idea details..." />;
   }
@@ -95,16 +99,27 @@ const IdeaDetail: React.FC = () => {
         <div className="text-center max-w-md">
           <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Idea Not Found
+            {repositoryFullName ? 'No Idea Found For This Repository' : 'Idea Not Found'}
           </h2>
           <p className="text-gray-600 mb-6 leading-relaxed">
-            {error || 'The idea you are looking for does not exist.'}
+            {repositoryFullName 
+              ? `We don't have a business idea for ${repositoryFullName} yet. Would you like to submit this repository for analysis?`
+              : error || 'The idea you are looking for does not exist.'}
           </p>
-          <button
-            onClick={() => navigate('/ideas')}
-            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
-            Back to Ideas
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/ideas')}
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+              Back to Ideas
+            </button>
+            {repositoryFullName && (
+              <button
+                onClick={handleSubmitRepository}
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+                Submit This Repository
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
