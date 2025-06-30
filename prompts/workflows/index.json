@@ -238,6 +238,27 @@
         "description": "Coordinates the generation of risk analysis for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/risk-analysis-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-go-to-market": {
+      "name": "Idea Engine - Go-to-Market Plan Generator",
+      "description": "Develops launch strategies and marketing plans for business ideas",
+      "agents": [
+        {
+          "id": "go-to-market-agent",
+          "name": "Go-to-Market Agent",
+          "description": "Creates effective launch channels and marketing tactics",
+          "workflowPath": "prompts/workflows/idea-engine/go-to-market-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/GoToMarketAgent/system_prompt.md",
+          "inputSchema": "prompts/GoToMarketAgent/input_required.json",
+          "outputSchema": "prompts/GoToMarketAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "go-to-market-orchestrator",
+        "name": "Go-to-Market Orchestrator",
+        "description": "Coordinates the generation of go-to-market plans for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/go-to-market-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }

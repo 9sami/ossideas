@@ -28,6 +28,7 @@ import MonetizationStrategyCard from './MonetizationStrategyCard';
 import TechStackCard from './TechStackCard';
 import MetricsCard from './MetricsCard';
 import RiskAnalysisCard from './RiskAnalysisCard';
+import GoToMarketCard from './GoToMarketCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -130,6 +131,15 @@ const IdeaDetail: React.FC = () => {
     
     return idea.analysisResults.find(
       analysis => analysis.analysis_type_id === 9
+    );
+  }, [idea?.analysisResults]);
+
+  // Find go-to-market plan
+  const goToMarketPlan = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 10
     );
   }, [idea?.analysisResults]);
 
@@ -358,6 +368,13 @@ const IdeaDetail: React.FC = () => {
       {riskAnalysis && (
         <div className="max-w-4xl mx-auto px-6 py-4">
           <RiskAnalysisCard analysis={riskAnalysis} />
+        </div>
+      )}
+
+      {/* Go-to-Market Plan Section */}
+      {goToMarketPlan && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <GoToMarketCard analysis={goToMarketPlan} />
         </div>
       )}
 
