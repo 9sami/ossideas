@@ -218,7 +218,7 @@ const Header: React.FC<HeaderProps> = ({
 
                   {/* Profile Dropdown */}
                   {profileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-100">
                       <button
                         onClick={handleProfileClick}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -265,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Search Bar - Only show on ideas page and mobile */}
       {showSearchAndFilter && (
-        <div className="md:hidden bg-white border-b border-gray-200 sticky top-16 z-40">
+        <div className="md:hidden bg-white border-b border-gray-200 sticky top-16 z-10">
           <div className="ml-16 px-2 py-3">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

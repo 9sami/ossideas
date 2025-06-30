@@ -345,7 +345,7 @@ const PricingPage: React.FC = () => {
       iconBg: 'bg-gray-100',
       iconColor: 'text-gray-600',
     },
-    
+
     // Basic Plan
     ...subscriptionProducts
       .filter((product) => product.name === 'Basic')
@@ -455,7 +455,13 @@ const PricingPage: React.FC = () => {
   }
 
   const handleSubscribe = async (plan: PricingPlan) => {
-    if (plan.enterprise || plan.id === 'pro-monthly' || plan.id === 'pro-yearly' || plan.id === 'basic-monthly' || plan.id === 'basic-yearly') {
+    if (
+      plan.enterprise ||
+      plan.id === 'pro-monthly' ||
+      plan.id === 'pro-yearly' ||
+      plan.id === 'basic-monthly' ||
+      plan.id === 'basic-yearly'
+    ) {
       // Handle enterprise contact
       window.open(
         'mailto:enterprise@ossideas.com?subject=Enterprise Plan Inquiry',
@@ -463,7 +469,7 @@ const PricingPage: React.FC = () => {
       );
       return;
     }
-    
+
     if (plan.free) {
       // Handle free plan signup
       if (!authState.user) {
@@ -500,9 +506,7 @@ const PricingPage: React.FC = () => {
       if (isCurrentPlan(plan) && userSubscription.status === 'canceled') {
         setLoadingPlan(plan.id);
         try {
-          const result = await reactivateSubscription(
-            userSubscription.id,
-          );
+          const result = await reactivateSubscription(userSubscription.id);
           if (result.success) {
             setSuccessMessage(
               result.message || 'Subscription reactivated successfully!',
@@ -645,9 +649,7 @@ const PricingPage: React.FC = () => {
       )
     ) {
       try {
-        const result = await cancelSubscription(
-          userSubscription.id,
-        );
+        const result = await cancelSubscription(userSubscription.id);
         if (result.success) {
           setSuccessMessage(
             result.message || 'Subscription canceled successfully!',
@@ -745,6 +747,23 @@ const PricingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Early Bird Access Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
+          <div className="flex items-start space-x-3">
+            <Zap className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Early Bird Access
+              </h3>
+              <p className="text-sm text-blue-700 mt-1">
+                Welcome to our early bird phase! All users currently have free
+                access to our premium features. Paid plans are coming soon. Feel
+                free to explore everything we have to offer!
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Subscription Change Notification */}
         {subscriptionNotification && (
           <div
@@ -1023,9 +1042,7 @@ const PricingPage: React.FC = () => {
                         <div className="text-4xl font-bold text-gray-900 mb-2">
                           {formatPrice(0, currency)}
                         </div>
-                        <div className="text-gray-500">
-                          Forever free
-                        </div>
+                        <div className="text-gray-500">Forever free</div>
                       </div>
                     ) : (
                       <div>
