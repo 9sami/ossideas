@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Github,
@@ -21,6 +21,7 @@ const SubmitRepositoryForm: React.FC<SubmitRepositoryFormProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { authState } = useAuth();
   const { user } = authState;
 
@@ -32,6 +33,18 @@ const SubmitRepositoryForm: React.FC<SubmitRepositoryFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Extract repository URL from query parameters if present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const repoUrl = params.get('repo');
+    if (repoUrl) {
+      setFormData(prev => ({
+        ...prev,
+        githubUrl: repoUrl
+      }));
+    }
+  }, [location.search]);
 
   const handleSignInClick = () => {
     setAuthModalOpen(true);

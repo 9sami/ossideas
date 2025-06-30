@@ -70,6 +70,15 @@ const IdeaDetail: React.FC = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleSubmitRepository = () => {
+    if (repositoryFullName) {
+      const repoUrl = `https://github.com/${repositoryFullName}`;
+      navigate(`/submit?repo=${encodeURIComponent(repoUrl)}`);
+    } else {
+      navigate('/submit');
+    }
+  };
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -83,10 +92,6 @@ const IdeaDetail: React.FC = () => {
       month: 'short',
       day: 'numeric',
     });
-  };
-
-  const handleSubmitRepository = () => {
-    navigate('/submit');
   };
 
   if (loading) {
