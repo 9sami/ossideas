@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import fullLogo from '../assets/full-logo.png';
 import { useState } from 'react';
 import AuthModal from './AuthModal';
+import { useAuth } from '../hooks/useAuth';
 
 const features = [
   {
@@ -86,9 +87,18 @@ const useCases = [
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { authState } = useAuth();
 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
+
+  const handleGetStartedClick = () => {
+    if (authState.user) {
+      navigate('/ideas');
+    } else {
+      openAuthModal();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -267,7 +277,7 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={openAuthModal}
+              onClick={handleGetStartedClick}
               className="w-full sm:w-auto px-8 py-4 bg-white text-orange-600 rounded-lg font-semibold hover:bg-orange-50 transition border border-orange-200">
               Get Started Free
             </button>
