@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "properties": {
+    "coreComponents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Name of the technical component"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 300,
+            "description": "What this component does in the system"
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Primary and alternative technology recommendations"
+          }
+        },
+        "required": ["name", "purpose", "alternatives"],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 10,
+      "description": "Core technical components needed for implementation"
+    },
+    "workflow": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 100,
+                "description": "Name of the implementation step"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 20,
+                "maxLength": 500,
+                "description": "Detailed description of this implementation step"
+              }
+            },
+            "required": ["name", "description"],
+            "additionalProperties": false
+          },
+          "minItems": 3,
+          "maxItems": 10,
+          "description": "Sequential implementation steps"
+        }
+      },
+      "required": ["steps"],
+      "additionalProperties": false,
+      "description": "Implementation workflow with logical steps"
+    },
+    "implementationComplexity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Overall assessment of implementation complexity"
+    }
+  },
+  "required": ["coreComponents", "workflow", "implementationComplexity"],
+  "additionalProperties": false
+}

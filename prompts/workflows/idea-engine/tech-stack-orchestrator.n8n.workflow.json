@@ -1,0 +1,502 @@
+{
+  "name": "Idea Engine - 8. Tech Stack Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"coreComponents\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the technical component\"\n          },\n          \"purpose\": {\n            \"type\": \"string\",\n            \"description\": \"What this component does in the system\"\n          },\n          \"alternatives\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Primary and alternative technology recommendations\"\n          }\n        }\n      }\n    },\n    \"workflow\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"steps\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"name\": {\n                \"type\": \"string\",\n                \"description\": \"Name of the implementation step\"\n              },\n              \"description\": {\n                \"type\": \"string\",\n                \"description\": \"Detailed description of this implementation step\"\n              }\n            }\n          }\n        }\n      }\n    },\n    \"implementationComplexity\": {\n      \"type\": \"string\",\n      \"enum\": [\"low\", \"medium\", \"high\"],\n      \"description\": \"Overall assessment of implementation complexity\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        -40
+      ],
+      "id": "8ab5b5c5-3e1f-44de-900c-44029152d8d7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -40
+      ],
+      "id": "7543a2c2-47d1-405d-86af-0a755c226afa",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        -40
+      ],
+      "id": "3e6f63be-4b46-437a-850f-c7fbabc8b262",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1900,
+        90
+      ],
+      "id": "9416493e-740c-445e-8a17-8741fc7ebd86",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*, analysis_results(*),repository:repositories(*)"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_tech_stack"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1680,
+        -260
+      ],
+      "id": "9596c29a-ca0d-4f5c-aac2-218d34c50c52",
+      "name": "GetIdeasWithoutTechStack",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2120,
+        90
+      ],
+      "id": "96e065e2-4b00-4858-a898-24f730aa6fd4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('FormatInputData').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# TechStackAgent System Prompt\n\n## ROLE:\nYou are **TechStackAgent**, an AI technical architect specialized in recommending optimal technology stacks and implementation workflows for business ideas.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, languages, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n3. MVP core features (if available)\n\nProduce a structured JSON output that:\n- Identifies the core technical components needed to implement the business idea\n- Recommends specific technologies for each component with alternatives\n- Outlines a high-level implementation workflow with logical steps\n- Assesses the overall implementation complexity\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  },\n  \"mvpFeatures\": {\n    \"features\": [\n      {\n        \"name\": \"string\",\n        \"description\": \"string\",\n        \"priority\": \"high|medium|low\",\n        \"userValue\": \"string\"\n      }\n    ],\n    \"mvpScope\": \"string\",\n    \"futureFeatures\": [\"string\"]\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"coreComponents\": [\n    {\n      \"name\": \"Component Name\",\n      \"purpose\": \"What this component does\",\n      \"alternatives\": [\n        \"Primary technology recommendation\",\n        \"Alternative option 1\",\n        \"Alternative option 2\"\n      ]\n    }\n  ],\n  \"workflow\": {\n    \"steps\": [\n      {\n        \"name\": \"Step Name\",\n        \"description\": \"What happens in this step\"\n      }\n    ]\n  },\n  \"implementationComplexity\": \"low|medium|high\"\n}\n```\n\n## GUIDELINES:\n\n1. **Repository-Informed**: Base recommendations on the repository's existing technologies when appropriate.\n\n2. **Modern Stack**: Recommend current, well-supported technologies with strong communities.\n\n3. **Component Breakdown**: Include all essential technical components:\n   - Frontend framework/library\n   - Backend/API layer\n   - Database/storage\n   - Authentication/authorization\n   - Deployment/infrastructure\n   - Any domain-specific components needed for core features\n\n4. **Alternatives**: For each component, provide the primary recommendation and 1-2 viable alternatives.\n\n5. **Implementation Workflow**: Create a logical sequence of development steps that:\n   - Starts with foundational components\n   - Prioritizes core features based on the MVP\n   - Includes testing and deployment considerations\n   - Follows industry best practices\n\n6. **Complexity Assessment**: Rate the overall implementation complexity based on:\n   - Technical stack complexity\n   - Integration challenges\n   - Feature complexity\n   - Required specialized knowledge\n   - Estimated development effort\n\n7. **Scalability Considerations**: Ensure the recommended stack can scale with business growth.\n\n8. **Security Awareness**: Include security considerations where relevant.\n\n9. **Cost Efficiency**: Consider hosting and operational costs in recommendations.\n\n10. **Open Source Alignment**: For open source projects, ensure recommendations align with the project's philosophy and license.\n\nRemember: A good technical stack recommendation balances modern best practices with practical implementation concerns. It should be ambitious enough to support the business vision but pragmatic enough to enable rapid development of the MVP."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -328,
+        -260
+      ],
+      "id": "61646dab-2fa0-4fcf-8cda-9bc8a27bfbe8",
+      "name": "TechStackAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "7"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=Technical Stack & Workflow for {{ $('FormatInputData').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.implementationComplexity.charAt(0).toUpperCase() + $json.output.implementationComplexity.slice(1) + ' complexity implementation with ' + $json.output.coreComponents.length + ' core components' }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -360
+      ],
+      "id": "00eaecb5-eca4-4858-bfc4-81aa7536bbb0",
+      "name": "StoreTechStackAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with TechStackAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "tech-stack-agent"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "04674474-e353-4a05-9c31-680748750ba7",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -580,
+        -260
+      ],
+      "id": "10455168-41f6-44b1-8e20-eb33a1ceb32f",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by TechStackAgent\nconst idea = $('GetIdeasWithoutTechStack').first().json;\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Get MVP features if available\nconst mvpFeatures = idea.analysis_results.find(result => \n  result.analysis_type_id === 3\n);\n\nlet mvpFeaturesData = null;\nif (mvpFeatures && mvpFeatures.analysis_payload) {\n  try {\n    mvpFeaturesData = typeof mvpFeatures.analysis_payload === 'string'\n      ? JSON.parse(mvpFeatures.analysis_payload)\n      : mvpFeatures.analysis_payload;\n  } catch (e) {\n    console.log('Error parsing MVP features:', e);\n  }\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: idea.repository.id,\n    name: idea.repository.name,\n    full_name: idea.repository.full_name,\n    description: idea.repository.description,\n    html_url: idea.repository.html_url,\n    stargazers_count: idea.repository.stargazers_count,\n    forks_count: idea.repository.forks_count,\n    topics: idea.repository.topics,\n    license_name: idea.repository.license_name,\n    languages: idea.repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  },\n  mvpFeatures: mvpFeaturesData\n};\n\nreturn { json: formattedData };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -260
+      ],
+      "id": "1f580739-9a7b-4fd7-8b22-43c6919bd96b",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        -135
+      ],
+      "id": "64a95bf8-2c0f-46e1-9a04-0f2748083cbb",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_metrics"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -360
+      ],
+      "id": "db90b85c-5eba-4d6a-89ab-3d66333b3116",
+      "name": "UpdateIdeaStatus",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "TechStackAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TechStackAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "TechStackAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeasWithoutTechStack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutTechStack": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TechStackAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreTechStackAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreTechStackAnalysis": {
+      "main": [
+        [
+          {
+            "node": "UpdateIdeaStatus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "TechStackAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateIdeaStatus": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "06052a78-c82a-4932-8ddd-d0123a36eaf7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "eWcpAa6p1fCefAZW",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    },
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    }
+  ]
+}
