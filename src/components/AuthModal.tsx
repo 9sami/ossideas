@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle, AlertCircle, Phone, Building, Megaphone } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Lock,
+  User,
+  MapPin,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Phone,
+  Building,
+  Megaphone,
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { OnboardingData } from '../types/auth';
 
@@ -14,19 +27,23 @@ interface AuthModalProps {
 const MODAL_CONTENT = {
   login: {
     title: 'Welcome Back',
-    subtitle: 'Sign in to your account'
+    subtitle: 'Sign in to your account',
   },
   register: {
     title: 'Create Account',
-    subtitle: 'Start your journey with us'
+    subtitle: 'Start your journey with us',
   },
   onboarding: {
     title: 'Complete Your Profile',
-    subtitle: 'Help us personalize your experience'
-  }
+    subtitle: 'Help us personalize your experience',
+  },
 } as const;
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
+const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  initialMode = 'login',
+}) => {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -47,7 +64,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const { login, register, loginWithGoogle, authState, completeOnboarding } = useAuth();
+  const { login, register, loginWithGoogle, authState, completeOnboarding } =
+    useAuth();
 
   // Update mode when initialMode changes (for onboarding trigger)
   useEffect(() => {
@@ -60,10 +78,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
       }
 
       setValidationError(null);
-      
+
       if (initialMode !== 'onboarding') {
-        setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
-        setOnboardingData({ phoneNumber: '', location: '', usagePurpose: '', industries: [], referralSource: '' });
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          fullName: '',
+        });
+        setOnboardingData({
+          phoneNumber: '',
+          location: '',
+          usagePurpose: '',
+          industries: [],
+          referralSource: '',
+        });
         setShowPassword(false);
         setShowConfirmPassword(false);
       }
@@ -82,58 +111,67 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
       if (!formData.email || !formData.password || !formData.confirmPassword) {
         return 'All fields are required';
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
         return 'Passwords do not match';
       }
-      
+
       if (formData.password.length < 6) {
         return 'Password must be at least 6 characters long';
       }
-      
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         return 'Please enter a valid email address';
       }
     }
-    
+
     return null;
   };
 
   const validateOnboarding = () => {
-    if (!onboardingData.phoneNumber || !onboardingData.location || !onboardingData.usagePurpose || 
-        onboardingData.industries.length === 0 || !onboardingData.referralSource) {
+    if (
+      !onboardingData.phoneNumber ||
+      !onboardingData.location ||
+      !onboardingData.usagePurpose ||
+      onboardingData.industries.length === 0 ||
+      !onboardingData.referralSource
+    ) {
       return 'All fields are required';
     }
-    
-    // Basic phone number validation
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+
+    // Basic phone number validation - optional + and 7-15 digits
+    const phoneRegex = /^\+?\d{7,15}$/;
     if (!phoneRegex.test(onboardingData.phoneNumber)) {
-      return 'Please enter a valid phone number with country code (e.g., +1234567890)';
+      return 'Please enter a valid phone number (7-15 digits, optional leading +)';
     }
-    
+
     return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationError = validateForm();
     if (validationError) {
       setValidationError(validationError);
       return;
     }
-    
+
     setValidationError(null);
-    
+
     try {
       if (mode === 'login') {
         const result = await login({
           email: formData.email,
           password: formData.password,
         });
-        
-        if (result.user && !result.emailVerificationRequired && !result.onboardingRequired) {
+
+        if (
+          result.user &&
+          !result.emailVerificationRequired &&
+          !result.onboardingRequired
+        ) {
           onClose();
         } else if (result.onboardingRequired) {
           setMode('onboarding');
@@ -145,31 +183,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           confirmPassword: formData.confirmPassword,
           fullName: formData.fullName,
         });
-        
+
         if (result.user && !result.emailVerificationRequired) {
           setMode('onboarding');
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setValidationError(error instanceof Error ? error.message : 'Authentication failed');
+      setValidationError(
+        error instanceof Error ? error.message : 'Authentication failed',
+      );
     }
   };
 
   const handleOnboardingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationError = validateOnboarding();
     if (validationError) {
       setValidationError(validationError);
       return;
     }
-    
+
     setValidationError(null);
-    
+
     try {
       const result = await completeOnboarding(onboardingData);
-      
+
       if (result.success) {
         // Reset form data
         setOnboardingData({
@@ -179,14 +219,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           industries: [],
           referralSource: '',
         });
-        
+
         // Close the modal and redirect
         onClose();
-        
+
         // Optional: Redirect to main application interface
-        window.location.href = '/dashboard';
+        window.location.href = '/ideas';
       } else {
-        setValidationError(result.error || 'Failed to complete onboarding. Please try again.');
+        setValidationError(
+          result.error || 'Failed to complete onboarding. Please try again.',
+        );
       }
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -202,26 +244,46 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
-  const handleOnboardingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleOnboardingChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    
+
     if (name === 'industries') {
       // Handle multi-select for industries
       const select = e.target as HTMLSelectElement;
-      const selectedOptions = Array.from(select.selectedOptions, option => option.value);
-      setOnboardingData(prev => ({
+      const selectedOptions = Array.from(
+        select.selectedOptions,
+        (option) => option.value,
+      );
+      setOnboardingData((prev) => ({
         ...prev,
         industries: selectedOptions,
       }));
+    } else if (name === 'phoneNumber') {
+      // Sanitize to allow only digits and a leading '+'
+      let sanitizedValue = value.replace(/[^0-9+]/g, '');
+      if (sanitizedValue.startsWith('+')) {
+        const rest = sanitizedValue.substring(1).replace(/\+/g, '');
+        sanitizedValue = `+${rest}`;
+      } else {
+        sanitizedValue = sanitizedValue.replace(/\+/g, '');
+      }
+      setOnboardingData((prev) => ({
+        ...prev,
+        [name]: sanitizedValue,
+      }));
     } else {
-      setOnboardingData(prev => ({
+      setOnboardingData((prev) => ({
         ...prev,
         [name]: value,
       }));
@@ -229,11 +291,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
   };
 
   const handleIndustryToggle = (industry: string) => {
-    setOnboardingData(prev => ({
+    setOnboardingData((prev) => ({
       ...prev,
       industries: prev.industries.includes(industry)
-        ? prev.industries.filter(i => i !== industry)
-        : [...prev.industries, industry]
+        ? prev.industries.filter((i) => i !== industry)
+        : [...prev.industries, industry],
     }));
   };
 
@@ -243,7 +305,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
   const handleSwitchToLogin = () => {
     setMode('login');
-    setFormData(prev => ({ ...prev, password: '', confirmPassword: '', fullName: '' }));
+    setFormData((prev) => ({
+      ...prev,
+      password: '',
+      confirmPassword: '',
+      fullName: '',
+    }));
   };
 
   if (!isOpen) return null;
@@ -254,11 +321,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[55] p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Check Your Email
+            </h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -267,14 +335,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Mail className="h-8 w-8 text-orange-600" />
             </div>
-            
+
             <h3 className="text-xl font-semibold text-gray-900 mb-4">
               Verify Your Email Address
             </h3>
-            
+
             <p className="text-gray-600 mb-6 leading-relaxed">
-              We've sent a verification link to <strong>{formData.email}</strong>. 
-              Please check your email and click the link to verify your account.
+              We've sent a verification link to{' '}
+              <strong>{formData.email}</strong>. Please check your email and
+              click the link to verify your account.
             </p>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -294,15 +363,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             <div className="space-y-3">
               <button
                 onClick={handleBackToForm}
-                className="w-full px-4 py-2 text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition-colors"
-              >
+                className="w-full px-4 py-2 text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition-colors">
                 Try Different Email
               </button>
-              
+
               <button
                 onClick={onClose}
-                className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
+                className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
                 I'll Check My Email
               </button>
             </div>
@@ -321,10 +388,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     ];
 
     const industries = [
-      'AI/ML', 'DevTools', 'SaaS', 'E-commerce', 'Data Analytics',
-      'Security', 'Mobile', 'Web Dev', 'IoT', 'Blockchain',
-      'FinTech', 'HealthTech', 'EdTech', 'Marketing', 'Design',
-      'Gaming', 'Social Media', 'Productivity', 'Enterprise', 'Other'
+      'AI/ML',
+      'DevTools',
+      'SaaS',
+      'E-commerce',
+      'Data Analytics',
+      'Security',
+      'Mobile',
+      'Web Dev',
+      'IoT',
+      'Blockchain',
+      'FinTech',
+      'HealthTech',
+      'EdTech',
+      'Marketing',
+      'Design',
+      'Gaming',
+      'Social Media',
+      'Productivity',
+      'Enterprise',
+      'Other',
     ];
 
     const referralSources = [
@@ -352,7 +435,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-6">
             {/* Phone Number */}
             <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number *
               </label>
               <div className="relative">
@@ -368,12 +453,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Get <strong>exclusive updates & early access</strong> via SMS. Your number stays private.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Get <strong>exclusive updates & early access</strong> via SMS.
+                Your number stays private.
+              </p>
             </div>
 
             {/* Location */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 Location *
               </label>
               <div className="relative">
@@ -393,7 +483,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             {/* Usage Purpose */}
             <div>
-              <label htmlFor="usagePurpose" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="usagePurpose"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 What will you use OSSIdeas for? *
               </label>
               <div className="relative">
@@ -404,8 +496,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   value={onboardingData.usagePurpose}
                   onChange={handleOnboardingChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white"
-                  required
-                >
+                  required>
                   <option value="">Select your purpose</option>
                   {usagePurposes.map((purpose) => (
                     <option key={purpose.value} value={purpose.value}>
@@ -443,7 +534,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             {/* Referral Source */}
             <div>
-              <label htmlFor="referralSource" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="referralSource"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 Where did you hear about us? *
               </label>
               <div className="relative">
@@ -454,8 +547,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   value={onboardingData.referralSource}
                   onChange={handleOnboardingChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white"
-                  required
-                >
+                  required>
                   <option value="">Select source</option>
                   {referralSources.map((source) => (
                     <option key={source.value} value={source.value}>
@@ -470,7 +562,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-red-600">{authState.error || validationError}</p>
+                  <p className="text-sm text-red-600">
+                    {authState.error || validationError}
+                  </p>
                 </div>
               </div>
             )}
@@ -478,8 +572,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             <button
               type="submit"
               disabled={authState.loading}
-              className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {authState.loading ? 'Completing Setup...' : 'Complete Setup'}
             </button>
           </form>
@@ -498,8 +591,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -509,8 +601,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           <button
             onClick={handleGoogleLogin}
             disabled={authState.loading}
-            className="w-full flex items-center justify-center space-x-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            className="w-full flex items-center justify-center space-x-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed">
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
@@ -529,7 +620,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="font-medium text-gray-700">Continue with Google</span>
+            <span className="font-medium text-gray-700">
+              Continue with Google
+            </span>
           </button>
 
           {/* Divider */}
@@ -538,7 +631,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+              <span className="px-2 bg-white text-gray-500">
+                Or continue with email
+              </span>
             </div>
           </div>
 
@@ -546,7 +641,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
                 </label>
                 <div className="relative">
@@ -565,7 +662,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address *
               </label>
               <div className="relative">
@@ -584,7 +683,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2">
                 Password *
               </label>
               <div className="relative">
@@ -602,19 +703,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
               {mode === 'register' && (
-                <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Must be at least 6 characters long
+                </p>
               )}
             </div>
 
             {mode === 'register' && (
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-2">
                   Confirm Password *
                 </label>
                 <div className="relative">
@@ -632,9 +740,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -645,16 +756,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm text-red-600">{authState.error || validationError}</p>
-                    {(authState.error?.includes('already exists') || validationError?.includes('already exists')) && mode === 'register' && (
-                      <button
-                        type="button"
-                        onClick={handleSwitchToLogin}
-                        className="mt-2 text-sm text-red-700 hover:text-red-800 font-medium underline"
-                      >
-                        Switch to Sign In
-                      </button>
-                    )}
+                    <p className="text-sm text-red-600">
+                      {authState.error || validationError}
+                    </p>
+                    {(authState.error?.includes('already exists') ||
+                      validationError?.includes('already exists')) &&
+                      mode === 'register' && (
+                        <button
+                          type="button"
+                          onClick={handleSwitchToLogin}
+                          className="mt-2 text-sm text-red-700 hover:text-red-800 font-medium underline">
+                          Switch to Sign In
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -663,20 +777,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             <button
               type="submit"
               disabled={authState.loading}
-              className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {authState.loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {authState.loading
+                ? 'Please wait...'
+                : mode === 'login'
+                ? 'Sign In'
+                : 'Create Account'}
             </button>
           </form>
 
           {/* Switch Mode */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+              {mode === 'login'
+                ? "Don't have an account? "
+                : 'Already have an account? '}
               <button
                 onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                className="text-orange-600 hover:text-orange-700 font-medium"
-              >
+                className="text-orange-600 hover:text-orange-700 font-medium">
                 {mode === 'login' ? 'Sign up' : 'Sign in'}
               </button>
             </p>
