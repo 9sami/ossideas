@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Target, ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { AnalysisResult, CompetitiveAnalysisData } from './RepositoryAnalysis';
+import { AnalysisResult, CompetitiveAnalysisData } from './AnalysisResults';
 
 interface CompetitiveAnalysisCardProps {
   analysis: AnalysisResult;

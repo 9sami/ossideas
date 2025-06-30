@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, BarChart2, Users, RefreshCw, DollarSign } from 'lucide-react';
-import { AnalysisResult, MetricsData, Metric } from './RepositoryAnalysis';
+import { AnalysisResult, MetricsData, Metric } from './AnalysisResults';
 
 interface MetricsCardProps {
   analysis: AnalysisResult;

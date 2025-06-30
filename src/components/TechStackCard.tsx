@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Code, ChevronDown, ChevronUp, Workflow } from 'lucide-react';
-import { AnalysisResult, TechStackData } from './RepositoryAnalysis';
+import { AnalysisResult, TechStackData } from './AnalysisResults';
 
 interface TechStackCardProps {
   analysis: AnalysisResult;

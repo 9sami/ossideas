@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
-import { AnalysisResult, MVPFeaturesData } from './RepositoryAnalysis';
+import { AnalysisResult, MVPFeaturesData } from './AnalysisResults';
 
 interface MVPFeaturesCardProps {
   analysis: AnalysisResult;

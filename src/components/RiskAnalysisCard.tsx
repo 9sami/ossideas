@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, AlertCircle, ShieldAlert, Lightbulb } from 'lucide-react';
-import { AnalysisResult, RiskAnalysisData } from './RepositoryAnalysis';
+import { AnalysisResult, RiskAnalysisData } from './AnalysisResults';
 
 interface RiskAnalysisCardProps {
   analysis: AnalysisResult;
