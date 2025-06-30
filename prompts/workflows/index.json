@@ -175,6 +175,27 @@
         "description": "Coordinates the generation of monetization strategies for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/monetization-strategy-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-tech-stack": {
+      "name": "Idea Engine - Tech Stack Generator",
+      "description": "Recommends technical stack and implementation workflow for business ideas",
+      "agents": [
+        {
+          "id": "tech-stack-agent",
+          "name": "Tech Stack Agent",
+          "description": "Identifies optimal technology components and implementation steps",
+          "workflowPath": "prompts/workflows/idea-engine/tech-stack-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/TechStackAgent/system_prompt.md",
+          "inputSchema": "prompts/TechStackAgent/input_required.json",
+          "outputSchema": "prompts/TechStackAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "tech-stack-orchestrator",
+        "name": "Tech Stack Orchestrator",
+        "description": "Coordinates the generation of technical stack recommendations for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/tech-stack-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }

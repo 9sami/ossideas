@@ -25,6 +25,7 @@ import FullScreenLoader from './FullScreenLoader';
 import ShareModal from './ShareModal';
 import AuthModal from './AuthModal';
 import MonetizationStrategyCard from './MonetizationStrategyCard';
+import TechStackCard from './TechStackCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -103,6 +104,15 @@ const IdeaDetail: React.FC = () => {
     );
   }, [idea?.analysisResults]);
 
+  // Find tech stack analysis
+  const techStack = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 7
+    );
+  }, [idea?.analysisResults]);
+
   if (loading) {
     return <FullScreenLoader message="Loading idea..." />;
   }
@@ -127,41 +137,6 @@ const IdeaDetail: React.FC = () => {
       </div>
     );
   }
-
-  const sections = [
-    {
-      id: 'overview',
-      title: 'Executive Summary',
-      icon: Target,
-      content: idea.description,
-    },
-    {
-      id: 'market',
-      title: 'Market & Target Audience',
-      icon: Users,
-      content: `Market Size: ${idea.marketSize}\n\nTarget Audience: ${idea.targetAudience}`,
-    },
-    {
-      id: 'tech',
-      title: 'Recommended Tech Stack',
-      icon: Code,
-      content: Array.isArray(idea.techStack)
-        ? idea.techStack.join(', ')
-        : idea.techStack,
-    },
-    {
-      id: 'advantage',
-      title: 'Key Differentiators & Value Add',
-      icon: TrendingUp,
-      content: idea.competitiveAdvantage,
-    },
-    {
-      id: 'risks',
-      title: 'Risks & Considerations',
-      icon: AlertTriangle,
-      content: Array.isArray(idea.risks) ? idea.risks.join('\n• ') : idea.risks,
-    },
-  ];
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -345,10 +320,50 @@ const IdeaDetail: React.FC = () => {
         </div>
       )}
 
+      {/* Tech Stack Section */}
+      {techStack && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <TechStackCard analysis={techStack} />
+        </div>
+      )}
+
       {/* Content Sections */}
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {sections.map((section) => (
+          {[
+            {
+              id: 'overview',
+              title: 'Executive Summary',
+              icon: Target,
+              content: idea.description,
+            },
+            {
+              id: 'market',
+              title: 'Market & Target Audience',
+              icon: Users,
+              content: `Market Size: ${idea.marketSize}\n\nTarget Audience: ${idea.targetAudience}`,
+            },
+            {
+              id: 'tech',
+              title: 'Recommended Tech Stack',
+              icon: Code,
+              content: Array.isArray(idea.techStack)
+                ? idea.techStack.join(', ')
+                : idea.techStack,
+            },
+            {
+              id: 'advantage',
+              title: 'Key Differentiators & Value Add',
+              icon: TrendingUp,
+              content: idea.competitiveAdvantage,
+            },
+            {
+              id: 'risks',
+              title: 'Risks & Considerations',
+              icon: AlertTriangle,
+              content: Array.isArray(idea.risks) ? idea.risks.join('\n• ') : idea.risks,
+            },
+          ].map((section) => (
             <div key={section.id} className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <section.icon className="h-5 w-5 text-orange-500 mr-2" />
