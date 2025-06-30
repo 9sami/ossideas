@@ -27,6 +27,7 @@ import GoogleTag from './components/GoogleAnalytics';
 import LandingPage from './components/LandingPage';
 import boltBadge from './assets/black_circle_360x360.png';
 import IdeaDetail from './components/IdeaDetail';
+import CategoriesPage from './components/CategoriesPage';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -132,17 +133,7 @@ const AppContent: React.FC = () => {
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route
-              path="/categories"
-              element={
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Categories</h1>
-                  <p className="text-gray-600">
-                    Categories page coming soon...
-                  </p>
-                </div>
-              }
-            />
+            <Route path="/categories" element={<CategoriesPage />} />
             <Route
               path="/community"
               element={
