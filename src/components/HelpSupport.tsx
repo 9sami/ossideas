@@ -1,14 +1,8 @@
 import React from 'react';
-import { HelpCircle, MessageCircle, FileText, Mail, Phone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { HelpCircle, MessageCircle, FileText, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const HelpSupport: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handlePrivacyPolicyClick = () => {
-    navigate('/privacy');
-  };
-
   const faqs = [
     {
       question: 'How do I save an idea?',
@@ -49,7 +43,7 @@ const HelpSupport: React.FC = () => {
         </div>
 
         {/* Contact Options */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <MessageCircle className="h-6 w-6 text-blue-600" />
@@ -79,21 +73,6 @@ const HelpSupport: React.FC = () => {
               Send Email
             </button>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-            <div className="mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-              <Phone className="h-6 w-6 text-purple-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Phone Support
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Call us for immediate assistance
-            </p>
-            <button className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
-              Call Now
-            </button>
-          </div>
         </div>
 
         {/* FAQ Section */}
@@ -117,58 +96,10 @@ const HelpSupport: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Additional Resources */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Additional Resources
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a
-              href="#"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">User Guide</h3>
-                <p className="text-sm text-gray-600">
-                  Complete guide to using OSSIdeas
-                </p>
-              </div>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">API Documentation</h3>
-                <p className="text-sm text-gray-600">
-                  Integrate OSSIdeas into your workflow
-                </p>
-              </div>
-            </a>
-            <a
-              onClick={handlePrivacyPolicyClick}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">Privacy Policy</h3>
-                <p className="text-sm text-gray-600">
-                  How we protect your data
-                </p>
-              </div>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">Terms of Service</h3>
-                <p className="text-sm text-gray-600">
-                  Our terms and conditions
-                </p>
-              </div>
-            </a>
-          </div>
+        <div className="text-center mt-8">
+          <Link to="/privacy" className="text-sm text-gray-500 hover:underline">
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </div>
