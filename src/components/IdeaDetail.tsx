@@ -24,6 +24,7 @@ import { useAuth } from '../hooks/useAuth';
 import FullScreenLoader from './FullScreenLoader';
 import ShareModal from './ShareModal';
 import AuthModal from './AuthModal';
+import MonetizationStrategyCard from './MonetizationStrategyCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +94,15 @@ const IdeaDetail: React.FC = () => {
     };
   }, [idea?.competitiveAdvantage, isRepositoryBased, idea]);
 
+  // Find monetization strategy analysis
+  const monetizationStrategy = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 6
+    );
+  }, [idea?.analysisResults]);
+
   if (loading) {
     return <FullScreenLoader message="Loading idea..." />;
   }
@@ -130,12 +140,6 @@ const IdeaDetail: React.FC = () => {
       title: 'Market & Target Audience',
       icon: Users,
       content: `Market Size: ${idea.marketSize}\n\nTarget Audience: ${idea.targetAudience}`,
-    },
-    {
-      id: 'monetization',
-      title: 'Monetization Strategy',
-      icon: DollarSign,
-      content: idea.monetizationStrategy,
     },
     {
       id: 'tech',
@@ -331,6 +335,13 @@ const IdeaDetail: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Monetization Strategy Section */}
+      {monetizationStrategy && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <MonetizationStrategyCard analysis={monetizationStrategy} />
         </div>
       )}
 

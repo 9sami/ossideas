@@ -154,6 +154,27 @@
         "description": "Coordinates the generation of competitive analysis for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/competitive-analysis-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-monetization-strategy": {
+      "name": "Idea Engine - Monetization Strategy Generator",
+      "description": "Develops monetization strategies and pricing models for business ideas",
+      "agents": [
+        {
+          "id": "monetization-strategy-agent",
+          "name": "Monetization Strategy Agent",
+          "description": "Creates pricing tiers, value metrics, and revenue streams",
+          "workflowPath": "prompts/workflows/idea-engine/monetization-strategy-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/MonetizationStrategyAgent/system_prompt.md",
+          "inputSchema": "prompts/MonetizationStrategyAgent/input_required.json",
+          "outputSchema": "prompts/MonetizationStrategyAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "monetization-strategy-orchestrator",
+        "name": "Monetization Strategy Orchestrator",
+        "description": "Coordinates the generation of monetization strategies for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/monetization-strategy-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }
