@@ -42,16 +42,18 @@ const SavedIdeas: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-4">
+          <div className="flex items-center space-x-3 mb-2 sm:mb-4">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Bookmark className="h-6 w-6 text-orange-600" />
+              <Bookmark className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">My Saved Ideas</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              My Saved Ideas
+            </h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm sm:text-base">
             Your collection of saved business ideas and opportunities
           </p>
         </div>
@@ -69,13 +71,13 @@ const SavedIdeas: React.FC = () => {
               Start exploring ideas and save the ones that interest you
             </p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/ideas')}
               className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
               Explore Ideas
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {savedIdeas.map((idea) => (
               <IdeaCard
                 key={idea.id}

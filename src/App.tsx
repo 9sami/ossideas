@@ -101,8 +101,7 @@ const AppContent: React.FC = () => {
         {/* Main content with constant left margin for closed sidebar width */}
         <main className="flex-1 ml-16">
           <Routes>
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/" element={<Navigate to="/landing" replace />} />
+            <Route path="/" element={<LandingPage />} />
             <Route
               path="/ideas"
               element={
