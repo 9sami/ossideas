@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import fullLogo from '../assets/full-logo.png';
+import { useState } from 'react';
+import AuthModal from './AuthModal';
 
 const features = [
   {
@@ -83,6 +85,10 @@ const useCases = [
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const openAuthModal = () => setIsAuthModalOpen(true);
+  const closeAuthModal = () => setIsAuthModalOpen(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -101,7 +107,7 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/ideas')}
               className="px-8 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition">
               Explore Ideas
             </button>
@@ -241,7 +247,7 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/ideas')}
               className="px-8 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition">
               Explore Ideas
             </button>
@@ -259,13 +265,18 @@ const LandingPage: React.FC = () => {
             Sign up for free and unlock a world of open-source startup
             opportunities powered by AI.
           </p>
-          <button
-            onClick={() => navigate('/landing')}
-            className="px-8 py-3 bg-white text-orange-600 rounded-lg font-semibold hover:bg-orange-50 transition">
-            Get Started Free
-          </button>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={openAuthModal}
+              className="w-full sm:w-auto px-8 py-4 bg-white text-orange-600 rounded-lg font-semibold hover:bg-orange-50 transition border border-orange-200">
+              Get Started Free
+            </button>
+          </div>
         </div>
       </section>
+
+      {/* AuthModal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
     </div>
   );
 };
