@@ -1,30 +1,8 @@
 import React, { useState } from 'react';
 import { DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
+import { AnalysisResult, MonetizationStrategyData } from './AnalysisResults';
 
-interface PricingTier {
-  name: string;
-  price: string;
-  keyFeatures: string[];
-}
 
-interface MonetizationStrategyData {
-  pricingModel: string;
-  pricingTiers: PricingTier[];
-  valueMetric: string;
-  revenueStreams: string[];
-}
-
-interface AnalysisResult {
-  id: string;
-  title: string;
-  analysis_type_id: number;
-  analysis_payload: string | MonetizationStrategyData;
-  summary_description?: string;
-  analysis_type?: {
-    name: string;
-    slug: string;
-  };
-}
 
 interface MonetizationStrategyCardProps {
   analysis: AnalysisResult;

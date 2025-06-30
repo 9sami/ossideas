@@ -1,0 +1,502 @@
+{
+  "name": "Idea Engine - 9. Success Metrics Generator - OSSIDEAS",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"acquisitionMetrics\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the acquisition metric\"\n          },\n          \"target\": {\n            \"type\": \"string\",\n            \"description\": \"Target value or range for this metric\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Importance level of this metric\"\n          }\n        }\n      }\n    },\n    \"activationMetrics\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the activation metric\"\n          },\n          \"target\": {\n            \"type\": \"string\",\n            \"description\": \"Target value or range for this metric\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Importance level of this metric\"\n          }\n        }\n      }\n    },\n    \"retentionMetrics\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the retention metric\"\n          },\n          \"target\": {\n            \"type\": \"string\",\n            \"description\": \"Target value or range for this metric\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Importance level of this metric\"\n          }\n        }\n      }\n    },\n    \"revenueMetrics\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the revenue metric\"\n          },\n          \"target\": {\n            \"type\": \"string\",\n            \"description\": \"Target value or range for this metric\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"high\", \"medium\", \"low\"],\n            \"description\": \"Importance level of this metric\"\n          }\n        }\n      }\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        -40
+      ],
+      "id": "8ab5b5c5-3e1f-44de-900c-44029152d8d7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -40
+      ],
+      "id": "7543a2c2-47d1-405d-86af-0a755c226afa",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NhWYxdG7RtFxT59p",
+          "name": "Google Gemini(PaLM) Api account - technical4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.idea.id }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        -40
+      ],
+      "id": "3e6f63be-4b46-437a-850f-c7fbabc8b262",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1900,
+        90
+      ],
+      "id": "9416493e-740c-445e-8a17-8741fc7ebd86",
+      "name": "IdeaBatch"
+    },
+    {
+      "parameters": {
+        "url": "=https://qevwmqbfohxfcwyaixqe.supabase.co/rest/v1/ideas",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*, analysis_results(*),repository:repositories(*)"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending_metrics"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1680,
+        -260
+      ],
+      "id": "9596c29a-ca0d-4f5c-aac2-218d34c50c52",
+      "name": "GetIdeasWithoutMetrics",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2120,
+        90
+      ],
+      "id": "96e065e2-4b00-4858-a898-24f730aa6fd4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Input Context\n\n{{ JSON.stringify($('FormatInputData').item.json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# MetricsAgent System Prompt\n\n## ROLE:\nYou are **MetricsAgent**, an AI business analyst specialized in defining success metrics and key performance indicators (KPIs) for business ideas.\n\n## TASK:\nGiven:\n1. Repository metadata (id, name, URL, description, etc.)\n2. Idea overview (problem statement, product vision, market validation)\n3. Monetization strategy (if available)\n\nProduce a structured JSON output that identifies key metrics across the customer journey:\n- Top-of-funnel acquisition metrics to track marketing and awareness\n- Activation metrics that indicate when users experience the \"aha!\" moment\n- Retention metrics that show ongoing engagement and satisfaction\n- Revenue metrics that measure business health and growth\n\n## INPUT FORMAT:\n```json\n{\n  \"repository\": {\n    \"id\": \"uuid\",\n    \"name\": \"string\",\n    \"full_name\": \"string\",\n    \"description\": \"string\",\n    \"html_url\": \"string\",\n    \"stargazers_count\": number,\n    \"forks_count\": number,\n    \"topics\": [\"string\"],\n    \"license_name\": \"string\",\n    \"languages\": {\"language\": percentage}\n  },\n  \"idea\": {\n    \"id\": \"uuid\",\n    \"title\": \"string\",\n    \"tagline\": \"string\",\n    \"overview\": {\n      \"problem\": \"string\",\n      \"vision\": \"string\",\n      \"validation\": {\n        \"validatedDemand\": \"string\",\n        \"marketTrend\": \"string\"\n      }\n    }\n  },\n  \"monetizationStrategy\": {\n    \"pricingModel\": \"string\",\n    \"pricingTiers\": [\n      {\n        \"name\": \"string\",\n        \"price\": \"string\",\n        \"keyFeatures\": [\"string\"]\n      }\n    ],\n    \"valueMetric\": \"string\",\n    \"revenueStreams\": [\"string\"]\n  }\n}\n```\n\n## OUTPUT FORMAT:\nReturn ONLY the following JSON structure (no extra text or explanations):\n\n```json\n{\n  \"acquisitionMetrics\": [\n    {\n      \"name\": \"Metric Name\",\n      \"target\": \"Target value or range\",\n      \"importance\": \"high|medium|low\"\n    }\n  ],\n  \"activationMetrics\": [\n    {\n      \"name\": \"Metric Name\",\n      \"target\": \"Target value or range\",\n      \"importance\": \"high|medium|low\"\n    }\n  ],\n  \"retentionMetrics\": [\n    {\n      \"name\": \"Metric Name\",\n      \"target\": \"Target value or range\",\n      \"importance\": \"high|medium|low\"\n    }\n  ],\n  \"revenueMetrics\": [\n    {\n      \"name\": \"Metric Name\",\n      \"target\": \"Target value or range\",\n      \"importance\": \"high|medium|low\"\n    }\n  ]\n}\n```\n\n## GUIDELINES:\n\n1. **Business Model Alignment**: Ensure metrics align with the business model and monetization strategy.\n\n2. **Measurable & Actionable**: Each metric should be quantifiable and lead to clear actions if targets aren't met.\n\n3. **Balanced Approach**: Include both leading indicators (predictive) and lagging indicators (results).\n\n4. **Acquisition Focus**: For top-of-funnel metrics, focus on:\n   - Website traffic and sources\n   - Marketing campaign performance\n   - Conversion rates from visitor to lead\n   - Cost per acquisition (CPA)\n   - Social media engagement and reach\n\n5. **Activation Clarity**: Define clear \"aha!\" moments when users first experience value:\n   - Feature adoption rates\n   - Time to first meaningful action\n   - Onboarding completion rate\n   - Initial engagement depth\n\n6. **Retention Insights**: For ongoing engagement metrics, consider:\n   - Daily/weekly/monthly active users (DAU/WAU/MAU)\n   - Churn rate and retention cohorts\n   - Feature usage frequency\n   - Net Promoter Score (NPS) or satisfaction metrics\n   - Time spent in product\n\n7. **Revenue Health**: For business performance metrics, include:\n   - Monthly recurring revenue (MRR) or annual recurring revenue (ARR)\n   - Average revenue per user (ARPU)\n   - Customer lifetime value (LTV)\n   - Conversion rate from free to paid\n   - Expansion revenue and upsells\n\n8. **Realistic Targets**: Set ambitious but achievable targets based on:\n   - Industry benchmarks\n   - Business stage (early vs. established)\n   - Growth expectations\n\n9. **Prioritization**: Mark metrics as high, medium, or low importance to focus efforts.\n\n10. **Technical Feasibility**: Consider what's actually measurable given the technical architecture.\n\nRemember: Good metrics tell a story about your business health and guide decision-making. They should be few enough to focus on (3-5 per category) but comprehensive enough to give a complete picture of business performance."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -328,
+        -260
+      ],
+      "id": "61646dab-2fa0-4fcf-8cda-9bc8a27bfbe8",
+      "name": "MetricsAgent",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_results",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analysis_type_id",
+              "fieldValue": "8"
+            },
+            {
+              "fieldId": "repository_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.repository.id }}"
+            },
+            {
+              "fieldId": "idea_id",
+              "fieldValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "=Success Metrics & KPIs for {{ $('FormatInputData').item.json.idea.title }}"
+            },
+            {
+              "fieldId": "summary_description",
+              "fieldValue": "={{ $json.output.acquisitionMetrics.filter(m => m.importance === 'high').map(m => m.name).join(', ') }}"
+            },
+            {
+              "fieldId": "analysis_payload",
+              "fieldValue": "={{ JSON.stringify($json.output) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -360
+      ],
+      "id": "00eaecb5-eca4-4858-bfc4-81aa7536bbb0",
+      "name": "StoreMetricsAnalysis",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "errors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "error",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "Something went wrong with MetricsAgent"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "metrics-agent"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "04674474-e353-4a05-9c31-680748750ba7",
+      "name": "LogError",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -580,
+        -260
+      ],
+      "id": "10455168-41f6-44b1-8e20-eb33a1ceb32f",
+      "name": "Wait",
+      "webhookId": "f640930c-a58d-4e7e-9f5f-e6f8e3b31e06"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform the data into the format expected by MetricsAgent\nconst idea = $('GetIdeasWithoutMetrics').first().json;\nif (!idea) {\n  return { json: { error: 'No idea found' } };\n}\n\n// Extract tagline from overview if available\nlet tagline = '';\nif (idea.overview && idea.overview.tagline) {\n  tagline = idea.overview.tagline;\n} else if (idea.overview && typeof idea.overview === 'object') {\n  // Try to extract from other fields if available\n  tagline = idea.title;\n}\n\n// Get monetization strategy if available\nconst monetizationStrategy = idea.analysis_results.find(result => \n  result.analysis_type_id === 6\n);\n\nlet monetizationStrategyData = null;\nif (monetizationStrategy && monetizationStrategy.analysis_payload) {\n  try {\n    monetizationStrategyData = typeof monetizationStrategy.analysis_payload === 'string'\n      ? JSON.parse(monetizationStrategy.analysis_payload)\n      : monetizationStrategy.analysis_payload;\n  } catch (e) {\n    console.log('Error parsing monetization strategy:', e);\n  }\n}\n\n// Format the input data\nconst formattedData = {\n  repository: {\n    id: idea.repository.id,\n    name: idea.repository.name,\n    full_name: idea.repository.full_name,\n    description: idea.repository.description,\n    html_url: idea.repository.html_url,\n    stargazers_count: idea.repository.stargazers_count,\n    forks_count: idea.repository.forks_count,\n    topics: idea.repository.topics,\n    license_name: idea.repository.license_name,\n    languages: idea.repository.languages\n  },\n  idea: {\n    id: idea.id,\n    title: idea.title,\n    tagline: tagline,\n    overview: idea.overview\n  },\n  monetizationStrategy: monetizationStrategyData\n};\n\nreturn { json: formattedData };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -260
+      ],
+      "id": "1f580739-9a7b-4fd7-8b22-43c6919bd96b",
+      "name": "FormatInputData"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        -135
+      ],
+      "id": "64a95bf8-2c0f-46e1-9a04-0f2748083cbb",
+      "name": "WaitBeforeNextBatch",
+      "webhookId": "0fddedb1-01d0-4cd1-a3aa-117864fe33bd"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('FormatInputData').item.json.idea.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_risks"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -360
+      ],
+      "id": "db90b85c-5eba-4d6a-89ab-3d66333b3116",
+      "name": "UpdateIdeaStatus",
+      "credentials": {
+        "supabaseApi": {
+          "id": "h6glGddJTttd41ys",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "MetricsAgent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "MetricsAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "MetricsAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IdeaBatch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetIdeasWithoutMetrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetIdeasWithoutMetrics": {
+      "main": [
+        [
+          {
+            "node": "FormatInputData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MetricsAgent": {
+      "main": [
+        [
+          {
+            "node": "StoreMetricsAnalysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreMetricsAnalysis": {
+      "main": [
+        [
+          {
+            "node": "UpdateIdeaStatus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogError": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "MetricsAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInputData": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WaitBeforeNextBatch": {
+      "main": [
+        [
+          {
+            "node": "IdeaBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateIdeaStatus": {
+      "main": [
+        [
+          {
+            "node": "WaitBeforeNextBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "06052a78-c82a-4932-8ddd-d0123a36eaf7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e10ab23e7bda1b308d7880ad2ce9afe94ce54ae054be6feb06bc1dd524a69ad"
+  },
+  "id": "fWcpAa6p1fCefAZW",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T07:35:57.149Z",
+      "updatedAt": "2025-05-08T07:35:57.149Z",
+      "id": "LUq67xnrdY4qnA7a",
+      "name": "production"
+    },
+    {
+      "createdAt": "2025-06-09T22:11:04.637Z",
+      "updatedAt": "2025-06-09T22:11:04.637Z",
+      "id": "LxY2ntJAtqoYUu62",
+      "name": "ossideas"
+    },
+    {
+      "createdAt": "2025-05-15T11:17:02.051Z",
+      "updatedAt": "2025-05-15T11:17:02.051Z",
+      "id": "5xB7TmJqLJHXhXlN",
+      "name": "schedule"
+    }
+  ]
+}
