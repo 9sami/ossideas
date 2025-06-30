@@ -26,6 +26,7 @@ import ShareModal from './ShareModal';
 import AuthModal from './AuthModal';
 import MonetizationStrategyCard from './MonetizationStrategyCard';
 import TechStackCard from './TechStackCard';
+import MetricsCard from './MetricsCard';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +111,15 @@ const IdeaDetail: React.FC = () => {
     
     return idea.analysisResults.find(
       analysis => analysis.analysis_type_id === 7
+    );
+  }, [idea?.analysisResults]);
+
+  // Find metrics analysis
+  const metrics = useMemo(() => {
+    if (!idea?.analysisResults) return null;
+    
+    return idea.analysisResults.find(
+      analysis => analysis.analysis_type_id === 8
     );
   }, [idea?.analysisResults]);
 
@@ -324,6 +334,13 @@ const IdeaDetail: React.FC = () => {
       {techStack && (
         <div className="max-w-4xl mx-auto px-6 py-4">
           <TechStackCard analysis={techStack} />
+        </div>
+      )}
+
+      {/* Metrics Section */}
+      {metrics && (
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <MetricsCard analysis={metrics} />
         </div>
       )}
 

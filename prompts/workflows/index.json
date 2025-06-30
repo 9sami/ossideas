@@ -196,6 +196,27 @@
         "description": "Coordinates the generation of technical stack recommendations for business ideas",
         "workflowPath": "prompts/workflows/idea-engine/tech-stack-orchestrator.n8n.workflow.json"
       }
+    },
+    "idea-engine-metrics": {
+      "name": "Idea Engine - Success Metrics Generator",
+      "description": "Defines success metrics and KPIs for business ideas",
+      "agents": [
+        {
+          "id": "metrics-agent",
+          "name": "Metrics Agent",
+          "description": "Creates comprehensive metrics framework across the customer journey",
+          "workflowPath": "prompts/workflows/idea-engine/metrics-orchestrator.n8n.workflow.json",
+          "promptPath": "prompts/MetricsAgent/system_prompt.md",
+          "inputSchema": "prompts/MetricsAgent/input_required.json",
+          "outputSchema": "prompts/MetricsAgent/analysis_structured_output.json"
+        }
+      ],
+      "orchestrator": {
+        "id": "metrics-orchestrator",
+        "name": "Metrics Orchestrator",
+        "description": "Coordinates the generation of success metrics for business ideas",
+        "workflowPath": "prompts/workflows/idea-engine/metrics-orchestrator.n8n.workflow.json"
+      }
     }
   }
 }
