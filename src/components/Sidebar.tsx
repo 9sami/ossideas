@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   CreditCard,
+  Hammer,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -57,6 +58,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
       label: 'Pricing',
       path: '/pricing',
       onClick: () => navigate('/pricing'),
+    },
+    {
+      id: 'build',
+      icon: Hammer,
+      label: 'Build',
+      path: '/build',
+      onClick: () => navigate('/build'),
     },
     {
       id: 'submit',

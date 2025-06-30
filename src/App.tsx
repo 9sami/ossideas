@@ -27,6 +27,7 @@ import GoogleTag from './components/GoogleAnalytics';
 import LandingPage from './components/LandingPage';
 import boltBadge from './assets/black_circle_360x360.png';
 import IdeaDetail from './components/IdeaDetail';
+import BuildPage from './components/BuildPage';
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -132,6 +133,7 @@ const AppContent: React.FC = () => {
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/build" element={<BuildPage />} />
             <Route
               path="/categories"
               element={
