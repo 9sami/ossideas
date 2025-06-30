@@ -25,23 +25,10 @@ import {
 interface UserSubscription {
   id: string;
   user_id: string;
-  stripe_customer_id: string;
-  stripe_subscription_id: string;
-  stripe_price_id: string;
   plan_name: string;
-  plan_interval: string;
   status: string;
-  current_period_start: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
-  payment_method_brand: string;
-  payment_method_last4: string;
-  amount_cents: number;
-  currency: string;
-  created_at: string;
-  updated_at: string;
   is_active: boolean;
-  days_until_renewal: number;
+  created_at: string;
 }
 
 interface PricingPlan {
@@ -54,6 +41,7 @@ interface PricingPlan {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   popular?: boolean;
   enterprise?: boolean;
+  free?: boolean;
   stripeProduct?: StripeProduct;
   buttonText: string;
   gradient: string;
@@ -336,6 +324,28 @@ const PricingPage: React.FC = () => {
 
   // Create plans from Stripe products
   const plans: PricingPlan[] = [
+    // Free Plan
+    {
+      id: 'free',
+      name: 'Free',
+      price: 0,
+      period: billingInterval,
+      description: 'Get started with basic features for individuals',
+      features: [
+        'Access to 10 startup ideas',
+        'Basic filtering',
+        'Save up to 3 ideas',
+        'Community forum access',
+        'Email support',
+      ],
+      icon: Zap,
+      free: true,
+      buttonText: 'Get Started Free',
+      gradient: 'from-gray-500 to-gray-600',
+      iconBg: 'bg-gray-100',
+      iconColor: 'text-gray-600',
+    },
+    
     // Basic Plan
     ...subscriptionProducts
       .filter((product) => product.name === 'Basic')
@@ -367,7 +377,7 @@ const PricingPage: React.FC = () => {
         icon: Crown,
         popular: product.popular,
         stripeProduct: product,
-        buttonText: getButtonText(product, userSubscription),
+        buttonText: 'Contact Sales',
         gradient: 'from-orange-500 to-orange-600',
         iconBg: 'bg-orange-100',
         iconColor: 'text-orange-600',
@@ -455,12 +465,26 @@ const PricingPage: React.FC = () => {
   }
 
   const handleSubscribe = async (plan: PricingPlan) => {
-    if (plan.enterprise) {
+    if (plan.enterprise || plan.id === 'pro-monthly' || plan.id === 'pro-yearly') {
       // Handle enterprise contact
       window.open(
         'mailto:enterprise@ossideas.com?subject=Enterprise Plan Inquiry',
         '_blank',
       );
+      return;
+    }
+    
+    if (plan.free) {
+      // Handle free plan signup
+      if (!authState.user) {
+        alert('Please sign in to start with the free plan');
+      } else {
+        setSuccessMessage('You are now on the Free plan!');
+        setTimeout(() => {
+          setSuccessMessage(null);
+          window.location.href = '/ideas';
+        }, 2000);
+      }
       return;
     }
 
@@ -960,7 +984,7 @@ const PricingPage: React.FC = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
           {plans.map((plan) => {
             const Icon = plan.icon;
             const currency = plan.stripeProduct?.currency || 'USD';
@@ -1019,6 +1043,15 @@ const PricingPage: React.FC = () => {
                         </div>
                         <div className="text-gray-500">
                           Tailored to your needs
+                        </div>
+                      </div>
+                    ) : plan.free ? (
+                      <div>
+                        <div className="text-4xl font-bold text-gray-900 mb-2">
+                          {formatPrice(0, currency)}
+                        </div>
+                        <div className="text-gray-500">
+                          Forever free
                         </div>
                       </div>
                     ) : (
@@ -1082,7 +1115,7 @@ const PricingPage: React.FC = () => {
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                         : plan.popular || isCurrentUserPlan
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`
-                        : plan.enterprise
+                        : plan.enterprise || plan.free
                         ? `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg hover:scale-105`
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}>
