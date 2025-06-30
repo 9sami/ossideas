@@ -27,6 +27,8 @@ import GoogleTag from './components/GoogleAnalytics';
 import LandingPage from './components/LandingPage';
 import boltBadge from './assets/black_circle_360x360.png';
 import IdeaDetail from './components/IdeaDetail';
+import BuildPage from './components/BuildPage';
+import IdeaAgentPage from './components/IdeaAgentPage';
 import CategoriesPage from './components/CategoriesPage';
 
 const AppContent: React.FC = () => {
@@ -133,6 +135,8 @@ const AppContent: React.FC = () => {
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/build" element={<BuildPage />} />
+            <Route path="/idea-agent" element={<IdeaAgentPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route
               path="/community"
